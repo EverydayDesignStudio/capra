@@ -85,8 +85,10 @@ largefont = pygame.font.SysFont("monospace", 70)
 metaAlt = 0
 sh.hikes = 0
 for file in listdir('..'):
+    print file
     if file.startswith('Hike') and os.path.isdir(file):
         sh.hikes += 1
+        print sh.hikes
 print str(sh.hikes) + ' hikes counted!'
 alts = [0] * sh.hikes
 progress = [0]*sh.hikes # variable for displaying correct hike photo
