@@ -108,7 +108,7 @@ for hike in range(sh.hikes):
         print('alts[' + str(hike) + '] : ' + str(alts[hike]))
 
 #pass alts data to shared
-initialisesh.hikes(alts)
+initialisehikes(alts)
 
 # calculate
 for hike in range(0, sh.hikes):
