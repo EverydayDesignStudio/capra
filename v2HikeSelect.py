@@ -194,7 +194,9 @@ while (1):
         photolayer.blit(bfade, (0,0))
     screen.blit(photolayer, (0,0))
     if overlay:
+        loc = screen.get_rect.center
         rot_indication = pygame.transform.rotate(indication, headcount)
+        rot_indication.get_rect.center = loc
         screen.blit(rot_indication, (0,0))
         # !Placeholder: draw line instead of show hike
         label = largefont.render(str(select), 1, (255, 255, 255))
