@@ -90,9 +90,8 @@ for file in listdir('..'):
         print '=============='
         print 'file says hike'
         print '=============='
-        if os.path.isdir(file):
-            hikes += 1
-            print hikes
+        hikes += 1
+        print hikes
 print str(hikes) + ' hikes counted!'
 alts = [0] * hikes
 progress = [0]*hikes # variable for displaying correct hike photo
@@ -193,7 +192,7 @@ while (1):
             progress[select] = 0
     else:
         photolayer.blit(bfade, (0,0))
-    screen.blit(photolayer, (0,0))    
+    screen.blit(photolayer, (0,0))
     if overlay:
         screen.blit(indication, (0,0))
         # !Placeholder: draw line instead of show hike
