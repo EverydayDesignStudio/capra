@@ -26,8 +26,6 @@
 - try out solutions for the voids
 - fix 0 < > 360 degree bug
 - complete github integration
-
-
 """
 
 #             __
@@ -89,7 +87,7 @@ sh.hikes = 0
 for file in listdir('..'):
     if file.startswith('Hike') and os.path.isdir(file):
         sh.hikes += 1
-print str(sh.hikes) + ' sh.hikes counted!'
+print str(sh.hikes) + ' hikes counted!'
 alts = [0] * sh.hikes
 progress = [0]*sh.hikes # variable for displaying correct hike photo
 
