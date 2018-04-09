@@ -64,7 +64,7 @@ print(heading)
 for i in range(buffersize - 1):
     heading[i] = motion.heading()
 
-image = Image.open('../HikeSelect/compass/compass-1.jpg')
+image = Image.open('../compass/compass-1.jpg')
 pygame.init()
 pygame.display.init()
 
@@ -94,7 +94,7 @@ progress = [0]*sh.hikes # variable for displaying correct hike photo
 
 # determine minimum and maximum altitude in every hike
 for hike in range(sh.hikes):
-    folder = 'Hike' + str(hike + 1)
+    folder = '../Hike' + str(hike + 1)
     with open(folder + '/metatest.csv', 'r') as imgmeta:
         reader = csv.reader(imgmeta)
 
@@ -174,7 +174,7 @@ while (1):
         file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
         if lowres:
             folder = folder + '/405/'
-        folder = '../HikeSelect/' + folder
+        folder = '../' + folder
         image = pygame.image.load(folder + '/' + file)
         #image = pygame.transform.scale(image, (1280, 720))
         fadeimagein(image, screen)
