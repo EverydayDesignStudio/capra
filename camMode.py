@@ -4,6 +4,8 @@ import os
 from envirophat import light
 from envirophat import leds
 from envirophat import motion
+from envirophat import weather
+
 index = 0
 hikeno = 1
 
