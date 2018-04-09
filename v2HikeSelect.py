@@ -64,7 +64,7 @@ print(heading)
 for i in range(buffersize - 1):
     heading[i] = motion.heading()
 
-image = Image.open('compass/compass-1.jpg')
+image = Image.open('../HikeSelect/compass/compass-1.jpg')
 pygame.init()
 pygame.display.init()
 
