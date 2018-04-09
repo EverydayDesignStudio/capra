@@ -87,7 +87,9 @@ hikes = 0
 for file in listdir('..'):
     print file
     if file.startswith('Hike'):
+        print '=============='
         print 'file says hike'
+        print '=============='
         if os.path.isdir(file):
             hikes += 1
             print hikes
