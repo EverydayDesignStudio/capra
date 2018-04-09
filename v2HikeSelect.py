@@ -12,6 +12,7 @@
 #  |___/_/\__/|__,__/ .__/\___/_/_//_/\__/\__/_/
 #                  /_/
 # =====================================================
+# =====================================================
 # Written By: Tal Amram - tal_amram@sfu.ca
 # Everyday Design Studio, SIAT, SFU
 # eds.siat.sfu.ca
@@ -85,7 +86,7 @@ largefont = pygame.font.SysFont("monospace", 70)
 # Count hikes
 metaAlt = 0
 sh.hikes = 0
-for file in listdir('.'):
+for file in listdir('..'):
     if file.startswith('Hike') and os.path.isdir(file):
         sh.hikes += 1
 print str(sh.hikes) + ' sh.hikes counted!'
