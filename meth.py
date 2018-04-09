@@ -1,3 +1,9 @@
+#               __  __
+#    __ _  ___ / /_/ /
+#   /  ' \/ -_) __/ _ \
+#  /_/_/_/\__/\__/_//_/
+# =====================                     
+
 from os import listdir
 import os
 import csv
@@ -23,7 +29,7 @@ def sorthikes():
         with open('metasort.csv', 'w') as metasort:
             for row in sortedmeta:
                 print row
-    """            
+    """
 
 # =========================
 # with minimum altitude and maximum altitude known, return hike corresponding
@@ -40,10 +46,10 @@ def calcHike(alts, angle):
     print 'len(alts): ' + str(sh.hikes)
     if angle > 180:
         angle = 360 - angle
-    
+
     for h in range(0, sh.hikes):
         hangle = calcAngle(alts, alts[h])
-        
+
         #print 'calculd angle: ' + str(hangle)
         #print '==================='
         if abs(hangle - angle) < tol:
@@ -66,14 +72,14 @@ def average(values):
     summ = 0
     amount = len(values)
     for i in range(amount):
-        summ = summ + values[i]        
+        summ = summ + values[i]
     #calculate average of sum heading
     average = summ / amount
     return average
 
 def orientToHike(degrees):
     number = int(degrees/90)
-    
+
     return number
 
 def fadeimagein(image, screen):
