@@ -1,16 +1,16 @@
-#                             .                        
-#                   .-.      / \        _              
-#                  / .,\    /,,.\-_   _/,\             
-#     _        .--'     \__/       \_/    \___         
-#    / \_    _/      _____              __/   \        
-#   /    \_/       _/     \            /       \       
-#  /      \__     /        `-_.-_     /         \__    
-# /          \  _/         .'    \   /   .'\       \   
-#         _              '       _      __             
-#   _  __(_)__ _    _____  ___  (_)__  / /____ ____ TM 
-#  | |/ / / -_) |/|/ / _ \/ _ \/ / _ \/ __/ -_) __/    
-#  |___/_/\__/|__,__/ .__/\___/_/_//_/\__/\__/_/       
-#                  /_/                                 
+#                             .
+#                   .-.      / \        _
+#                  / .,\    /,,.\-_   _/,\
+#     _        .--'     \__/       \_/    \___
+#    / \_    _/      _____              __/   \
+#   /    \_/       _/     \            /       \
+#  /      \__     /        `-_.-_     /         \__
+# /          \  _/         .'    \   /   .'\       \
+#         _              '       _      __
+#   _  __(_)__ _    _____  ___  (_)__  / /____ ____ TM
+#  | |/ / / -_) |/|/ / _ \/ _ \/ / _ \/ __/ -_) __/
+#  |___/_/\__/|__,__/ .__/\___/_/_//_/\__/\__/_/
+#                  /_/
 # =====================================================
 # Written By: Tal Amram - tal_amram@sfu.ca
 # Everyday Design Studio, SIAT, SFU
@@ -24,16 +24,16 @@
  # # # # # # #
 - try out solutions for the voids
 - fix 0 < > 360 degree bug
-
+- complete github integration
 
 
 """
 
-#             __           
-#    ___ ___ / /___ _____  
-#   (_-</ -_) __/ // / _ \ 
-#  /___/\__/\__/\_,_/ .__/ 
-#                  /_/     
+#             __
+#    ___ ___ / /___ _____
+#   (_-</ -_) __/ // / _ \
+#  /___/\__/\__/\_,_/ .__/
+#                  /_/
 # =========================
 
 import math
@@ -54,7 +54,7 @@ buffersize = 5
 heading = [] # array to store heading values in and calculate average.
 overlay = False # for toggling overlay on/off
 lowres = False # for toggling lowres mode
-photo = True # for toggling photo 
+photo = True # for toggling photo
 for i in range(buffersize):
     heading.append(0)
 heady = 0 # index to count location in array 'heading'
@@ -90,14 +90,14 @@ for file in listdir('.'):
         sh.hikes += 1
 print str(sh.hikes) + ' sh.hikes counted!'
 alts = [0] * sh.hikes
-progress = [0]*sh.hikes # variable for displaying correct hike photo 
+progress = [0]*sh.hikes # variable for displaying correct hike photo
 
 # determine minimum and maximum altitude in every hike
 for hike in range(sh.hikes):
     folder = 'Hike' + str(hike + 1)
     with open(folder + '/metatest.csv', 'r') as imgmeta:
         reader = csv.reader(imgmeta)
-        
+
         maxt = 0
         mint = 9999 # not most elegant solution
         for row in reader:
@@ -110,7 +110,7 @@ for hike in range(sh.hikes):
 #pass alts data to shared
 initialisesh.hikes(alts)
 
-# calculate 
+# calculate
 for hike in range(0, sh.hikes):
     percentage = (alts[hike] - sh.altsmin) / sh.altsdif
     print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
@@ -122,29 +122,29 @@ for h in range(sh.hikes):
     hangle = calcAngle(alts, alts[h])
     r = sh.height/3
     print 'Hike [' + str(h) + '] @ angle : ' + str(hangle)
-    
+
     xh, yh = polar( hangle, r)
     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
     for i in range(2):
         xh, yh = polar( hangle + (1 - 2*i) * 10, r)
         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-    
+
     xh, yh = polar(360 - hangle, r)
     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
     for i in range(2):
         xh, yh = polar(360 - (hangle + (1 - 2*i) * 10), r)
         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-   
+
     label = largefont.render(str(h), 1, (0, 255, 0))
     indication.blit(label, polar(hangle, r*1.2))
 
 indication.set_alpha(75)
 
-#     __             
-#    / /__  ___  ___ 
+#     __
+#    / /__  ___  ___
 #   / / _ \/ _ \/ _ \
 #  /_/\___/\___/ .__/
-#             /_/    
+#             /_/
 # ===================
 
 while (1):
@@ -153,20 +153,20 @@ while (1):
     heady = heady + 1
     if heady > len(heading) - 1:
         heady = 0
-    
-    heading[heady] = motion.heading()    
-    headcount = average(heading) #calculate average of all values in heading    
+
+    heading[heady] = motion.heading()
+    headcount = average(heading) #calculate average of all values in heading
     headingdiff = headcount - (45 + ((select-1) * 90))
-    
+
     #if (headingdiff < tolerance and headingdiff > -tolerance):
-     #   pass        
+     #   pass
     #else:
     if (select is not calcHike(alts, headcount)):
             select = calcHike(alts, headcount)
-                          
-    
+
+
     # Progress and show Hike
-    
+
     #draw image ===========
     if select is not -1:
         print 'select: ' + str(select + 1)
@@ -174,7 +174,7 @@ while (1):
         file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
         if lowres:
             folder = folder + '/405/'
-        
+        folder '../HikeSelect/'
         image = pygame.image.load(folder + '/' + file)
         #image = pygame.transform.scale(image, (1280, 720))
         fadeimagein(image, screen)
@@ -188,7 +188,7 @@ while (1):
         screen.blit(bfade, (0,0))
 
     if overlay:
-        screen.blit(indication, (0,0))          
+        screen.blit(indication, (0,0))
         # !Placeholder: draw line instead of show hike
         label = largefont.render(str(select), 1, (255, 255, 255))
         screen.blit(label, (sh.width/2, sh.height/2))
@@ -213,14 +213,14 @@ while (1):
     label = font.render('photo: ' + str(progress), 1, (255, 255, 255))
     screen.blit(label, (100, 160))
     """
-     
+
     pygame.display.flip() # update screen
 
 #     __            __                    __
 #    / /_____ __ __/ /  ___  ___ ________/ /
-#   /  '_/ -_) // / _ \/ _ \/ _ `/ __/ _  / 
-#  /_/\_\\__/\_, /_.__/\___/\_,_/_/  \_,_/  
-#           /___/                           
+#   /  '_/ -_) // / _ \/ _ \/ _ `/ __/ _  /
+#  /_/\_\\__/\_, /_.__/\___/\_,_/_/  \_,_/
+#           /___/
 #===========================================
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -233,4 +233,4 @@ while (1):
             elif event.key == pygame.K_i:
                 photo = not photo
             elif event.key == pygame.K_l:
-                lowres = not lowres     
+                lowres = not lowres
