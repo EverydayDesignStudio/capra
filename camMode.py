@@ -5,11 +5,15 @@ from envirophat import light
 from envirophat import leds
 from envirophat import motion
 index = 0
+hikeno = 1
 
 cam = picamera.PiCamera()
 
 # check recorded hikes currently on card
-
+for file in listdir('.'):
+    if os.path.isdir(file) and file.startswith('Hike'):
+        hikeno + 1
+        print str(hikeno)
 
 
 
