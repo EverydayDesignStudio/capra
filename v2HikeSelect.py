@@ -83,17 +83,19 @@ largefont = pygame.font.SysFont("monospace", 70)
 # =====================
 # Count hikes
 metaAlt = 0
-sh.hikes = 0
+hikes = 0
 for file in listdir('..'):
     print file
     if file.startswith('Hike'):
         print 'file says hike'
         if os.path.isdir(file):
-            sh.hikes += 1
-            print sh.hikes
-print str(sh.hikes) + ' hikes counted!'
-alts = [0] * sh.hikes
-progress = [0]*sh.hikes # variable for displaying correct hike photo
+            hikes += 1
+            print hikes
+print str(hikes) + ' hikes counted!'
+alts = [0] * hikes
+progress = [0]*hikes # variable for displaying correct hike photo
+
+sh.hikes = hikes
 
 # determine minimum and maximum altitude in every hike
 for hike in range(sh.hikes):
