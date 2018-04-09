@@ -1,7 +1,7 @@
 #                             .
 #                   .-.      / \        _
-#                  / .,\    /,,.\-_   _/,\
-#     _        .--'     \__/       \_/    \___
+#                  /,,.\    /,,.\-_   _/,\
+#     _        .--'' '  \__/       \_/    \___
 #    / \_    _/      _____              __/   \
 #   /    \_/       _/     \            /       \
 #  /      \__     /        `-_.-_     /         \__
@@ -25,7 +25,6 @@
  # # # # # # #
 - try out solutions for the voids
 - fix 0 < > 360 degree bug
-- complete github integration
 """
 
 #             __
@@ -71,6 +70,7 @@ screen = pygame.display.set_mode((1280, 720))
 sh.width, sh.height = pygame.display.get_surface().get_size()
 
 # prepare semitransparent black screen
+photolayer = pygame.Surface((sh.width, sh.height))
 bfade = pygame.Surface((sh.width, sh.height))
 bfade.fill((0, 0, 0, 3))
 bfade.set_alpha(3)
@@ -122,7 +122,7 @@ for hike in range(0, sh.hikes):
     percentage = (alts[hike] - sh.altsmin) / sh.altsdif
     print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
 
-# draw indication of angles corresponding with sh.hikes
+# draw indication of angles corresponding with hikes
 indication = pygame.Surface((sh.width, sh.height))
 
 for h in range(sh.hikes):
@@ -130,7 +130,7 @@ for h in range(sh.hikes):
     r = sh.height/3
     print 'Hike [' + str(h) + '] @ angle : ' + str(hangle)
 
-    xh, yh = polar( hangle, r)
+    xh, yh = polar(hangle, r)
     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
     for i in range(2):
         xh, yh = polar( hangle + (1 - 2*i) * 10, r)
@@ -184,7 +184,7 @@ while (1):
         folder = '../' + folder
         image = pygame.image.load(folder + '/' + file)
         #image = pygame.transform.scale(image, (1280, 720))
-        fadeimagein(image, screen)
+        fadeimagein(image, photolayer)
         progress[select] = progress[select] + 1
         if (progress[select] > len(listdir(folder)) - 1):
             print '+- RESET HIKE -+'
@@ -192,8 +192,8 @@ while (1):
             print 'progress[' + str(select) + '] @ ' + str(progress[select])
             progress[select] = 0
     else:
-        screen.blit(bfade, (0,0))
-
+        photolayer.blit(bfade, (0,0))
+    screen.blit(photolayer, (0,0))    
     if overlay:
         screen.blit(indication, (0,0))
         # !Placeholder: draw line instead of show hike
