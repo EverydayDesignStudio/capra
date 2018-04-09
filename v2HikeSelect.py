@@ -174,7 +174,7 @@ while (1):
         file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
         if lowres:
             folder = folder + '/405/'
-        folder '../HikeSelect/'
+        folder = '../HikeSelect/' + folder
         image = pygame.image.load(folder + '/' + file)
         #image = pygame.transform.scale(image, (1280, 720))
         fadeimagein(image, screen)
