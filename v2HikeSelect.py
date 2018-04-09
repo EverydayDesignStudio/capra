@@ -194,7 +194,7 @@ while (1):
         photolayer.blit(bfade, (0,0))
     screen.blit(photolayer, (0,0))
     if overlay:
-        loc = indication.get_rect.center
+        loc = (sh.width/2, sh. height/2)
         rot_indication = pygame.transform.rotate(indication, headcount)
         rot_indication.get_rect.center = loc
         screen.blit(rot_indication, (0,0))
