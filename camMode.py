@@ -24,7 +24,7 @@ cam = picamera.PiCamera()
 # check recorded hikes currently on card
 def counthikes():
     for file in os.listdir('..'):
-        if os.path.isdir(file) and file.startswith('Hike'):
+        if file.startswith('Hike'):
             hikeno + 1
             print str(hikeno)
 
