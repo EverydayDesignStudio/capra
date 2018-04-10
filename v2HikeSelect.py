@@ -173,26 +173,29 @@ while (1):
 
     # Progress and show Hike
 
-    #draw image ===========
-    if select is not -1:
-        print 'select: ' + str(select + 1)
-        folder = 'Hike' + str(select + 1)
-        file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
-        if lowres:
-            folder = folder + '/405/'
-        folder = '../' + folder
-        image = pygame.image.load(folder + '/' + file)
-        #image = pygame.transform.scale(image, (1280, 720))
-        fadeimagein(image, photolayer)
-        progress[select] = progress[select] + 1
-        if (progress[select] > len(listdir(folder)) - 1):
-            print '+- RESET HIKE -+'
-            print folder + ' contains ' + str(len(listdir(folder))) + 'files,'
-            print 'progress[' + str(select) + '] @ ' + str(progress[select])
-            progress[select] = 0
-    else:
-        photolayer.blit(bfade, (0,0))
-    screen.blit(photolayer, (0,0))
+    #draw image ======================
+    if photo:
+        if select is not -1:
+            print 'select: ' + str(select + 1)
+            folder = 'Hike' + str(select + 1)
+            file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
+            if lowres:
+                folder = folder + '/405/'
+            folder = '../' + folder
+            image = pygame.image.load(folder + '/' + file)
+            #image = pygame.transform.scale(image, (1280, 720))
+            fadeimagein(image, photolayer)
+            progress[select] = progress[select] + 1
+            if (progress[select] > len(listdir(folder)) - 1):
+                print '+- RESET HIKE -+'
+                print folder + ' contains ' + str(len(listdir(folder))) + 'files,'
+                print 'progress[' + str(select) + '] @ ' + str(progress[select])
+                progress[select] = 0
+        else:
+            photolayer.blit(bfade, (0,0))
+        screen.blit(photolayer, (0,0))
+
+    #draw overlay ======================
     if overlay:
         # loc = (sh.width/2, sh. height/2)
         # rot_indication = pygame.transform.rotate(indication, headcount)

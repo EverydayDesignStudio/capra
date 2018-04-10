@@ -25,7 +25,7 @@ cam = picamera.PiCamera()
 def counthikes():
     for file in os.listdir('..'):
         if file.startswith('Hike'):
-            hikeno + 1
+            hikeno = hikeno + 1
             print str(hikeno)
 
 counthikes()
