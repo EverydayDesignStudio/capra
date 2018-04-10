@@ -63,7 +63,7 @@ while(True):
     #photo = cam.takePhoto()
     #photo.save(name)
     print 'taking photo ...'
-    cam.capture(folder + 'Hike' + str("%04d" % index) + '.jpg')
+    cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
     print 'photo taken!'
     with open(folder + 'metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
