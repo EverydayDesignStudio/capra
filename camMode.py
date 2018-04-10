@@ -6,7 +6,7 @@
 #                  /_/
 # ============================================================================
 
-from picamera import PiCamera
+import picamera
 import time
 import os
 import csv
@@ -47,7 +47,7 @@ while(True):
     name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
     #photo = cam.takePhoto()
     #photo.save(name)
-    cam.capture(name)
+    cam.capture('Hike' + str("%04d" % index) + '.jpg')
     with open(folder + 'metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
