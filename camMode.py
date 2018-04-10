@@ -19,6 +19,7 @@ index = 0
 hikeno = 1
 
 cam = picamera.PiCamera()
+cam.resolution(720, 405)
 
 # check recorded hikes currently on card
 for file in listdir('.'):
@@ -52,7 +53,7 @@ while(True):
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
         writer.writerow("{:04}".format(index), round(altitude, 2))
-        
+
 
     index = index + 1
 
