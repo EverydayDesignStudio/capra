@@ -48,7 +48,7 @@ while(True):
     #photo = cam.takePhoto()
     #photo.save(name)
     cam.capture('Hike' + str("%04d" % index) + '.jpg')
-    with open(folder + 'metatest.csv', 'a') as meta:
+    with open(folder + 'metatest.csv', 'wa') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
         writer.writerow("{:04}".format(index), round(altitude, 2))
