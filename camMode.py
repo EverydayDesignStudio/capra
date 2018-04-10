@@ -22,10 +22,13 @@ cam = picamera.PiCamera()
 #cam.resolution(720, 405)
 
 # check recorded hikes currently on card
-for file in os.listdir('.'):
-    if os.path.isdir(file) and file.startswith('Hike'):
-        hikeno + 1
-        print str(hikeno)
+def counthikes():
+    for file in os.listdir('..'):
+        if os.path.isdir(file) and file.startswith('Hike'):
+            hikeno + 1
+            print str(hikeno)
+
+counthikes()
 
 folder = '../camHike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
