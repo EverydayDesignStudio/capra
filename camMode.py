@@ -26,8 +26,9 @@ def counthikes():
     number = 1
     for file in os.listdir('..'):
         if file.startswith('Hike'):
+            print
             number = number + 1
-            print str(number)
+            print file + 'is instance: ' + str(number)
             return number
 
 hikeno = counthikes()
