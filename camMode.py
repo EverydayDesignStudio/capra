@@ -35,7 +35,7 @@ for i in range(3):
     leds.on()
     time.sleep(0.5)
 
-cam.capture('Hike' + str("%04d" % index) + '.jpg')
+cam.capture('../testhike/Hike' + str("%04d" % index) + '.jpg')
 with open(folder + '/metatest.csv', 'w') as meta:
     writer = csv.writer(meta)
     altitude = weather.altitude() + 90
