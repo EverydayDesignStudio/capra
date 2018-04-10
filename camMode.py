@@ -29,7 +29,7 @@ def counthikes():
             print
             number = number + 1
             print file + 'is instance: ' + str(number)
-            return number
+    return number
 
 hikeno = counthikes()
 
