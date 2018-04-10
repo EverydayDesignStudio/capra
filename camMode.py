@@ -1,23 +1,21 @@
 # ============================================================================
-#             __
-#    ___ ___ / /___ _____
-#   (_-</ -_) __/ // / _ \
-#  /___/\__/\__/\_,_/ .__/
-#                  /_/
+#             __                       _[]_/['']\__n_
+#    ___ ___ / /___ _____             |_____.--.__()_|
+#   (_-</ -_) __/ // / _ \            |LI  //# \\    |
+#  /___/\__/\__/\_,_/ .__/            |    \\__//    |
+#                  /_/                '--------------'
 # ============================================================================
 
-import picamera
-import time
 import os
 import csv
+import time
+import picamera
 from envirophat import light
 from envirophat import leds
 from envirophat import motion
 from envirophat import weather
 
 index = 0
-
-
 cam = picamera.PiCamera()
 #cam.resolution(720, 405)
 
@@ -33,7 +31,7 @@ def counthikes():
 
 hikeno = counthikes()
 
-folder = '../camHike' + str(hikeno) + '/' # change directory for actual hike record
+folder = '../Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 # for i in range(3):
