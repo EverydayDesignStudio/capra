@@ -45,6 +45,8 @@ from envirophat import motion
 from PIL import Image
 from meth import *
 
+# General variables
+# ========================
 select = 0 # variable for choosing hike folder
 tolerance = 45 # threshold amount of degrees to turn viewpointer before switching to other hike folder
 buffersize = 5
@@ -61,7 +63,7 @@ print(heading)
 for i in range(buffersize - 1):
     heading[i] = motion.heading()
 
-image = Image.open('../compass/compass-1.jpg')
+image = Image.open('../compass/compass-1.jpg') # initialise 
 pygame.init()
 pygame.display.init()
 
