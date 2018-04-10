@@ -54,16 +54,18 @@ time.sleep(2)
 # ============================================================================
 while(True):
 
-    name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
+    #name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
     #photo = cam.takePhoto()
     #photo.save(name)
+    print 'taking photo ...'
     cam.capture('Hike' + str("%04d" % index) + '.jpg')
+    print 'photo taken!'
     with open(folder + '/metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
         writer.writerow(["{:04}".format(index), round(altitude, 2)])
-        print 'photo taken'
-        print ["{:04}".format(index), round(altitude, 2)]
+
+        print 'wrote' + ["{:04}".format(index), round(altitude, 2)]
         print '========================'
 
     index = index + 1
