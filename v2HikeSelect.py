@@ -1,4 +1,4 @@
-#.                            .
+"""                             .
 #                   .-.      / \        _
 #                  /,,.\    /,,.\-_   _/,\
 #     _        .--'' '  \__/       \_/    \___
@@ -19,7 +19,7 @@
 # For Raspberry Pi Zero W
 #
 # ASCI art font 'small slant' from http://patorjk.com/software/taag/
-"""
+
  # # # # # # #
  #  Tickets  #
  # # # # # # #
@@ -44,7 +44,6 @@ sh.init()
 from envirophat import motion
 from PIL import Image
 from meth import *
-
 
 select = 0 # variable for choosing hike folder
 tolerance = 45 # threshold amount of degrees to turn viewpointer before switching to other hike folder
@@ -94,7 +93,7 @@ for file in listdir('..'):
         print hikes
 print str(hikes) + ' hikes counted!'
 alts = [0] * hikes
-progress = [0]*hikes # variable for displaying correct hike photo
+progress = [0] * hikes # variable for displaying correct hike photo
 
 sh.hikes = hikes
 
@@ -203,8 +202,7 @@ while (1):
         label = largefont.render(str(select), 1, (255, 255, 255))
         screen.blit(label, (sh.width/2, sh.height/2))
         r = sh.height/2
-        x1 = sh.width/2
-        y1 = sh.height/2
+        x1, y1 = polar(0, 0)
         x2, y2 = polar(headcount, r)
         x3, y3 = polar(motion.heading(), r)
         pygame.draw.line(screen, (255, 0, 0), (x1, y1), (x2, y2), 10)
