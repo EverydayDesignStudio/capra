@@ -27,7 +27,7 @@ for file in os.listdir('.'):
         hikeno + 1
         print str(hikeno)
 
-folder = 'Hike' + hikeno + '/' # change directory for actual hike record
+folder = 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 
 for i in range(3):
     leds.off()
