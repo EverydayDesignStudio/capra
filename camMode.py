@@ -16,19 +16,21 @@ from envirophat import motion
 from envirophat import weather
 
 index = 0
-hikeno = 1
+
 
 cam = picamera.PiCamera()
 #cam.resolution(720, 405)
 
 # check recorded hikes currently on card
 def counthikes():
+    number = 1
     for file in os.listdir('..'):
         if file.startswith('Hike'):
-            hikeno = hikeno + 1
-            print str(hikeno)
+            number = number + 1
+            print str(number)
+            return number
 
-counthikes()
+hikeno = counthikes()
 
 folder = '../camHike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
