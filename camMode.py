@@ -48,7 +48,9 @@ while(True):
 
 
     name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
-    cam.capture(name)
+    photo = cam.takePhoto()
+    photo.save(name)
+    #cam.capture(name)
     with open(folder + 'metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
