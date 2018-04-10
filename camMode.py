@@ -39,7 +39,7 @@ cam.capture('Hike' + str("%04d" % index) + '.jpg')
 with open(folder + '/metatest.csv', 'w') as meta:
     writer = csv.writer(meta)
     altitude = weather.altitude() + 90
-    writer.writerow([]"{:04}".format(index), round(altitude, 2)])
+    writer.writerow(["{:04}".format(index), round(altitude, 2)])
 index = index + 1
 time.sleep(2)
 # ============================================================================
