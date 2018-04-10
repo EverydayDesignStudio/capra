@@ -27,7 +27,7 @@ for file in os.listdir('.'):
         hikeno + 1
         print str(hikeno)
 
-folder = 'Hike' + str(hikeno) + '/' # change directory for actual hike record
+folder = 'testhike' # 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 
 for i in range(3):
     leds.off()
@@ -48,7 +48,7 @@ while(True):
     #photo = cam.takePhoto()
     #photo.save(name)
     cam.capture('Hike' + str("%04d" % index) + '.jpg')
-    with open(folder + 'metatest.csv', 'wa') as meta:
+    with open(folder + '/metatest.csv', 'wa') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
         writer.writerow("{:04}".format(index), round(altitude, 2))
