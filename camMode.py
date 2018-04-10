@@ -65,7 +65,7 @@ while(True):
         altitude = weather.altitude() + 90
         writer.writerow(["{:04}".format(index), round(altitude, 2)])
 
-        print 'wrote' + ["{:04}".format(index), round(altitude, 2)]
+        print 'wrote' + str(["{:04}".format(index), round(altitude, 2)])
         print '========================'
 
     index = index + 1
