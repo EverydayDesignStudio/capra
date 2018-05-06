@@ -1,4 +1,4 @@
-"""                             .
+"""                           .
 #                   .-.      / \        _
 #                  /,,.\    /,,.\-_   _/,\
 #     _        .--'' '  \__/       \_/    \___
@@ -20,9 +20,9 @@
 #
 # ASCI art font 'small slant' from http://patorjk.com/software/taag/
 
- # # # # # # #
- #  Tickets  #
- # # # # # # #
+# # # # # # #
+#  Tickets  #
+# # # # # # #
 - try out solutions for the voids
 - fix 0 < > 360 degree bug
 """
@@ -63,7 +63,7 @@ print(heading)
 for i in range(buffersize - 1):
     heading[i] = motion.heading()
 
-image = Image.open('../compass/compass-1.jpg') # initialise 
+image = Image.open('../compass/compass-1.jpg') # initialise
 pygame.init()
 pygame.display.init()
 
@@ -133,7 +133,7 @@ for h in range(sh.hikes):
     xh, yh = polar(hangle, r)
     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
     for i in range(2):
-        xh, yh = polar( hangle + (1 - 2*i) * 10, r)
+        xh, yh = polar( hangle + (1 - 2 * i ) * 10, r)
         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
 
     xh, yh = polar(360 - hangle, r)
@@ -156,8 +156,9 @@ indication.set_alpha(75)
 # ============================================================================
 
 while (1):
-    # Read Compass
-    # ===============================================
+    #   ______________
+    # / Read Compass  \
+    # ========================================================================
     heady = heady + 1
     if heady > len(heading) - 1:
         heady = 0
@@ -228,6 +229,8 @@ while (1):
     """
 
     pygame.display.flip() # update screen
+
+
 # ============================================================================
 #     __            __                    __                                 =
 #    / /_____ __ __/ /  ___  ___ ________/ /                                 =
