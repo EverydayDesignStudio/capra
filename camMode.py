@@ -6,7 +6,14 @@
 #  /___/\__/\__/\_,_/ .__/            |    \\__//    |
 #                  /_/                '--------------'
 # ============================================================================
+
+# > make LEDs flash when taking a picture
+# > enable boot into cammode / with button?
+# >
+
 """
+
+
 
 import os
 import csv
@@ -17,6 +24,7 @@ from envirophat import leds
 from envirophat import motion
 from envirophat import weather
 
+period = 2.5 # take a picture every 2.5 seconds
 index = 0
 cam = picamera.PiCamera()
 #cam.resolution(720, 405)
@@ -30,6 +38,14 @@ def counthikes():
             number = number + 1
             print file + 'is instance: ' + str(number)
     return number
+
+def blink(times):
+    for i in range(times):
+        leds.on()
+        time.sleep(0.05)
+        leds.off()
+        time.sleep(0.05)
+
 
 hikeno = counthikes()
 
@@ -64,18 +80,23 @@ while(True):
     #name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
     #photo = cam.takePhoto()
     #photo.save(name)
+    priortime = time.time()
     print 'taking photo ...'
     cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
     print 'photo taken!'
     with open(folder + 'metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
+        temperature = weather.temperature()
         writer.writerow(["{:04}".format(index), round(altitude, 2)])
 
         print 'wrote' + str(["{:04}".format(index), round(altitude, 2)])
         print '========================'
+        blink(3)
 
     index = index + 1
 
     # Nap time
-    time.sleep(2)
+    nowtime = time.time()
+    naptime = period - (nowtime - priortime)
+    time.sleep(naptime)
