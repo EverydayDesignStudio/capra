@@ -89,9 +89,10 @@ while(True):
         writer = csv.writer(meta)
         altitude = weather.altitude() + 90
         temperature = weather.temperature()
-        writer.writerow(["{:04}".format(index), round(altitude, 2)])
+        newrow = ["{:04}".format(index), round(altitude, 2), round(temperature, 2)]
+        writer.writerow(newrow)
 
-        print 'wrote' + str(["{:04}".format(index), round(altitude, 2)])
+        print 'wrote ' + str(newrow)
         print '========================'
         blink(3)
 
