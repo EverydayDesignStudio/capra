@@ -23,6 +23,9 @@ from envirophat import leds
 from envirophat import motion
 from envirophat import weather
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+print dir_path
+
 period = 2.5 # take a picture every 2.5 seconds
 index = 0
 cam = picamera.PiCamera()
