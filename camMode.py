@@ -7,11 +7,9 @@
 #  /___/\__/\__/\_,_/ .__/            |    \\__//    |
 #                  /_/                '--------------'
 # ============================================================================
-
 # > make LEDs flash when taking a picture
 # > enable boot into cammode / with button?
 # >
-
 """
 
 
@@ -50,7 +48,7 @@ def blink(times):
 
 hikeno = counthikes()
 
-folder = '../Hike' + str(hikeno) + '/' # change directory for actual hike record
+folder = 'home/pi/HikeSelect/Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 # for i in range(3):
