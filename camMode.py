@@ -54,7 +54,7 @@ print dir_path
 
 hikeno = counthikes()
 
-folder = '../Hike' + str(hikeno) + '/' # change directory for actual hike record
+folder = '/home/pi/HikeSelect/Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 # for i in range(3):
