@@ -97,6 +97,7 @@ while(True):
         writer.writerow(newrow)
 
         print 'wrote ' + str(newrow)
+        print dir_path
         print '========================'
         blink(3)
 
