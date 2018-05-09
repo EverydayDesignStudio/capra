@@ -51,7 +51,7 @@ def blink(times):
 
 hikeno = counthikes()
 
-folder = "/home/pi/HikeSelect/Hike" + str(hikeno) + "/" # change directory for actual hike record
+folder = '../Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 # for i in range(3):
