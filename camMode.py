@@ -98,6 +98,7 @@ while(True):
 
         print 'wrote ' + str(newrow)
         print dir_path
+        print folder
         print '========================'
         blink(3)
 
