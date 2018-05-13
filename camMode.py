@@ -57,9 +57,9 @@ with open(folder + 'metatest.csv', 'w') as meta:
     writer = csv.writer(meta)
     altitude = round(weather.altitude() + 90, 2)
     temperature = round(weather.temperature(), 2)
-    red = lights.rgb()[0]
-    green = lights.rgb()[1]
-    blue = lights.rgb()[2]
+    red = light.rgb()[0]
+    green = light.rgb()[1]
+    blue = light.rgb()[2]
     newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
     writer.writerow(newrow)
     print 'photo taken'
@@ -87,9 +87,9 @@ while(True):
         writer = csv.writer(meta)
         altitude = round(weather.altitude() + 90, 2)
         temperature = round(weather.temperature(), 2)
-        red = lights.rgb()[0]
-        green = lights.rgb()[1]
-        blue = lights.rgb()[2]
+        red = light.rgb()[0]
+        green = light.rgb()[1]
+        blue = light.rgb()[2]
         newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
         writer.writerow(newrow)
         print 'photo taken'
