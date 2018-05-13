@@ -26,12 +26,13 @@ from envirophat import weather
 period = 2.5 # take a picture every 2.5 seconds
 index = 0
 cam = picamera.PiCamera()
+folder = '/home/pi/HikeSelect/'
 #cam.resolution(720, 405)
 
 # check recorded hikes currently on card
 def counthikes():
     number = 1
-    for file in os.listdir('..'):
+    for file in os.listdir(folder):
         if file.startswith('Hike'):
             print
             number = number + 1
@@ -54,7 +55,7 @@ print dir_path
 
 hikeno = counthikes()
 
-folder = '/home/pi/HikeSelect/Hike' + str(hikeno) + '/' # change directory for actual hike record
+folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 # for i in range(3):
