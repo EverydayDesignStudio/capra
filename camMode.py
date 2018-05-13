@@ -29,12 +29,14 @@ folder = '/home/pi/capra/'
 # check recorded hikes currently on card
 def counthikes():
     number = 1
-    print 'counting hikes in folder', folder
+    print 'counting hikes in folder ', folder
     for file in os.listdir(folder):
         if file.startswith('Hike'):
             print
             number = number + 1
             print file + 'is instance: ' + str(number)
+            print '-_-_-_-_-_-_'
+            print 'new hike is number ', number
     return number
 
 def blink(times):
@@ -44,27 +46,24 @@ def blink(times):
         leds.off()
         time.sleep(0.05)
 
-blink(20)
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-print dir_path
+blink(10)
 
 hikeno = counthikes()
 folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
-# for i in range(3):
-#     leds.off()
-#     time.sleep(1)
-#     leds.on()
-#     time.sleep(0.5)
 
 cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
 with open(folder + 'metatest.csv', 'w') as meta:
     writer = csv.writer(meta)
-    altitude = weather.altitude() + 90
-    writer.writerow(["{:04}".format(index), round(altitude, 2)])
+    altitude = round(weather.altitude() + 90, 2)
+    temperature = round(weather.temperature(), 2)
+    red = lights.rgb()[0]
+    green = lights.rgb()[1]
+    blue = lights.rgb()[2]
+    newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
+    writer.writerow(newrow)
     print 'photo taken'
-    print ["{:04}".format(index), round(altitude, 2)]
+    print newrow
     print '========================'
 index = index + 1
 time.sleep(2)
@@ -86,15 +85,17 @@ while(True):
     print 'photo taken!'
     with open(folder + 'metatest.csv', 'a') as meta:
         writer = csv.writer(meta)
-        altitude = weather.altitude() + 90
-        temperature = weather.temperature()
-        newrow = ["{:04}".format(index), round(altitude, 2), round(temperature, 2)]
+        altitude = round(weather.altitude() + 90, 2)
+        temperature = round(weather.temperature(), 2)
+        red = lights.rgb()[0]
+        green = lights.rgb()[1]
+        blue = lights.rgb()[2]
+        newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
         writer.writerow(newrow)
-        print 'wrote ' + str(newrow)
-        print dir_path
-        print folder
+        print 'photo taken'
+        print [newrow]
         print '========================'
-        blink(3)
+        blink(2)
     index = index + 1
 
     # Nap time
