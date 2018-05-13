@@ -12,8 +12,6 @@
 # >
 """
 
-
-
 import os
 import csv
 import time
@@ -26,12 +24,12 @@ from envirophat import weather
 period = 2.5 # take a picture every 2.5 seconds
 index = 0
 cam = picamera.PiCamera()
-folder = '/home/pi/HikeSelect/'
-#cam.resolution(720, 405)
+folder = '/home/pi/capra/'
 
 # check recorded hikes currently on card
 def counthikes():
     number = 1
+    print 'counting hikes in folder', folder
     for file in os.listdir(folder):
         if file.startswith('Hike'):
             print
@@ -46,18 +44,14 @@ def blink(times):
         leds.off()
         time.sleep(0.05)
 
-
 blink(20)
-
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print dir_path
 
 hikeno = counthikes()
-
 folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
-
 # for i in range(3):
 #     leds.off()
 #     time.sleep(1)
@@ -96,13 +90,11 @@ while(True):
         temperature = weather.temperature()
         newrow = ["{:04}".format(index), round(altitude, 2), round(temperature, 2)]
         writer.writerow(newrow)
-
         print 'wrote ' + str(newrow)
         print dir_path
         print folder
         print '========================'
         blink(3)
-
     index = index + 1
 
     # Nap time
