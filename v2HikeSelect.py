@@ -183,7 +183,7 @@ while (1):
     if photo:
         if select is not -1:
             print 'select: ' + str(select + 1)
-            folder = 'Hike' + 13 # str(select + 1)
+            folder = 'Hike' + str(13) # str(select + 1)
             file = folder +'-' + "{:04}".format(progress[select]) +'.jpg'
             if lowres:
                 folder = folder + '/405/'
