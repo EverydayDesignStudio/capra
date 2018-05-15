@@ -128,27 +128,27 @@ for hike in range(0, sh.hikes):
 # draw indication of angles corresponding with hikes
 indication = pygame.Surface((sh.width, sh.height))
 
-for h in range(sh.hikes):
-    hangle = calcAngle(alts, alts[h])
-    r = sh.height/3
-    print 'Hike [' + str(h) + '] @ angle : ' + str(hangle)
-
-    xh, yh = polar(hangle, r)
-    pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
-    for i in range(2):
-        xh, yh = polar( hangle + (1 - 2 * i ) * 10, r)
-        pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-
-    xh, yh = polar(360 - hangle, r)
-    pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
-    for i in range(2):
-        xh, yh = polar(360 - (hangle + (1 - 2*i) * 10), r)
-        pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-
-    label = largefont.render(str(h), 1, (0, 255, 0))
-    indication.blit(label, polar(hangle, r*1.2))
-
-indication.set_alpha(75)
+# for h in range(sh.hikes):
+#     hangle = calcAngle(alts, alts[h])
+#     r = sh.height/3
+#     print 'Hike [' + str(h) + '] @ angle : ' + str(hangle)
+#
+#     xh, yh = polar(hangle, r)
+#     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
+#     for i in range(2):
+#         xh, yh = polar( hangle + (1 - 2 * i ) * 10, r)
+#         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
+#
+#     xh, yh = polar(360 - hangle, r)
+#     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
+#     for i in range(2):
+#         xh, yh = polar(360 - (hangle + (1 - 2*i) * 10), r)
+#         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
+#
+#     label = largefont.render(str(h), 1, (0, 255, 0))
+#     indication.blit(label, polar(hangle, r*1.2))
+#
+# indication.set_alpha(75)
 
 # ============================================================================
 #     __
