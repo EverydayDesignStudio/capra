@@ -83,8 +83,8 @@ def orientToHike(degrees):
     return number
 
 def fadeimagein(image, screen):
-    for alpha in range(5):
-        image.set_alpha(47)
+    for alpha in range(20):
+        image.set_alpha(10)
         wid, hei = image.get_rect().size
         screen.blit(image, (sh.width/2 - wid/2, sh.height/2 - hei/2) )
         pygame.display.flip()
