@@ -100,30 +100,30 @@ progress = [0] * hikes # variable for displaying correct hike photo
 sh.hikes = hikes
 
 # determine minimum and maximum altitude in every hike
-for hike in range(sh.hikes):
-    folder = '../Hike' + str(hike + 1)
-    with open(folder + '/metatest.csv', 'r') as imgmeta:
-        reader = csv.reader(imgmeta)
-
-        maxt = 0
-        mint = 9999 # not most elegant solution
-        # TEMPORARY DISABLED MIN/MAX ALT
-        # for row in reader:
-        #     alt = float(row[1])
-        #     maxt = max(maxt, alt)
-        #     mint = min(mint, alt)
-        maxt = 100
-        mint = 0
-        alts[hike] = maxt - mint
-        print('alts[' + str(hike) + '] : ' + str(alts[hike]))
+# for hike in range(sh.hikes):
+#     folder = '../Hike' + str(hike + 1)
+#     with open(folder + '/metatest.csv', 'r') as imgmeta:
+#         reader = csv.reader(imgmeta)
+#
+#         maxt = 0
+#         mint = 9999 # not most elegant solution
+#         # TEMPORARY DISABLED MIN/MAX ALT
+#         # for row in reader:
+#         #     alt = float(row[1])
+#         #     maxt = max(maxt, alt)
+#         #     mint = min(mint, alt)
+#         maxt = 100
+#         mint = 0
+#         alts[hike] = maxt - mint
+#         print('alts[' + str(hike) + '] : ' + str(alts[hike]))
 
 #pass alts data to shared
 initialisehikes(alts)
 
 # calculate
-for hike in range(0, sh.hikes):
-    percentage = hike # Original > (alts[hike] - sh.altsmin) / sh.altsdif
-    print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
+# for hike in range(0, sh.hikes):
+#     percentage = hike # Original > (alts[hike] - sh.altsmin) / sh.altsdif
+#     print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
 
 # draw indication of angles corresponding with hikes
 indication = pygame.Surface((sh.width, sh.height))
@@ -162,19 +162,19 @@ while (1):
     #   ______________
     # / Read Compass  \
     # ========================================================================
-    heady = heady + 1
-    if heady > len(heading) - 1:
-        heady = 0
-
-    heading[heady] = motion.heading()
-    headcount = average(heading) #calculate average of all values in heading
-    headingdiff = headcount - (45 + ((select-1) * 90))
-
-    #if (headingdiff < tolerance and headingdiff > -tolerance):
-     #   pass
-    #else:
-    if (select is not calcHike(alts, headcount)):
-            select = calcHike(alts, headcount)
+    # heady = heady + 1
+    # if heady > len(heading) - 1:
+    #     heady = 0
+    #
+    # heading[heady] = motion.heading()
+    # headcount = average(heading) #calculate average of all values in heading
+    # headingdiff = headcount - (45 + ((select-1) * 90))
+    #
+    # #if (headingdiff < tolerance and headingdiff > -tolerance):
+    #  #   pass
+    # #else:
+    # if (select is not calcHike(alts, headcount)):
+    #         select = calcHike(alts, headcount)
 
 
     # Progress and show Hike
