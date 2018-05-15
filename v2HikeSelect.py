@@ -107,10 +107,13 @@ for hike in range(sh.hikes):
 
         maxt = 0
         mint = 9999 # not most elegant solution
-        for row in reader:
-            alt = float(row[1])
-            maxt = max(maxt, alt)
-            mint = min(mint, alt)
+        # TEMPORARY DISABLED MIN/MAX ALT 
+        # for row in reader:
+        #     alt = float(row[1])
+        #     maxt = max(maxt, alt)
+        #     mint = min(mint, alt)
+        maxt = max(maxt, alt)
+        mint = min(mint, alt)
         alts[hike] = maxt - mint
         print('alts[' + str(hike) + '] : ' + str(alts[hike]))
 
