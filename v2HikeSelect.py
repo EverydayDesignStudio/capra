@@ -95,7 +95,7 @@ for file in listdir('..'):
         print hikes
 print str(hikes) + ' hikes counted!'
 alts = [0] * hikes
-progress = [0] * hikes # variable for displaying correct hike photo
+progress = [1500] * hikes # variable for displaying correct hike photo
 
 sh.hikes = hikes
 
