@@ -122,7 +122,7 @@ initialisehikes(alts)
 
 # calculate
 for hike in range(0, sh.hikes):
-    percentage = (alts[hike] - sh.altsmin) / sh.altsdif
+    percentage = hike # Original > (alts[hike] - sh.altsmin) / sh.altsdif
     print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
 
 # draw indication of angles corresponding with hikes
