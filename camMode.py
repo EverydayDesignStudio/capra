@@ -48,7 +48,7 @@ def blink(times):
 blink(10)
 
 def writedata():
-    with open(folder + 'metatest.csv', 'w') as meta:
+    with open(folder + 'meta.csv', 'w') as meta:
         writer = csv.writer(meta)
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         altitude = round(weather.altitude() + 90, 2)
@@ -68,7 +68,7 @@ hikeno = counthikes()
 folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
-cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
+cam.capture(folder + str("%04d" % index) + '.jpg')
 writedata()
 print 'photo taken'
 print newrow
