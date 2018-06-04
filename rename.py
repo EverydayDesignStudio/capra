@@ -1,6 +1,11 @@
 import os
 
-target = raw_input("target: ")
-target = '../' + target
-if (os.path.exists(target)):
-    print 'hello'
+for folder in os.listdir('.'):
+    if folder.startswith('Hike'):
+        for image in os.listdir(folder):
+            if image.startswith('Hike'):
+                oldname = image
+                newname = oldname.split('-')[1]
+                print oldname
+                print newname
+                os.rename(folder + '/' + oldname, folder + '/' + newname)
