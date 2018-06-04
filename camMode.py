@@ -71,7 +71,7 @@ os.makedirs(folder)
 
 cam.capture(folder + str("%04d" % index) + '.jpg')
 writedata()
-print 'photo taken
+print 'photo taken'
 print '========================'
 index = index + 1
 time.sleep(2)
