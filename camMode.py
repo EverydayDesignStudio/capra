@@ -61,6 +61,7 @@ def writedata():
         green = light.rgb()[1]
         blue = light.rgb()[2]
         newrow = ["{:04}".format(index), altitude, temperature, red, green, blue, heading, accx, accy, accz]
+        print newrow
         writer.writerow(newrow)
 
 
@@ -70,8 +71,7 @@ os.makedirs(folder)
 
 cam.capture(folder + str("%04d" % index) + '.jpg')
 writedata()
-print 'photo taken'
-print newrow
+print 'photo taken
 print '========================'
 index = index + 1
 time.sleep(2)
