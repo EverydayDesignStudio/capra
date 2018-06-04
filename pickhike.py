@@ -97,56 +97,10 @@ progress = [start] * hikes # variable for displaying correct hike photo
 
 sh.hikes = hikes
 
-# determine minimum and maximum altitude in every hike
-# for hike in range(sh.hikes):
-#     folder = '../Hike' + str(hike + 1)
-#     with open(folder + '/metatest.csv', 'r') as imgmeta:
-#         reader = csv.reader(imgmeta)
-#
-#         maxt = 0
-#         mint = 9999 # not most elegant solution
-#         # TEMPORARY DISABLED MIN/MAX ALT
-#         # for row in reader:
-#         #     alt = float(row[1])
-#         #     maxt = max(maxt, alt)
-#         #     mint = min(mint, alt)
-#         maxt = 100
-#         mint = 0
-#         alts[hike] = maxt - mint
-#         print('alts[' + str(hike) + '] : ' + str(alts[hike]))
-
-#pass alts data to shared
 initialisehikes(alts)
 
-# calculate
-# for hike in range(0, sh.hikes):
-#     percentage = hike # Original > (alts[hike] - sh.altsmin) / sh.altsdif
-#     print 'Hike' + str(hike + 1) + ' alt: ' + str(alts[hike]) + ' % ' + str(percentage * 100)
-
-# draw indication of angles corresponding with hikes
 indication = pygame.Surface((sh.width, sh.height))
 
-# for h in range(sh.hikes):
-#     hangle = calcAngle(alts, alts[h])
-#     r = sh.height/3
-#     print 'Hike [' + str(h) + '] @ angle : ' + str(hangle)
-#
-#     xh, yh = polar(hangle, r)
-#     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
-#     for i in range(2):
-#         xh, yh = polar( hangle + (1 - 2 * i ) * 10, r)
-#         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-#
-#     xh, yh = polar(360 - hangle, r)
-#     pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 10)
-#     for i in range(2):
-#         xh, yh = polar(360 - (hangle + (1 - 2*i) * 10), r)
-#         pygame.draw.line(indication, (0, 20 + h * 20, 0), (sh.width/2, sh.height/2), (xh, yh), 3)
-#
-#     label = largefont.render(str(h), 1, (0, 255, 0))
-#     indication.blit(label, polar(hangle, r*1.2))
-#
-# indication.set_alpha(75)
 
 # ============================================================================
 #     __
@@ -157,27 +111,7 @@ indication = pygame.Surface((sh.width, sh.height))
 # ============================================================================
 
 while (1):
-    #   ______________
-    # / Read Compass  \
-    # ========================================================================
-    # heady = heady + 1
-    # if heady > len(heading) - 1:
-    #     heady = 0
-    #
-    # heading[heady] = motion.heading()
-    # headcount = average(heading) #calculate average of all values in heading
-    # headingdiff = headcount - (45 + ((select-1) * 90))
-    #
-    # #if (headingdiff < tolerance and headingdiff > -tolerance):
-    #  #   pass
-    # #else:
-    # if (select is not calcHike(alts, headcount)):
-    #         select = calcHike(alts, headcount)
 
-
-    # Progress and show Hike
-
-    #draw image ======================
     if photo:
         if select is not -1:
             print 'select: ' + str(select + 1)
@@ -199,35 +133,7 @@ while (1):
             photolayer.blit(bfade, (0,0))
         screen.blit(photolayer, (0,0))
 
-    #draw overlay ======================
-    if overlay:
-        # loc = (sh.width/2, sh. height/2)
-        # rot_indication = pygame.transform.rotate(indication, headcount)
-        # rot_indication.get_rect.center = loc
-        screen.blit(indication, (0,0))
-        # !Placeholder: draw line instead of show hike
-        label = largefont.render(str(select), 1, (255, 255, 255))
-        screen.blit(label, (sh.width/2, sh.height/2))
-        r = sh.height/2
-        x1, y1 = polar(0, 0)
-        x2, y2 = polar(headcount, r)
-        x3, y3 = polar(motion.heading(), r)
-        pygame.draw.line(screen, (255, 0, 0), (x1, y1), (x2, y2), 10)
-        pygame.draw.line(screen, (0, 0, 255), (x1, y1), (x3, y3), 10)
 
-    # print program info to screen
-    """
-    #rectangle = pygame.Rect(80, 80, 200, 100)
-    pygame.draw.rect(screen, (0, 0, 0), rectangle)
-    label = font.render('compass: ' + str(motion.heading()), 1, (255, 255, 255))
-    screen.blit(label, (100, 100))
-    label = font.render('headingdiff: ' + str(headingdiff), 1, (255, 255, 255))
-    screen.blit(label, (100, 120))
-    label = font.render('folder: ' + str(select), 1, (255, 255, 255))
-    screen.blit(label, (100, 140))
-    label = font.render('photo: ' + str(progress), 1, (255, 255, 255))
-    screen.blit(label, (100, 160))
-    """
 
     pygame.display.flip() # update screen
 

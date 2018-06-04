@@ -35,7 +35,6 @@ def counthikes():
             print
             number = number + 1
             print file + 'is instance: ' + str(number)
-            print '-_-_-_-_-_-_'
             print 'new hike is number ', number
     return number
 
@@ -48,23 +47,32 @@ def blink(times):
 
 blink(10)
 
+def writedata():
+    with open(folder + 'metatest.csv', 'w') as meta:
+        writer = csv.writer(meta)
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        altitude = round(weather.altitude() + 90, 2)
+        temperature = round(weather.temperature(), 2)
+        heading = motion.heading()
+        accx = motion.accelerometer()[0]
+        accy = motion.accelerometer()[1]
+        accz = motion.accelerometer()[2]
+        red = light.rgb()[0]
+        green = light.rgb()[1]
+        blue = light.rgb()[2]
+        newrow = ["{:04}".format(index), altitude, temperature, red, green, blue, heading, accx, accy, accz]
+        writer.writerow(newrow)
+
+
 hikeno = counthikes()
 folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
-with open(folder + 'metatest.csv', 'w') as meta:
-    writer = csv.writer(meta)
-    altitude = round(weather.altitude() + 90, 2)
-    temperature = round(weather.temperature(), 2)
-    red = light.rgb()[0]
-    green = light.rgb()[1]
-    blue = light.rgb()[2]
-    newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
-    writer.writerow(newrow)
-    print 'photo taken'
-    print newrow
-    print '========================'
+writedata()
+print 'photo taken'
+print newrow
+print '========================'
 index = index + 1
 time.sleep(2)
 # ============================================================================
@@ -75,29 +83,13 @@ time.sleep(2)
 #             /_/
 # ============================================================================
 while(True):
-
-    #name = folder + 'Hikex' + str("%04d" % index) + '.jpg'
-    #photo = cam.takePhoto()
-    #photo.save(name)
     priortime = time.time()
     print 'taking photo ...'
     cam.capture(folder + 'Hike' + str(hikeno) + '-' + str("%04d" % index) + '.jpg')
     print 'photo taken!'
-    with open(folder + 'metatest.csv', 'a') as meta:
-        writer = csv.writer(meta)
-        altitude = round(weather.altitude() + 90, 2)
-        temperature = round(weather.temperature(), 2)
-        red = light.rgb()[0]
-        green = light.rgb()[1]
-        blue = light.rgb()[2]
-        newrow = ["{:04}".format(index), altitude, temperature, red, green, blue]
-        writer.writerow(newrow)
-        print 'photo taken'
-        print [newrow]
-        print '========================'
-        blink(2)
+    writedata()
     index = index + 1
-
+    blink(2)
     # Nap time
     nowtime = time.time()
     naptime = period - (nowtime - priortime)
