@@ -54,9 +54,9 @@ def writedata():
         altitude = round(weather.altitude() + 90, 2)
         temperature = round(weather.temperature(), 2)
         heading = motion.heading()
-        accx = motion.accelerometer()[0]
-        accy = motion.accelerometer()[1]
-        accz = motion.accelerometer()[2]
+        accx = round(motion.accelerometer()[0], 2)
+        accy = round(motion.accelerometer()[1], 2)
+        accz = round(motion.accelerometer()[2], 2)
         red = light.rgb()[0]
         green = light.rgb()[1]
         blue = light.rgb()[2]
