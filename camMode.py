@@ -30,6 +30,7 @@ folder = '/home/pi/capra/'
 with open(folder + 'meta.csv', 'w') as meta:
     writer = csv.writer(meta)
     newrow = ["index", "time", "altitude", "temperature", "red", "green", "blue", "compass", "acc_x", "acc_y", "acc_z"]
+    print "HEADER ", newrow
     writer.writerow(newrow)
 
 # check recorded hikes currently on card
