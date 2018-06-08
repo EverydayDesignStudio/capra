@@ -29,7 +29,6 @@ folder = '/home/pi/capra/'
 # create csv file and write header
 with open(folder + 'meta.csv', 'w') as meta:
     writer = csv.writer(meta)
-    newrow = ["{:04}".format(index), timestamp, altitude, temperature, red, green, blue, heading, accx, accy, accz]
     newrow = ["index", "time", "altitude", "temperature", "red", "green", "blue", "compass", "acc_x", "acc_y", "acc_z"]
     writer.writerow(newrow)
 
