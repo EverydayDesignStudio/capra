@@ -37,7 +37,7 @@ def counthikes():
     number = 1
     print 'counting hikes in folder ', folder
     for file in os.listdir(folder):
-        if file.startswith('Hike'):
+        if file.startswith('hike'):
             print
             number = number + 1
             print file + 'is instance: ' + str(number)
@@ -72,7 +72,7 @@ def writedata():
 
 
 hikeno = counthikes()
-folder = folder + 'Hike' + str(hikeno) + '/' # change directory for actual hike record
+folder = folder + 'hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(folder)
 
 cam.capture(folder + str("%04d" % index) + '.jpg')
