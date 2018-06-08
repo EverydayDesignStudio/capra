@@ -97,7 +97,7 @@ while(True):
     print 'photo taken!'
     writedata()
     index = index + 1
-    if index % 5 = 0:
+    if index % 5 == 0:
         leds.on()
         time.sleep(0.1)
         leds.off()
