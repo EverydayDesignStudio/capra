@@ -97,7 +97,11 @@ while(True):
     print 'photo taken!'
     writedata()
     index = index + 1
-    blink(2)
+    if index % 5 = 0:
+        leds.on()
+        time.sleep(0.1)
+        leds.off()
+    #blink(2)
     # Nap time
     nowtime = time.time()
     naptime = period - (nowtime - priortime)
