@@ -11,6 +11,7 @@
 
 # Load modules
 import sys
+import os
 import csv
 sys.path.insert(0, "..")
 from haishoku.haishoku import Haishoku
@@ -21,7 +22,7 @@ folder = "/Users/talamram/Downloads/thike/"
 
 # Count files in selected repository
 counter = 0
-for file in listdir('..'):
+for file in os.listdir('..'):
     counter += 1
 
 # Iterate through images in folder and extract dominant colour and palette
