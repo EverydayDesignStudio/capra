@@ -24,12 +24,12 @@ folder = "/Users/talamram/Downloads/thike/"
 counter = 0
 for file in os.listdir('..'):
     counter += 1
-print counter + 'files counted!'
+print(str(counter) + 'files counted!')
 
 # Iterate through images in folder and extract dominant colour and palette
 # and write them to a csv
 
-path = "/Users/talamram/Documents/haishoku/demo/demo_01.png"
+path = "test.JPG"
 
 # getPalette api
 palette = Haishoku.getPalette(path)
