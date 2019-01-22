@@ -12,12 +12,9 @@ camera.resolution = (1024, 768)
 # Camera warm-up time
 sleep(2)
 
-
-
-
-
-camera.capture('foo.jpg')
-
+for cam in range 4:
+    selectcam(cam)
+    camera.capture(str(cam) + '.jpg')
 
 def selectcam(_cam):
     if _cam < 1 or _cam > 3:
