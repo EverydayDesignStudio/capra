@@ -26,7 +26,7 @@ for i in range(5):
 
 def selectcam(_cam):
     if _cam < 1 or _cam > 3:
-        print '[selectcam] invalid cam number!'
+        print('[selectcam] invalid cam number!')
     else:
         if _cam == 1:
              gpio.output(22, False)
