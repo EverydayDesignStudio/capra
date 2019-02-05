@@ -5,6 +5,7 @@ import RPi.GPIO as gpio
 gpio.setmode(gpio.BCM)
 gpio.setup(22, gpio.OUT)
 gpio.setup(23, gpio.OUT)
+gpio.setup(27, gpio.OUT)
 
 camera = picamera.PiCamera()
 camera.resolution = (1024, 768)
@@ -12,9 +13,16 @@ camera.resolution = (1024, 768)
 # Camera warm-up time
 sleep(2)
 
-for cam in range 4:
-    selectcam(cam)
-    camera.capture(str(cam) + '.jpg')
+for i in range(5):
+    gpio.output(27, True)
+    sleep(0.5)
+    gpio.output(27, False)
+    sleep(1)
+
+#
+# for cam in range(1, 4):
+#     selectcam(cam)
+#     camera.capture(str(cam) + '.jpg')
 
 def selectcam(_cam):
     if _cam < 1 or _cam > 3:
