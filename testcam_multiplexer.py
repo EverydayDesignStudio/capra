@@ -3,21 +3,34 @@ import picamera
 import RPi.GPIO as gpio
 
 gpio.setmode(gpio.BCM)
-gpio.setup(22, gpio.OUT)
-gpio.setup(23, gpio.OUT)
-gpio.setup(27, gpio.OUT)
+gpio.setup(22, gpio.OUT) # FSA switch 1
+gpio.setup(23, gpio.OUT) # FSA switch 2
+gpio.setup(27, gpio.OUT) # status led
 
-camera = picamera.PiCamera()
-camera.resolution = (1024, 768)
+selectcam(1)
+cam1 = picamera.PiCamera()
+cam1.resolution = (1024, 768)
+
+sleep(2)
+gpio.output(27, True)
+sleep(1)
+gpio.output(27, False)
+
+
+
+selectcam(2)
+cam2 = picamera.PiCamera()
+cam2.resolution = (1024, 768)
+
 #camera.start_preview()
 # Camera warm-up time
 sleep(2)
 
-for i in range(5):
+for i in range(15):
     gpio.output(27, True)
-    sleep(0.5)
+    sleep(0.25)
     gpio.output(27, False)
-    sleep(1)
+    sleep(0.25)
 
 #
 # for cam in range(1, 4):
