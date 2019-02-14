@@ -65,14 +65,14 @@ gpio.setup(24, gpio.OUT) # TCA9548A switch A0
 gpio.setup(25, gpio.OUT) # TCA9548A switch A1
 gpio.setup(27, gpio.OUT) # status led
 
-selectcam(1)
-cam1 = picamera.PiCamera()
-cam1.resolution = (1024, 768)
-
-time.sleep(2)
-gpio.output(27, True)
-time.sleep(1)
-gpio.output(27, False)
+# selectcam(1)
+# cam1 = picamera.PiCamera()
+# cam1.resolution = (1024, 768)
+#
+# time.sleep(2)
+# gpio.output(27, True)
+# time.sleep(1)
+# gpio.output(27, False)
 
 
 
