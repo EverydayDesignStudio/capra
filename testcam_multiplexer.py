@@ -5,7 +5,7 @@
 # Example: sudo ./multiplexer_channel.py 0
 
 # import smbus
-# import time
+import time
 # import sys
 #
 # I2C_address = 0x77
