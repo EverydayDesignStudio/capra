@@ -21,10 +21,12 @@ I2C_ch_6 = 0b01000000
 I2C_ch_7 = 0b10000000
 
 def I2C_setup(i2c_channel_setup):
+    print(i2c_channel_setup)
     bus = smbus.SMBus(I2C_bus_number)
     bus.write_byte(I2C_address,i2c_channel_setup)
     time.sleep(0.1)
     print "TCA9548A I2C channel status:", bin(bus.read_byte(I2C_address))
+
 
 I2C_setup(I2C_RST)
 I2C_setup(I2C_ch_1)
