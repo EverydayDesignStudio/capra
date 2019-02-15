@@ -79,12 +79,13 @@ gpio.setup(27, gpio.OUT) # status led
 selectcam(2)
 cam2 = picamera.PiCamera()
 cam2.resolution = (1024, 768)
-cam2.capture('/home/pi/Desktop/image.jpg')
-#camera.start_preview()
-# Camera warm-up time
 time.sleep(2)
+cam2.capture('/home/pi/Desktop/image.jpg')
+cam2.start_preview()
+# Camera warm-up time
 
-for i in range(15):
+
+for i in range(2):
     gpio.output(27, True)
     time.sleep(0.25)
     gpio.output(27, False)
