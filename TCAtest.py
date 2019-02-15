@@ -19,4 +19,4 @@ def I2C_setup(i2c_channel_setup):
     time.sleep(0.1)
     print "TCA9548A I2C channel status:", bin(bus.read_byte(I2C_address))
 
-I2C_setup(int(sys.argv[1]))
+I2C_setup(0x77)
