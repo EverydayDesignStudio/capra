@@ -42,27 +42,17 @@ def selectcam(_cam):
         if _cam == 1:
              gpio.output(22, False)
              gpio.output(23, False)
-             gpio.output(24, False)
-             gpio.output(25, False)
         if _cam == 2:
              gpio.output(22, True)
              gpio.output(23, False)
-             gpio.output(24, True)
-             gpio.output(25, False)
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-             gpio.output(24, False)
-             gpio.output(25, True)
-
-
 
 
 gpio.setmode(gpio.BCM)
 gpio.setup(22, gpio.OUT) # FSA switch 1
 gpio.setup(23, gpio.OUT) # FSA switch 2
-gpio.setup(24, gpio.OUT) # TCA9548A switch A0
-gpio.setup(25, gpio.OUT) # TCA9548A switch A1
 gpio.setup(27, gpio.OUT) # status led
 
 # selectcam(1)
@@ -73,8 +63,6 @@ gpio.setup(27, gpio.OUT) # status led
 # gpio.output(27, True)
 # time.sleep(1)
 # gpio.output(27, False)
-
-
 
 selectcam(2)
 cam2 = picamera.PiCamera()
