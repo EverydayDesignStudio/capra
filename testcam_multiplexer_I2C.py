@@ -26,7 +26,7 @@ def I2C_setup(i2c_channel_setup):
     print "TCA9548A I2C channel status:", bin(bus.read_byte(I2C_address))
 
 I2C_setup(I2C_address)
-
+I2C_setup(I2C_ch_1)
 
 
 
