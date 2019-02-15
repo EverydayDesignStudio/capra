@@ -80,16 +80,16 @@ selectcam(2)
 cam2 = picamera.PiCamera()
 cam2.resolution = (1024, 768)
 time.sleep(2)
-cam2.capture('/home/pi/Desktop/image.jpg')
+#cam2.capture('/home/pi/Desktop/image.jpg')
 cam2.start_preview()
 # Camera warm-up time
 
-
-for i in range(2):
-    gpio.output(27, True)
-    time.sleep(0.25)
-    gpio.output(27, False)
-    time.sleep(0.25)
+#
+# for i in range(2):
+#     gpio.output(27, True)
+#     time.sleep(0.25)
+#     gpio.output(27, False)
+#     time.sleep(0.25)
 
 #
 # for cam in range(1, 4):
