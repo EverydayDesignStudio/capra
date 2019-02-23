@@ -81,7 +81,10 @@ cam2 = picamera.PiCamera()
 cam2.resolution = (1024, 768)
 time.sleep(2)
 #cam2.capture('/home/pi/Desktop/image.jpg')
+i = 0
 cam2.start_preview()
+while(i < 1000):
+    i += 1
 # Camera warm-up time
 
 #
