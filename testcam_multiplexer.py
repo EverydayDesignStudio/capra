@@ -77,7 +77,7 @@ def selectcam(_cam):
 # gpio.output(27, False)
 
 
-select = raw_input("cam no: ")
+select = raw_input(int("cam no: ")
 selectcam(select)
 time.sleep(0.5)
 
