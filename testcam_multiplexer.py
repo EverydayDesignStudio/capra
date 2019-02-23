@@ -42,8 +42,6 @@ gpio.setup(24, gpio.OUT) # TCA9548A switch A0
 gpio.setup(25, gpio.OUT) # TCA9548A switch A1
 gpio.setup(27, gpio.OUT) # status led
 
-
-
 def selectcam(_cam):
     if _cam < 1 or _cam > 3:
         print('[selectcam] invalid cam number!')
