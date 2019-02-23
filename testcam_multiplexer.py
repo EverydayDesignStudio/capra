@@ -77,8 +77,8 @@ def selectcam(_cam):
 # gpio.output(27, False)
 
 
-select = raw_input(int("cam no: "))
-selectcam(select)
+select = raw_input("cam no: ")
+selectcam(int(select))
 time.sleep(0.5)
 
 cam2 = picamera.PiCamera()
