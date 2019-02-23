@@ -77,11 +77,13 @@ def selectcam(_cam):
 # gpio.output(27, False)
 
 
-
-selectcam(1)
+select = raw_input("cam no: ")
+selectcam(select)
+time.sleep(0.5)
 
 cam2 = picamera.PiCamera()
 cam2.resolution = (1024, 768)
+
 time.sleep(1)
 #cam2.capture('/home/pi/Desktop/image.jpg')
 
