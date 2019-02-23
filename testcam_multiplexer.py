@@ -76,7 +76,7 @@ gpio.setup(27, gpio.OUT) # status led
 
 
 
-selectcam(2)
+selectcam(3)
 cam2 = picamera.PiCamera()
 cam2.resolution = (1024, 768)
 time.sleep(2)
