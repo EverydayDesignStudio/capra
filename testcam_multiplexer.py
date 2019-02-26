@@ -54,14 +54,14 @@ def selectcam(_cam):
         if _cam == 2:
              gpio.output(22, True)
              gpio.output(23, False)
-             gpio.output(24, True)
-             gpio.output(25, False)
+             gpio.output(24, False)
+             gpio.output(25, True)
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-             gpio.output(24, False)
-             gpio.output(25, True)
-
+             gpio.output(24, True)
+             gpio.output(25, False)
+    time.sleep(0.1)
 
 
 
@@ -79,18 +79,28 @@ def selectcam(_cam):
 print("======[]")
 print("=={O}===")
 print("========")
-select = raw_input("cam no: ")
-selectcam(int(select))
-time.sleep(0.5)
+# select = raw_input("cam no: ")
+# selectcam(int(select))
 
-cam2 = picamera.PiCamera()
-cam2.resolution = (1024, 768)
+
+
+selectcam(1)
+cam1 = picamera.PiCamera()
+cam1.resolution = (1024, 768)
+
+selectcam(3)
+cam3 = picamera.PiCamera()
+cam3.resolution = (1024, 768)
 
 time.sleep(1)
-#cam2.capture('/home/pi/Desktop/image.jpg')
+selectcam(1)
+cam1.capture('/home/pi/Desktop/cam1.jpg')
+selectcam(3)
+cam1.capture('/home/pi/Desktop/cam3.jpg')
 
-cam2.start_preview()
-time.sleep(6)
+
+# cam2.start_preview()
+# time.sleep(6)
 # Camera warm-up time
 
 #
