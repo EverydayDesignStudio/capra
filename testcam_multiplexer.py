@@ -88,9 +88,9 @@ selectcam(1)
 cam1 = picamera.PiCamera()
 cam1.resolution = (1024, 768)
 
-selectcam(3)
-cam3 = picamera.PiCamera()
-cam3.resolution = (1024, 768)
+# selectcam(3)
+# cam3 = picamera.PiCamera()
+# cam3.resolution = (1024, 768)
 
 time.sleep(1)
 selectcam(1)
