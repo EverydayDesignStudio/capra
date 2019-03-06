@@ -93,16 +93,23 @@ cam1.resolution = (1024, 768)
 # cam3.resolution = (1024, 768)
 
 time.sleep(1)
+selectcam(1)
+cam1.capture('/home/pi/Desktop/interference_cam1.jpg')
+
+time.sleep(1)
 selectcam(2)
 cam1.capture('/home/pi/Desktop/interference_cam2.jpg')
-time.sleep(0.3)
-cam1.start_preview
+
+time.sleep(1)
+selectcam(3)
+cam1.capture('/home/pi/Desktop/interference_cam3.jpg')
+
 # selectcam(3)
 # cam1.capture('/home/pi/Desktop/cam3.jpg')
 
 
 # cam2.start_preview()
-time.sleep(6)
+
 # Camera warm-up time
 
 #
