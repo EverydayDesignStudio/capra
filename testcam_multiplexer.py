@@ -49,18 +49,18 @@ def selectcam(_cam):
         if _cam == 1:
              gpio.output(22, False)
              gpio.output(23, False)
-             gpio.output(24, False)
-             gpio.output(25, False)
+             # gpio.output(24, False)
+             # gpio.output(25, False)
         if _cam == 2:
              gpio.output(22, True)
              gpio.output(23, False)
-             gpio.output(24, False)
-             gpio.output(25, True)
+             # gpio.output(24, False)
+             # gpio.output(25, True)
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-             gpio.output(24, True)
-             gpio.output(25, False)
+             # gpio.output(24, True)
+             # gpio.output(25, False)
     time.sleep(0.1)
 
 
