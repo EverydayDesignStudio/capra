@@ -98,11 +98,11 @@ cam1.capture('/home/pi/Desktop/frame_cam1.jpg')
 
 time.sleep(1)
 selectcam(2)
-cam1.capture('/home/pi/Desktop/frame_cam3.jpg')
+cam1.capture('/home/pi/Desktop/frame_cam2.jpg')
 
 time.sleep(1)
 selectcam(3)
-cam1.capture('/home/pi/Desktop/frame_cam2.jpg')
+cam1.capture('/home/pi/Desktop/frame_cam3.jpg')
 
 # selectcam(3)
 # cam1.capture('/home/pi/Desktop/cam3.jpg')
