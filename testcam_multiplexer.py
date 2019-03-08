@@ -94,11 +94,11 @@ cam1.resolution = (1024, 768)
 
 time.sleep(1)
 selectcam(1)
-cam1.capture('/home/pi/Desktop/frame_cam1.jpg')
+cam1.capture('/home/pi/Desktop/frame_cam2.jpg')
 
 time.sleep(1)
 selectcam(2)
-cam1.capture('/home/pi/Desktop/frame_cam2.jpg')
+cam1.capture('/home/pi/Desktop/frame_cam1.jpg')
 
 time.sleep(1)
 selectcam(3)
