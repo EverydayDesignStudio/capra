@@ -1,39 +1,16 @@
 
 #!/usr/bin/python
 
-# Change channel of TCA9548A
-# Example: sudo ./multiplexer_channel.py 0
-
-# import smbus
 import time
-# import sys
-#
-# I2C_address = 0x77
-# I2C_bus_number = 1
-# I2C_ch_0 = 0b00000001
-# I2C_ch_1 = 0b00000010
-# I2C_ch_2 = 0b00000100
-# I2C_ch_3 = 0b00001000
-# I2C_ch_4 = 0b00010000
-# I2C_ch_5 = 0b00100000
-# I2C_ch_6 = 0b01000000
-# I2C_ch_7 = 0b10000000
-#
-# def I2C_setup(i2c_channel_setup):
-#     bus = smbus.SMBus(I2C_bus_number)
-#     bus.write_byte(I2C_address,i2c_channel_setup)
-#     time.sleep(0.1)
-#     print "TCA9548A I2C channel status:", bin(bus.read_byte(I2C_address))
-#
-# I2C_setup(int(sys.argv[1]))
-
-
-
-
-# =============================================================================
-# =============================================================================
 import picamera
 import RPi.GPIO as gpio
+
+folder = ""
+
+
+# =============================================================================
+# =============================================================================
+
 
 gpio.setmode(gpio.BCM)
 gpio.setup(22, gpio.OUT) # FSA switch 1
@@ -92,17 +69,22 @@ cam1.resolution = (1024, 768)
 # cam3 = picamera.PiCamera()
 # cam3.resolution = (1024, 768)
 
-time.sleep(1)
-selectcam(1)
-cam1.capture('/home/pi/Desktop/frame_cam2.jpg')
+name = 0
 
-time.sleep(1)
-selectcam(2)
-cam1.capture('/home/pi/Desktop/frame_cam1.jpg')
+while(1):
+    time.sleep(1)
+    selectcam(1)
+    cam1.capture('/home/pi/Desktop/pics/cam2_' + Str(name) + '.jpg')
+    time.sleep(0.2)
+    selectcam(2)
+    cam1.capture('/home/pi/Desktop/pics/cam1_' + Str(name) + '.jpg')
+    time.sleep(0.2)
+    selectcam(3)
+    cam1.capture('/home/pi/Desktop/pics/cam3_' + Str(name) + '.jpg')
+    time.sleep(0.2)
+    name += 1
+    time.sleep(2.5)
 
-time.sleep(1)
-selectcam(3)
-cam1.capture('/home/pi/Desktop/frame_cam3.jpg')
 
 # selectcam(3)
 # cam1.capture('/home/pi/Desktop/cam3.jpg')
