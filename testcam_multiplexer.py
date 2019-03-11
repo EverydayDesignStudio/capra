@@ -74,13 +74,13 @@ name = 0
 while(1):
     time.sleep(1)
     selectcam(1)
-    cam1.capture('/home/pi/Desktop/pics/cam2_' + str(name) + '.jpg')
+    cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam2.jpg')
     time.sleep(0.2)
     selectcam(2)
-    cam1.capture('/home/pi/Desktop/pics/cam1_' + str(name) + '.jpg')
+    cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam1.jpg')
     time.sleep(0.2)
     selectcam(3)
-    cam1.capture('/home/pi/Desktop/pics/cam3_' + str(name) + '.jpg')
+    cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam3.jpg')
     time.sleep(0.2)
     name += 1
     time.sleep(2.5)
