@@ -118,7 +118,7 @@ while(1):
 
   # Write Metadata
   # -------------------------------------
-  time = datetime.timestamp
+  time = datetime.datetime.timestamp
   writedata(time, altitude)
 
   # Increase increment
