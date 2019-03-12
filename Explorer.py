@@ -25,7 +25,6 @@ gpio.setup(17, gpio.OUT) # status led2
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
 
-
 # Set Definitions
 def counthikes():
     number = 1
