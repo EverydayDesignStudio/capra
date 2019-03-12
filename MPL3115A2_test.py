@@ -42,7 +42,7 @@ while(1):
     # MPL3115A2 address, 0x60(96)
     # Select control register, 0x26(38)
     #		0x39(57)	Active mode, OSR = 128, Barometer mode
-    bus.write_byte_data(0x60, 0x26, 0x39)
+    # bus.write_byte_data(0x60, 0x26, 0x39)
 
     time.sleep(1)
 
