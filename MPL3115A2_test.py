@@ -25,7 +25,7 @@ while(1):
     #		0xB9(185)	Active mode, OSR = 128, Altimeter mode
     # bus.write_byte_data(0x60, 0x26, 0xB9)
 
-    time.sleep(0.5)
+    time.sleep(3)
 
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
