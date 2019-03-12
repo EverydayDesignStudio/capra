@@ -19,11 +19,11 @@ while(1):
     # MPL3115A2 address, 0x60(96)
     # Select data configuration register, 0x13(19)
     #		0x07(07)	Data ready event enabled for altitude, pressure, temperature
-    bus.write_byte_data(0x60, 0x13, 0x07)
+    # bus.write_byte_data(0x60, 0x13, 0x07)
     # MPL3115A2 address, 0x60(96)
     # Select control register, 0x26(38)
     #		0xB9(185)	Active mode, OSR = 128, Altimeter mode
-    bus.write_byte_data(0x60, 0x26, 0xB9)
+    # bus.write_byte_data(0x60, 0x26, 0xB9)
 
     time.sleep(1)
 
