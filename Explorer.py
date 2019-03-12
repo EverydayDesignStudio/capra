@@ -12,7 +12,6 @@ import picamera
 import datetime
 import RPi.GPIO as gpio
 
-
 # Get I2C bus
 bus = smbus.SMBus(1)
 
