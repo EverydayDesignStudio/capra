@@ -26,6 +26,7 @@ gpio.setup(17, gpio.OUT) # status led2
 
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
+photono = 0
 
 # Set Definitions
 def counthikes():
@@ -98,11 +99,11 @@ while(1):
   # Take pictures
   # -------------------------------------
   selectcam(1)
-  cam1.capture(dir + folder + str(name) + '_cam2.jpg')
+  cam1.capture(dir + folder + str(photono) + '_cam2.jpg')
   selectcam(2)
-  cam1.capture(dir + folder + str(name) + '_cam1.jpg')
+  cam1.capture(dir + folder + str(photono) + '_cam1.jpg')
   selectcam(3)
-  cam1.capture(dir + folder + str(name) + '_cam3.jpg')
+  cam1.capture(dir + folder + str(photono) + '_cam3.jpg')
 
 
 
@@ -119,3 +120,7 @@ while(1):
   # -------------------------------------
   time = datetime.timestamp
   writedata(time, altitude)
+
+  # Increase increment
+  # -------------------------------------
+  photono += 1
