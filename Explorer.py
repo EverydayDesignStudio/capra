@@ -9,6 +9,7 @@ import csv
 import time
 import smbus
 import picamera
+import datetime
 import RPi.GPIO as gpio
 
 
@@ -22,6 +23,20 @@ gpio.setup(23, gpio.OUT) # switch 2
 gpio.setup(26, gpio.OUT) # status led1
 gpio.setup(17, gpio.OUT) # status led2
 
+# Set Variables
+dir = '/home/pi/Desktop/pics/'
+
+
+# Set Definitions
+def counthikes():
+    number = 1
+    for file in os.listdir(dir):
+        if file.startswith('hike'):
+            print
+            number = number + 1
+            print file + 'is instance: ' + str(number)
+            print 'new hike is number ', number
+    return number
 
 # Select Cam Definition
 def selectcam(_cam):
@@ -42,18 +57,35 @@ def selectcam(_cam):
     time.sleep(0.1)
 
 
+def writedata(time, altitude):
+    with open(dir + folder + 'meta.csv', 'a') as meta:
+        writer = csv.writer(meta)
+        newrow = [index, time, altitude]
+        print newrow
+        writer.writerow(newrow)
 
+
+# Initialize camera object
 selectcam(1)
 cam1 = picamera.PiCamera()
 cam1.resolution = (1024, 768)
 
+# Create new folder
+hikeno = counthikes()
+dir = 'hike' + str(hikeno) + '/' # change directory for actual hike record
+os.makedirs(dir + folder)
 
-
+# Create csv file and write header
+with open(dir + folder + 'meta.csv', 'w') as meta:
+    writer = csv.writer(meta)
+    newrow = ["index", "time", "altitude", "tbd"]
+    print "HEADER ", newrow
+    writer.writerow(newrow)
 
 
 
 # Loop Starts Here
-# = = = = = = = = = = = = =
+# =================
 
 while(1):
   # Query Altimeter first (takes a while)
@@ -66,11 +98,12 @@ while(1):
   # Take pictures
   # -------------------------------------
   selectcam(1)
-  cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam2.jpg')
+  cam1.capture(dir + folder + str(name) + '_cam2.jpg')
   selectcam(2)
-  cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam1.jpg')
+  cam1.capture(dir + folder + str(name) + '_cam1.jpg')
   selectcam(3)
-  cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam3.jpg')
+  cam1.capture(dir + folder + str(name) + '_cam3.jpg')
+
 
 
   # MPL3115A2 address, 0x60(96)
@@ -81,3 +114,8 @@ while(1):
   tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
   altitude = tHeight / 16.0
   print "Altitude : %.2f m" %altitude
+
+  # Write Metadata
+  # -------------------------------------
+  time = datetime.timestamp
+  writedata(time, altitude)
