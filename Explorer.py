@@ -6,7 +6,7 @@
 # Import Modules
 import os
 import csv
-import time
+import time as chronos
 import smbus
 import picamera
 import datetime
@@ -55,7 +55,7 @@ def selectcam(_cam):
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-    time.sleep(0.1)
+    chronos.sleep(0.1)
 
 
 def writedata(index, time, altitude):
