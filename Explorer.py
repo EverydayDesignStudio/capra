@@ -119,8 +119,8 @@ while(1):
 
   # Write Metadata
   # -------------------------------------
-  time = time.time()
-  writedata(photono, time, altitude)
+  timestamp = time.time()
+  writedata(photono, timestamp, altitude)
 
   # Increase increment
   # -------------------------------------
