@@ -58,10 +58,10 @@ def selectcam(_cam):
     time.sleep(0.1)
 
 
-def writedata(index, time, altitude):
+def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
-        newrow = [index, time, altitude]
+        newrow = [index, timestamp, altitude]
         print newrow
         writer.writerow(newrow)
 
