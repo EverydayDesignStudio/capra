@@ -6,7 +6,7 @@
 # Import Modules
 import os
 import csv
-import time as chronos
+import time
 import smbus
 import picamera
 import datetime
@@ -119,7 +119,7 @@ while(1):
 
   # Write Metadata
   # -------------------------------------
-  time = datetime.datetime.now()
+  time = time.time()
   writedata(photono, time, altitude)
 
   # Increase increment
