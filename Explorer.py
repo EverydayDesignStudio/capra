@@ -119,7 +119,7 @@ while(1):
 
   # Write Metadata
   # -------------------------------------
-  time = datetime.datetime.timestamp
+  time = datetime.datetime.now()
   writedata(photono, time, altitude)
 
   # Increase increment
