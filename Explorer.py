@@ -55,7 +55,7 @@ def selectcam(_cam):
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-    chronos.sleep(0.1)
+    time.sleep(0.1)
 
 
 def writedata(index, time, altitude):
