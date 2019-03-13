@@ -58,7 +58,7 @@ def selectcam(_cam):
     time.sleep(0.1)
 
 
-def writedata(time, altitude):
+def writedata(index, time, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
         newrow = [index, time, altitude]
@@ -77,7 +77,8 @@ folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 os.makedirs(dir + folder)
 
 # Create csv file and write header
-with open(dir + folder + 'meta.csv', 'w') as meta:
+csvfile = dir + folder + 'meta.csv'
+with open(csvfile, 'w') as meta:
     writer = csv.writer(meta)
     newrow = ["index", "time", "altitude", "tbd"]
     print "HEADER ", newrow
@@ -86,7 +87,7 @@ with open(dir + folder + 'meta.csv', 'w') as meta:
 
 
 # Loop Starts Here
-# =================
+# =================================================
 
 while(1):
   # Query Altimeter first (takes a while)
@@ -119,7 +120,7 @@ while(1):
   # Write Metadata
   # -------------------------------------
   time = datetime.datetime.timestamp
-  writedata(time, altitude)
+  writedata(photono, time, altitude)
 
   # Increase increment
   # -------------------------------------
