@@ -1,5 +1,5 @@
 #   __ _  _  _  _           __\ / _     _  _  __ _
-#  /  |_||_)|_)|_|   ---   |_  X |_)|  / \|_)|_ |_)
+#  /  |_||_)|_)|_|   ---   |_  / |_)|  / \|_)|_ |_)
 #  \__| ||  | \| |         |__/ \|  |__\_/| \|__| \
 # =================================================
 
@@ -12,17 +12,24 @@ import picamera
 import datetime
 import RPi.GPIO as gpio
 
-# this is not a test
+# Pin configuration
+BUTTON_PLAYPAUSE = 4
+LED_GREEN = 24
+LED_AMBER = 27
+LED_BTM = 26
+SEL_1 = 15
+SEL_2 = 16
 
 # Get I2C bus
 bus = smbus.SMBus(1)
 
 # Initialize GPIO pins
 gpio.setmode(gpio.BCM)
-gpio.setup(22, gpio.OUT) # switch 1
-gpio.setup(23, gpio.OUT) # switch 2
-gpio.setup(26, gpio.OUT) # status led1
-gpio.setup(17, gpio.OUT) # status led2
+gpio.setup(SEL_1, gpio.OUT) # select 1
+gpio.setup(SEL_2, gpio.OUT) # select 2
+gpio.setup(LED_GREEN, gpio.OUT) # status led1
+gpio.setup(LED_AMBER, gpio.OUT) # status led2
+gpio.setup(LED_BTM, gpio.OUT) # status led3
 
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
@@ -37,6 +44,14 @@ def counthikes():
             number = number + 1
             print file + 'is instance: ' + str(number)
             print 'new hike is number ', number
+    csvfile = dir + 'hike' + str(number) + '/' 'meta.csv'
+    with open(csvfile, 'r') as meta:
+        reader = csv.reader(meta)
+        headers = next(reader)
+        lasthikedate = split(next(reader), ',')[1]
+        if (lasthikedate - time.time() < 43200):
+            number = number -1
+            photono = sum(1 for row in reader)
     return number
 
 # Select Cam Definition
@@ -45,18 +60,17 @@ def selectcam(_cam):
         print('[selectcam] invalid cam number!')
     else:
         if _cam == 1:
-             gpio.output(22, False)
-             gpio.output(23, False)
+             gpio.output(SEL_1, False)
+             gpio.output(SEL_2, False)
 
         if _cam == 2:
-             gpio.output(22, True)
-             gpio.output(23, False)
+             gpio.output(SEL_1, True)
+             gpio.output(SEL_2, False)
 
         if _cam == 3:
-             gpio.output(22, True)
-             gpio.output(23, True)
-    time.sleep(0.1)
-
+             gpio.output(SEL_1, True)
+             gpio.output(SEL_2, True)
+        time.sleep(0.1)
 
 def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
@@ -68,8 +82,8 @@ def writedata(index, timestamp, altitude):
 
 # Initialize camera object
 selectcam(1)
-cam1 = picamera.PiCamera()
-cam1.resolution = (1024, 768)
+cam = picamera.PiCamera()
+cam.resolution = (1024, 768)
 
 # Create new folder
 hikeno = counthikes()
@@ -100,12 +114,11 @@ while(1):
   # Take pictures
   # -------------------------------------
   selectcam(1)
-  cam1.capture(dir + folder + str(photono) + '_cam2.jpg')
+  cam.capture(dir + folder + str(photono) + '_cam2.jpg')
   selectcam(2)
-  cam1.capture(dir + folder + str(photono) + '_cam1.jpg')
+  cam.capture(dir + folder + str(photono) + '_cam1.jpg')
   selectcam(3)
-  cam1.capture(dir + folder + str(photono) + '_cam3.jpg')
-
+  cam.capture(dir + folder + str(photono) + '_cam3.jpg')
 
 
   # MPL3115A2 address, 0x60(96)
@@ -125,3 +138,15 @@ while(1):
   # Increase increment
   # -------------------------------------
   photono += 1
+
+  # Blink on every fourth picture
+  # -------------------------------------
+  if (photono % 4):
+      gpio.output(LED_GREEN, True)
+      time.sleep(0.4)
+      gpio.output(LED_GREEN, False)
+
+  # wait until 2.5 seconds have passed since last picture
+  # -------------------------------------
+  while(time.time() < timestamp + 2.5):
+      pass
