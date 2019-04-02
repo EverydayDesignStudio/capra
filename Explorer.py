@@ -1,7 +1,14 @@
-#   __ _  _  _  _           __\ / _     _  _  __ _
-#  /  |_||_)|_)|_|   ---   |_  / |_)|  / \|_)|_ |_)
-#  \__| ||  | \| |         |__/ \|  |__\_/| \|__| \
-# =================================================
+#
+#    _________ _____  _________ _
+#   / ___/ __ `/ __ \/ ___/ __ `/
+#  / /__/ /_/ / /_/ / /  / /_/ /
+#  \___/\__,_/ .___/_/   \__,_/
+#           /_/
+# Script to run on the Explorer
+# camera unit. Takes pictures with
+# three picameras through the
+# Capra cam multiplexer board
+# ===============================
 
 # Import Modules
 import os
@@ -47,8 +54,9 @@ def counthikes():
     csvfile = dir + 'hike' + str(number) + '/' 'meta.csv'
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
-        headers = next(reader)
-        lasthikedate = split(next(reader), ',')[1]
+        for row in reversed(list(reader)):
+            lasthikedate = split(row, ',')[1]
+        # check if the last hike started less than half a day ago
         if (lasthikedate - time.time() < 43200):
             number = number -1
             photono = sum(1 for row in reader)
