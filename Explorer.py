@@ -96,7 +96,6 @@ def writedata(index, timestamp, altitude):
         print newrow
         writer.writerow(newrow)
 
-
 # Initialize camera object
 selectcam(1)
 cam = picamera.PiCamera()
@@ -114,8 +113,6 @@ with open(csvfile, 'w') as meta:
     newrow = ["index", "time", "altitude", "tbd"]
     print "HEADER ", newrow
     writer.writerow(newrow)
-
-
 
 # Loop Starts Here
 # =================================================
@@ -136,7 +133,6 @@ while(1):
   cam.capture(dir + folder + str(photono) + '_cam1.jpg')
   selectcam(3)
   cam.capture(dir + folder + str(photono) + '_cam3.jpg')
-
 
   # MPL3115A2 address, 0x60(96)
   # Read data back from 0x00(00), 6 bytes
