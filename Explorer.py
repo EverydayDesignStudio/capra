@@ -122,7 +122,7 @@ while(1):
   # -------------------------------------
   # MPL3115A2 address, 0x60(96)
   # Select control register, 0x26(38)
-  #		0xB9(185)	Active mode, OSR = 128, Altimeter mode
+  #		0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
   bus.write_byte_data(0x60, 0x26, 0xB9)
 
   # Take pictures
