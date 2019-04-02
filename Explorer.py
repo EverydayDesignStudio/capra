@@ -44,8 +44,8 @@ photono = 0
 
 # Set Definitions
 def counthikes():
-    print("counthikes() - Counting previous hikes")
-    print("======================================")
+    print('counthikes() - Counting previous hikes')
+    print('======================================')
     number = 1
     for file in os.listdir(dir):
         if file.startswith('hike'):
@@ -58,13 +58,17 @@ def counthikes():
         reader = csv.reader(meta)
         for row in reversed(list(reader)):
             lasthikedate = split(row, ',')[1]
-            print("last hike ended at: ", str(lasthikedate))
+            print('last hike ended at: ', str(lasthikedate))
             break
         # check if the last hike started less than half a day ago
-        if (lasthikedate - time.time() < 43200):
+        timesince = lasthikedate - time.time()
+        print('time since last: ', str(timesince))
+        if (timesince < 43200):
+            print('continuing last hike:')
             number = number - 1
+            print('hike ', str(number))
             photono = sum(1 for row in reader)
-            print(photono)
+            print('@', str(photono))
     return number
 
 # Select Cam Definition
