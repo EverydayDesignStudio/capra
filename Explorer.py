@@ -38,6 +38,11 @@ gpio.setup(LED_GREEN, gpio.OUT) # status led1
 gpio.setup(LED_AMBER, gpio.OUT) # status led2
 gpio.setup(LED_BTM, gpio.OUT) # status led3
 
+gpio.output(LED_GREEN, True)
+gpio.output(LED_AMBER, True)
+
+
+
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
 photono = 0
