@@ -58,7 +58,7 @@ def counthikes():
             number = number + 1
             print(file + 'is instance: ' + str(number))
             print('new hike is number ', number)
-    csvfile = dir + 'hike' + str(number) + '/' 'meta.csv'
+    csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
         for row in reversed(list(reader)):
