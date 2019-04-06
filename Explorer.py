@@ -40,7 +40,7 @@ gpio.setup(LED_BTM, gpio.OUT) # status led3
 
 gpio.output(LED_GREEN, True)
 gpio.output(LED_AMBER, True)
-
+gpio.output(LED_BTM, True)
 
 
 # Set Variables
