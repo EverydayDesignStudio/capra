@@ -66,7 +66,7 @@ def counthikes():
             print('last hike ended at: ', str(lasthikedate))
             break
         # check if the last hike started less than half a day ago
-        timesince = lasthikedate - time.time()
+        timesince = time.time() - lasthikedate
         print('time since last: ', str(timesince))
         if (timesince < 43200):
             print('continuing last hike:')
