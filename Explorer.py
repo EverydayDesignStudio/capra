@@ -63,8 +63,10 @@ def counthikes():
     csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
+        lasthikephoto = 0
         for row in reversed(list(reader)):
             lasthikedate = float(row[1])
+            lasthikephoto = int(row[0])
             print('last hike ended at: ', str(lasthikedate))
             break
         # check if the last hike started less than half a day ago
@@ -77,7 +79,7 @@ def counthikes():
             gpio.output(LED_GREEN, True)
             number = number - 1
             print('hike ', str(number))
-            photono = sum(1 for row in reader)
+            photono = lasthikephoto
             print('@', str(photono))
             folder = 'hike' + str(number) + '/' # change directory for actual hike record
         else:
