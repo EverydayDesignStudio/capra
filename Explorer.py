@@ -39,7 +39,9 @@ gpio.setup(LED_AMBER, gpio.OUT) # status led2
 gpio.setup(LED_BTM, gpio.OUT) # status led3
 
 gpio.output(LED_GREEN, True)
+time.wait(0.1)
 gpio.output(LED_AMBER, True)
+time.wait(0.1)
 gpio.output(LED_BTM, False)
 
 
