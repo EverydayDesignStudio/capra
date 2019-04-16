@@ -123,7 +123,6 @@ cam.resolution = (1280, 720)
 # Create new folder
 hikeno = counthikes()
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
-os.makedirs(dir + folder)
 
 # Create csv file and write header
 csvfile = dir + folder + 'meta.csv'
