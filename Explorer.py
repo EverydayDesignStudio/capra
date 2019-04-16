@@ -39,9 +39,9 @@ gpio.setup(LED_AMBER, gpio.OUT) # status led2
 gpio.setup(LED_BTM, gpio.OUT) # status led3
 
 gpio.output(LED_GREEN, True)
-time.wait(0.1)
+time.sleep(0.1)
 gpio.output(LED_AMBER, True)
-time.wait(0.1)
+time.sleep(0.1)
 gpio.output(LED_BTM, False)
 
 
@@ -73,7 +73,7 @@ def counthikes():
         if (timesince < 43200):
             print('continuing last hike:')
             gpio.output(LED_GREEN, False)
-            time.wait(0.4)
+            time.sleep(0.4)
             gpio.output(LED_GREEN, True)
             number = number - 1
             print('hike ', str(number))
@@ -81,7 +81,7 @@ def counthikes():
             print('@', str(photono))
         else:
             gpio.output(LED_AMBER, False)
-            time.wait(0.4)
+            time.sleep(0.4)
             gpio.output(LED_AMBER, True)
     return number
 
