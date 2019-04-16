@@ -72,11 +72,21 @@ def counthikes():
         print('time since last: ', str(timesince))
         if (timesince < 43200):
             print('continuing last hike:')
+            gpio.output(LED_GREEN, False)
+            time.wait(0.4)
+            gpio.output(LED_GREEN, True)
             number = number - 1
             print('hike ', str(number))
             photono = sum(1 for row in reader)
             print('@', str(photono))
+        else:
+            gpio.output(LED_AMBER, False)
+            time.wait(0.4)
+            gpio.output(LED_AMBER, True)
     return number
+
+
+
 
 # Select Cam Definition
 def selectcam(_cam):
