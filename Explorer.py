@@ -106,7 +106,7 @@ def writedata(index, timestamp, altitude):
 # Initialize camera object
 selectcam(1)
 cam = picamera.PiCamera()
-cam.resolution = (1024, 768)
+cam.resolution = (1280, 720)
 
 # Create new folder
 hikeno = counthikes()
@@ -162,9 +162,9 @@ while(1):
   # Blink on every fourth picture
   # -------------------------------------
   if (photono % 4):
-      gpio.output(LED_GREEN, True)
-      time.sleep(0.4)
       gpio.output(LED_GREEN, False)
+      time.sleep(0.4)
+      gpio.output(LED_GREEN, True)
 
   # wait until 2.5 seconds have passed since last picture
   # -------------------------------------
