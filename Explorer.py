@@ -65,6 +65,8 @@ def counthikes():
         reader = csv.reader(meta)
         lasthikephoto = 0
         for row in reversed(list(reader)):
+            reader.next()
+            print(row[0])
             lasthikedate = float(row[1])
             lasthikephoto = int(row[0])
             print('last hike ended at: ', str(lasthikedate))
