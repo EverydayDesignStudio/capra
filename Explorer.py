@@ -80,11 +80,12 @@ def counthikes():
             photono = sum(1 for row in reader)
             print('@', str(photono))
             folder = 'hike' + str(number) + '/' # change directory for actual hike record
-            os.makedirs(dir + str(number))
         else:
             gpio.output(LED_AMBER, False)
             time.sleep(0.4)
             gpio.output(LED_AMBER, True)
+            folder = 'hike' + str(number) + '/' # change directory for actual hike record
+            os.makedirs(dir + folder)
     return number
 
 
