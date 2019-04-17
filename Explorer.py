@@ -71,11 +71,14 @@ def counthikes():
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
         lasthikephoto = 0
+        lasthikedate = 0
         row_count = sum(1 for row in reader)
         print("row count:", str(row_count))
         print(row[row_count])
-        lasthikedate = float(row[row_count])
-        lasthikephoto = int(row[row_count])
+        for row in reader:
+            lasthikedate = float(row[row_count])
+            lasthikephoto = int(row[row_count])
+            break
         print('last hike ended at: ', str(lasthikedate))
 
         # check if the last hike started less than half a day ago
