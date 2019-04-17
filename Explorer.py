@@ -50,6 +50,13 @@ dir = '/home/pi/Desktop/pics/'
 photono = 0
 
 # Set Definitions
+def isLast(itr):
+  old = itr.next()
+  for new in itr:
+    yield False, old
+    old = new
+  yield True, old
+
 def counthikes():
     print('counthikes() - Counting previous hikes')
     print('======================================')
@@ -64,13 +71,13 @@ def counthikes():
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
         lasthikephoto = 0
-        for row in reversed(list(reader)):
-            reader.previous()
-            print(row[0])
-            lasthikedate = float(row[1])
-            lasthikephoto = int(row[0])
-            print('last hike ended at: ', str(lasthikedate))
-            break
+        row_count = sum(1 for row in reader)
+        print("row count:", str(row_count))
+        print(row[row_count])
+        lasthikedate = float(row[row_count])
+        lasthikephoto = int(row[row_count])
+        print('last hike ended at: ', str(lasthikedate))
+
         # check if the last hike started less than half a day ago
         timesince = time.time() - lasthikedate
         print('time since last: ', str(timesince))
