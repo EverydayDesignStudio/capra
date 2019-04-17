@@ -73,8 +73,8 @@ def counthikes():
         lasthikephoto = 0
         lasthikedate = 0
         row_count = sum(1 for row in reader)
+        print("row count:", str(row_count))
         for row in reader:
-            print("row count:", str(row_count))
             print(row[row_count - 1])
             lasthikedate = float(row[row_count])
             lasthikephoto = int(row[row_count])
