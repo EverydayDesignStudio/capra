@@ -91,24 +91,23 @@ def counthikes():
             number = number + 1
             print(file + 'is instance: ' + str(number))
             print('new hike is number ', number)
-    # csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
-    # with open(csvfile, 'r') as meta:
-    #     reader = csv.reader(meta)
-    #     lasthikephoto = 0
-    #     lasthikedate = 0
-    #     row_count = sum(1 for row in reader)
-    #     print("row count:", str(row_count))
-    #     for row in reader:
-    #         print(row[row_count - 1])
-    #         lasthikedate = float(row[row_count])
-    #         lasthikephoto = int(row[row_count])
-    #         break
-    #     print('last hike ended at: ', str(lasthikedate))
-    #
-    #     # check if the last hike started less than half a day ago
-    #     timesince = time.time() - lasthikedate
-    #     print('time since last: ', str(timesince))
-    timesince = 43210 # leave here until
+    csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
+    with open(csvfile, 'r') as meta:
+        reader = csv.reader(meta)
+        lasthikephoto = 0
+        lasthikedate = 0
+        row_count = sum(1 for row in reader)
+        print("row count:", str(row_count))
+        for row in reader:
+            print(row[row_count - 1])
+            lasthikedate = float(row[row_count])
+            lasthikephoto = int(row[row_count])
+            break
+        print('last hike ended at: ', str(lasthikedate))
+
+        # check if the last hike started less than half a day ago
+        timesince = time.time() - lasthikedate
+        print('time since last: ', str(timesince))
         if (timesince < 43200):
             print('continuing last hike:')
             gpio.output(LED_GREEN, False)
@@ -161,7 +160,7 @@ cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
 # Create new folder
-hikeno = counthikes()
+hikeno = simplecounthikes()
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
 # Create csv file and write header
