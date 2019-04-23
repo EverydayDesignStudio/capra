@@ -185,9 +185,9 @@ while(1):
   # Take pictures
   # -------------------------------------
   selectcam(1)
-  cam.capture(dir + folder + str(photono) + '_cam2.jpg')
-  selectcam(2)
   cam.capture(dir + folder + str(photono) + '_cam1.jpg')
+  selectcam(2)
+  cam.capture(dir + folder + str(photono) + '_cam2.jpg')
   selectcam(3)
   cam.capture(dir + folder + str(photono) + '_cam3.jpg')
 
