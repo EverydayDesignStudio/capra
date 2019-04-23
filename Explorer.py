@@ -24,8 +24,8 @@ BUTTON_PLAYPAUSE = 4
 LED_GREEN = 24
 LED_AMBER = 27
 LED_BTM = 26
-SEL_1 = 15
-SEL_2 = 16
+SEL_1 = 22
+SEL_2 = 23
 
 # Get I2C bus
 bus = smbus.SMBus(1)
@@ -57,6 +57,30 @@ def isLast(itr):
     old = new
   yield True, old
 
+
+def simplecounthikes():
+    print('counthikes() - Counting previous hikes')
+    print('======================================')
+    number = 1
+    for file in os.listdir(dir):
+        if file.startswith('hike'):
+            print
+            number = number + 1
+            print(file + 'is instance: ' + str(number))
+            print('new hike is number ', number)
+    folder = 'hike' + str(number) + '/' # change directory for actual hike record
+    os.makedirs(dir + folder)
+    gpio.output(LED_AMBER, False)
+    time.sleep(0.4)
+    gpio.output(LED_AMBER, True)
+    time.sleep(0.4)
+    gpio.output(LED_AMBER, False)
+    time.sleep(0.4)
+    gpio.output(LED_AMBER, True)
+    return number
+
+
+
 def counthikes():
     print('counthikes() - Counting previous hikes')
     print('======================================')
@@ -67,23 +91,24 @@ def counthikes():
             number = number + 1
             print(file + 'is instance: ' + str(number))
             print('new hike is number ', number)
-    csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
-    with open(csvfile, 'r') as meta:
-        reader = csv.reader(meta)
-        lasthikephoto = 0
-        lasthikedate = 0
-        row_count = sum(1 for row in reader)
-        print("row count:", str(row_count))
-        for row in reader:
-            print(row[row_count - 1])
-            lasthikedate = float(row[row_count])
-            lasthikephoto = int(row[row_count])
-            break
-        print('last hike ended at: ', str(lasthikedate))
-
-        # check if the last hike started less than half a day ago
-        timesince = time.time() - lasthikedate
-        print('time since last: ', str(timesince))
+    # csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
+    # with open(csvfile, 'r') as meta:
+    #     reader = csv.reader(meta)
+    #     lasthikephoto = 0
+    #     lasthikedate = 0
+    #     row_count = sum(1 for row in reader)
+    #     print("row count:", str(row_count))
+    #     for row in reader:
+    #         print(row[row_count - 1])
+    #         lasthikedate = float(row[row_count])
+    #         lasthikephoto = int(row[row_count])
+    #         break
+    #     print('last hike ended at: ', str(lasthikedate))
+    #
+    #     # check if the last hike started less than half a day ago
+    #     timesince = time.time() - lasthikedate
+    #     print('time since last: ', str(timesince))
+    timesince = 43210 # leave here until
         if (timesince < 43200):
             print('continuing last hike:')
             gpio.output(LED_GREEN, False)
