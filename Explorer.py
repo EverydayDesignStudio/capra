@@ -91,7 +91,10 @@ def counthikes():
             number = number + 1
             print(file + 'is instance: ' + str(number))
             print('new hike is number ', number)
-    csvfile = dir + 'hike' + str(number-1) + '/' 'meta.csv'
+    return number
+
+def timesincehike(_hikeno):
+    csvfile = dir + 'hike' + str(_hikeno) + '/' 'meta.csv'
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
         lasthikephoto = 0
@@ -104,7 +107,6 @@ def counthikes():
             lasthikephoto = int(row[row_count])
             break
         print('last hike ended at: ', str(lasthikedate))
-
         # check if the last hike started less than half a day ago
         timesince = time.time() - lasthikedate
         print('time since last: ', str(timesince))
@@ -124,9 +126,6 @@ def counthikes():
             gpio.output(LED_AMBER, True)
             folder = 'hike' + str(number) + '/' # change directory for actual hike record
             os.makedirs(dir + folder)
-    return number
-
-
 
 
 # Select Cam Definition
@@ -159,8 +158,11 @@ selectcam(1)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
-# Create new folder
+# Count existing hikes
 hikeno = simplecounthikes()
+timesince(hikeno - 1)
+
+
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
 # Create csv file and write header
