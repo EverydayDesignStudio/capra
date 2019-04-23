@@ -158,10 +158,9 @@ selectcam(1)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
-# Count existing hikes
-hikeno = simplecounthikes()
-timesince(hikeno - 1)
-
+hikeno = simplecounthikes() # Count existing hikes
+# > check time since last hike
+# > determine whether to create new hike entry or continue on last hike
 
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
