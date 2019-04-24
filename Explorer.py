@@ -188,15 +188,15 @@ while(1):
 
   # Take pictures
   # -------------------------------------
-  selectcam(3)
+  selectcam(1)
   cam.capture(dir + folder + str(photono) + '_cam1.jpg')
-  print("cam3 - picture taken!")
+  print("cam1 - picture taken!")
   selectcam(2)
   cam.capture(dir + folder + str(photono) + '_cam2.jpg')
   print("cam2 - picture taken!")
-  selectcam(1)
+  selectcam(3)
   cam.capture(dir + folder + str(photono) + '_cam3.jpg')
-  print("cam1 - picture taken!")
+  print("cam3 - picture taken!")
 
   # MPL3115A2 address, 0x60(96)
   # Read data back from 0x00(00), 6 bytes
