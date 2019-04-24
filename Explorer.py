@@ -146,6 +146,7 @@ def selectcam(_cam):
         if _cam == 3:
              gpio.output(SEL_1, True)
              gpio.output(SEL_2, True)
+
         time.sleep(0.1)
 
 def writedata(index, timestamp, altitude):
