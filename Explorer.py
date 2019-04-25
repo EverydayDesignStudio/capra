@@ -75,7 +75,6 @@ def simplecounthikes():
             print
             number = number + 1
             print(file + 'is instance: ' + str(number))
-            print('new hike is number ', number)
     folder = 'hike' + str(number) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
     return number
