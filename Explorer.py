@@ -119,7 +119,9 @@ def camcapture(_cam):
              gpio.output(SEL_1, True)
              gpio.output(SEL_2, True)
         time.sleep(0.2)
-        cam.capture(dir + folder + str(photono) + '_cam' + str(_cam) + '.jpg')
+        photoname = dir + folder + str(photono) + '_cam' + str(_cam) + '.jpg'
+        print(photoname)
+        cam.capture(photoname)
         print('cam', str(_cam), '- picture taken!')
 
 def writedata(index, timestamp, altitude):
