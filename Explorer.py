@@ -147,6 +147,7 @@ if(sincelast > 43200): # determine whether to create new hike entry or continue 
     folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
     # Create csv file and write header
+    folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
     csvfile = dir + folder + 'meta.csv'
     with open(csvfile, 'a') as meta:
         writer = csv.writer(meta)
