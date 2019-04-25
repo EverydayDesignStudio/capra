@@ -145,7 +145,7 @@ blink(LED_GREEN, 2, 0.25) #computer says hello
 blink(LED_AMBER, 2, 0.25) #computer says hello
 
 # Initialize camera object
-selectcam(1)
+selectcam(3)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
