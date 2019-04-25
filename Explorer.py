@@ -159,7 +159,7 @@ folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
 # Create csv file and write header
 csvfile = dir + folder + 'meta.csv'
-with open(csvfile, 'w') as meta:
+with open(csvfile, 'a') as meta:
     writer = csv.writer(meta)
     newrow = ["index", "time", "altitude"]
     print("HEADER ", newrow)
