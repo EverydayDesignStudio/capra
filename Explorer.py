@@ -4,10 +4,8 @@
 #  / /__/ /_/ / /_/ / /  / /_/ /
 #  \___/\__,_/ .___/_/   \__,_/
 #           /_/
-# Script to run on the Explorer
-# camera unit. Takes pictures with
-# three picameras through the
-# Capra cam multiplexer board
+# Script to run on the Explorer camera unit. Takes pictures with
+# three picameras through the Capra cam multiplexer board
 # ===============================
 
 # Import Modules
@@ -43,7 +41,6 @@ time.sleep(0.1)
 gpio.output(LED_AMBER, True)
 time.sleep(0.1)
 gpio.output(LED_BTM, False)
-
 
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
