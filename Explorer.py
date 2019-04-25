@@ -91,9 +91,10 @@ def timesincehike(_hikeno):
         for row in reader: # iterate over rows in meta.csv
             print(row)
             try:
-                lasthikedate = float(row[1])
-                lasthikephoto = int(row[0])
-                print(lasthikedate)
+                if(row[0]):
+                    lasthikedate = float(row[1])
+                    lasthikephoto = int(row[0])
+                    print(lasthikedate)
             except ValueError as e:
                 print('ValueError')
                 pass # empty rows
