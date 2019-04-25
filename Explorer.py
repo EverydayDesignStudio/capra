@@ -180,50 +180,49 @@ with open(csvfile, 'w') as meta:
 # Loop Starts Here
 # =================================================
 while(1):
-  # Query Altimeter first (takes a while)
-  # -------------------------------------
-  # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
-  # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
-  bus.write_byte_data(0x60, 0x26, 0xB9)
+    # Query Altimeter first (takes a while)
+    # -------------------------------------
+    # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
+ # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
+    bus.write_byte_data(0x60, 0x26, 0xB9)
 
-  # Take pictures
-  # -------------------------------------
-  selectcam(1)
-  cam.capture(dir + folder + str(photono) + '_cam1.jpg')
-  print("cam1 - picture taken!")
-  selectcam(2)
-  cam.capture(dir + folder + str(photono) + '_cam2.jpg')
-  print("cam2 - picture taken!")
-  selectcam(3)
-  cam.capture(dir + folder + str(photono) + '_cam3.jpg')
-  print("cam3 - picture taken!")
+    # Take pictures
+    # -------------------------------------
+    selectcam(1)
+    cam.capture(dir + folder + str(photono) + '_cam1.jpg')
+    print("cam1 - picture taken!")
+    selectcam(2)
+    cam.capture(dir + folder + str(photono) + '_cam2.jpg')
+    print("cam2 - picture taken!")
+    selectcam(3)
+    cam.capture(dir + folder + str(photono) + '_cam3.jpg')
+    print("cam3 - picture taken!")
 
-  # MPL3115A2 address, 0x60(96)
-  # Read data back from 0x00(00), 6 bytes
-  # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
-  data = bus.read_i2c_block_data(0x60, 0x00, 6)
+    # MPL3115A2 address, 0x60(96)
+    # Read data back from 0x00(00), 6 bytes
+    # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
+    # -------------------------------------
+    data = bus.read_i2c_block_data(0x60, 0x00, 6)
 
-  tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
-  altitude = tHeight / 16.0
-  print "Altitude : %.2f m" %altitude
+    tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
+    altitude = tHeight / 16.0
+    print "Altitude : %.2f m" %altitude
 
-  # Write Metadata
-  # -------------------------------------
-  timestamp = time.time()
-  writedata(photono, timestamp, altitude)
+    # Write Metadata
+    # -------------------------------------
+    timestamp = time.time()
+    writedata(photono, timestamp, altitude)
 
-  # Increase increment
-  # -------------------------------------
-  photono += 1
+    # Increase increment
+    # -------------------------------------
+    photono += 1
 
-  # Blink on every fourth picture
-  # -------------------------------------
-  if (photono % 4):
-      gpio.output(LED_GREEN, False)
-      time.sleep(0.4)
-      gpio.output(LED_GREEN, True)
+    # Blink on every fourth picture
+    # -------------------------------------
+    if (photono % 4):
+        blink(LED_GREEN, 1, 0.2)
 
-  # wait until 2.5 seconds have passed since last picture
-  # -------------------------------------
-  while(time.time() < timestamp + 2.5):
-      pass
+    # wait until 2.5 seconds have passed since last picture
+    # -------------------------------------
+    while(time.time() < timestamp + 2.5):
+        pass
