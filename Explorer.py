@@ -95,16 +95,6 @@ def timesincehike(_hikeno):
         lasthikedate = float(row[1])
         lasthikephoto = int(row[0])
         print(lasthikedate, "  =  ", lasthikephoto)
-        # for row in reader: # iterate over rows in meta.csv
-        #     print(row)
-        #     try:
-        #         if(row[0]):
-        #             lasthikedate = float(row[1])
-        #             lasthikephoto = int(row[0])
-        #             print(lasthikedate)
-        #     except ValueError as e:
-        #         print('ValueError')
-        #         pass # empty rows
         print('last hike ended at: ', str(lasthikedate))
         # check if the last hike started less than half a day ago
         timesince = time.time() - lasthikedate
@@ -139,8 +129,9 @@ def writedata(index, timestamp, altitude):
         print(newrow)
         writer.writerow(newrow)
 
-blink(LED_GREEN, 2, 0.25) #computer says hello
-blink(LED_AMBER, 2, 0.25) #computer says hello
+blink(LED_GREEN, 2, 0.1) #computer says hello
+blink(LED_AMBER, 2, 0.1) #computer says hello
+blink(LED_GREEN, 2, 0.1) #computer says hello
 
 # Initialize camera object
 gpio.output(SEL_1, False)
@@ -157,14 +148,14 @@ if(sincelast > 43200):
     print('creating new hike:')
     folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
-    blink(LED_GREEN, 2, 0.4)
+    blink(LED_GREEN, 2, 0.2)
 else:
     # append to last hike
     print('continuing last hike:')
     # retrieve last photo number
     hikeno -= 1
-    photono = timesincehike(hikeno)[1]
-    blink(LED_AMBER, 2, 0.4)
+    photono = timesincehike(hikeno)[1] + 1
+    blink(LED_AMBER, 2, 0.2)
 
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
