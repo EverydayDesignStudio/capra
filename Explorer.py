@@ -147,7 +147,7 @@ selectcam(3)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
-hikeno = simplecounthikes() # Count existing hikes
+hikeno = counthikes() # Count existing hikes
 # > check time since last hike
 sincelast = timesincehike(hikeno - 1)[0]
 # > determine whether to create new hike entry or continue on last hike
