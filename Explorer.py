@@ -103,8 +103,8 @@ def timesincehike(_hikeno):
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
         for row in reader: # iterate over rows in meta.csv
+            print(row)
             try:
-                print(row)
                 lasthikedate = float(row[1])
                 lasthikephoto = int(row[0])
             except():
