@@ -117,7 +117,7 @@ def timesincehike(_hikeno):
 
 # Select Cam Definition
 def selectcam(_cam):
-    print('selectcam( ', _cam, ' )')
+    print('selectcam( ' + _cam + ' )')
     print('===============')
     if _cam < 1 or _cam > 3:
         print('[selectcam] invalid cam number!')
