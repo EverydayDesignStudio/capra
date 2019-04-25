@@ -88,16 +88,23 @@ def timesincehike(_hikeno):
     lasthikedate = 0
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
-        for row in reader: # iterate over rows in meta.csv
-            print(row)
-            try:
-                if(row[0]):
-                    lasthikedate = float(row[1])
-                    lasthikephoto = int(row[0])
-                    print(lasthikedate)
-            except ValueError as e:
-                print('ValueError')
-                pass # empty rows
+        reversed(list(reader))
+        next(reader)
+        row = next(reader)
+        lasthikedate = float(row[1])
+        lasthikephoto = int(row[0])
+        print("=-=-=-=-=-=-=-=-=-=-")
+        print(lasthikedate, "  =  ", lasthikephoto)
+        # for row in reader: # iterate over rows in meta.csv
+        #     print(row)
+        #     try:
+        #         if(row[0]):
+        #             lasthikedate = float(row[1])
+        #             lasthikephoto = int(row[0])
+        #             print(lasthikedate)
+        #     except ValueError as e:
+        #         print('ValueError')
+        #         pass # empty rows
         print('last hike ended at: ', str(lasthikedate))
         # check if the last hike started less than half a day ago
         timesince = time.time() - lasthikedate
