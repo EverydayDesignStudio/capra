@@ -140,7 +140,7 @@ cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
 hikeno = counthikes() # Count existing hikes
-sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
+sincelast = 43201 #timesincehike(hikeno - 1)[0] # check time since last hike
 if(sincelast > 43200): # determine whether to create new hike entry or continue on last hike
     # create new hike folder
     print('creating new hike:')
