@@ -57,7 +57,7 @@ def isLast(itr):
 def blink(pin, repeat, interval):
     on = False
     off = True
-    if pin = LED_BTM:
+    if pin == LED_BTM:
         on = True
         off = False
     for i in range(repeat):
