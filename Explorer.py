@@ -178,7 +178,9 @@ while(1):
     # Take pictures
     # -------------------------------------
     camcapture(1)
+    time.sleep(1)
     camcapture(2)
+    time.sleep(1)
     camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
