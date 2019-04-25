@@ -57,9 +57,20 @@ def isLast(itr):
     old = new
   yield True, old
 
+def blink(pin, repeat, interval):
+    on = False
+    off = True
+    if pin = LED_BTM:
+        on = True
+        off = False
+    for i in range(repeat):
+        gpio.output(pin, on)
+        time.sleep(interval)
+        gpio.output(pin, off)
+        time.sleep(interval)
 
 def simplecounthikes():
-    print('counthikes() - Counting previous hikes')
+    print('simplecounthikes() - Counting previous hikes')
     print('======================================')
     number = 1
     for file in os.listdir(dir):
@@ -70,16 +81,7 @@ def simplecounthikes():
             print('new hike is number ', number)
     folder = 'hike' + str(number) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
-    gpio.output(LED_AMBER, False)
-    time.sleep(0.4)
-    gpio.output(LED_AMBER, True)
-    time.sleep(0.4)
-    gpio.output(LED_AMBER, False)
-    time.sleep(0.4)
-    gpio.output(LED_AMBER, True)
     return number
-
-
 
 def counthikes():
     print('counthikes() - Counting previous hikes')
@@ -94,39 +96,27 @@ def counthikes():
     return number
 
 def timesincehike(_hikeno):
+    print('timesincehike()')
+    print('===============')
     csvfile = dir + 'hike' + str(_hikeno) + '/' 'meta.csv'
+    print('reading from ', csvfile)
+    timesince = 0
+    lasthikephoto = 0
+    lasthikedate = 0
     with open(csvfile, 'r') as meta:
         reader = csv.reader(meta)
-        lasthikephoto = 0
-        lasthikedate = 0
-        row_count = sum(1 for row in reader)
-        print("row count:", str(row_count))
-        for row in reader:
-            print(row[row_count - 1])
-            lasthikedate = float(row[row_count])
-            lasthikephoto = int(row[row_count])
-            break
+        for row in reader: # iterate over rows in meta.csv
+            try:
+                print(row)
+                lasthikedate = float(row[1])
+                lasthikephoto = int(row[0])
+            except():
+                pass # empty rows
         print('last hike ended at: ', str(lasthikedate))
         # check if the last hike started less than half a day ago
         timesince = time.time() - lasthikedate
-        print('time since last: ', str(timesince))
-        if (timesince < 43200):
-            print('continuing last hike:')
-            gpio.output(LED_GREEN, False)
-            time.sleep(0.4)
-            gpio.output(LED_GREEN, True)
-            number = number - 1
-            print('hike ', str(number))
-            photono = lasthikephoto
-            print('@', str(photono))
-            folder = 'hike' + str(number) + '/' # change directory for actual hike record
-        else:
-            gpio.output(LED_AMBER, False)
-            time.sleep(0.4)
-            gpio.output(LED_AMBER, True)
-            folder = 'hike' + str(number) + '/' # change directory for actual hike record
-            os.makedirs(dir + folder)
-
+    print('time since last: ', str(timesince))
+    return timesince, lasthikephoto
 
 # Select Cam Definition
 def selectcam(_cam):
@@ -151,6 +141,9 @@ def writedata(index, timestamp, altitude):
         print newrow
         writer.writerow(newrow)
 
+blink(LED_GREEN, 2, 0.25) #computer says hello
+blink(LED_AMBER, 2, 0.25) #computer says hello
+
 # Initialize camera object
 selectcam(1)
 cam = picamera.PiCamera()
@@ -158,7 +151,21 @@ cam.resolution = (1280, 720)
 
 hikeno = simplecounthikes() # Count existing hikes
 # > check time since last hike
+sincelast = timesincehike(hikeno - 1)[0]
 # > determine whether to create new hike entry or continue on last hike
+if(sincelast > 43200):
+    # create new hike folder
+    print('creating new hike:')
+    folder = 'hike' + str(hikeno - 1) + '/' # change directory for actual hike record
+    os.makedirs(dir + folder)
+    blink(LED_GREEN, 2, 0.4)
+else:
+    # append to last hike
+    print('continuing last hike:')
+    # retrieve last photo number
+    hikeno -= 1
+    photono = timesincehike(hikeno)[1]
+    blink(LED_AMBER, 2, 0.4)
 
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 
@@ -166,19 +173,17 @@ folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
 csvfile = dir + folder + 'meta.csv'
 with open(csvfile, 'w') as meta:
     writer = csv.writer(meta)
-    newrow = ["index", "time", "altitude", "tbd"]
+    newrow = ["index", "time", "altitude"]
     print "HEADER ", newrow
     writer.writerow(newrow)
 
 # Loop Starts Here
 # =================================================
-
 while(1):
   # Query Altimeter first (takes a while)
   # -------------------------------------
-  # MPL3115A2 address, 0x60(96)
-  # Select control register, 0x26(38)
-  #		0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
+  # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
+  # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
   bus.write_byte_data(0x60, 0x26, 0xB9)
 
   # Take pictures
