@@ -137,7 +137,7 @@ def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
         newrow = [index, timestamp, altitude]
-        print newrow
+        print(newrow)
         writer.writerow(newrow)
 
 blink(LED_GREEN, 2, 0.25) #computer says hello
