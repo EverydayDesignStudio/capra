@@ -154,7 +154,7 @@ sincelast = timesincehike(hikeno - 1)[0]
 if(sincelast > 43200):
     # create new hike folder
     print('creating new hike:')
-    folder = 'hike' + str(hikeno - 1) + '/' # change directory for actual hike record
+    folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
     blink(LED_GREEN, 2, 0.4)
 else:
