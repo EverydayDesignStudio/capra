@@ -173,7 +173,7 @@ csvfile = dir + folder + 'meta.csv'
 with open(csvfile, 'w') as meta:
     writer = csv.writer(meta)
     newrow = ["index", "time", "altitude"]
-    print "HEADER ", newrow
+    print("HEADER ", newrow)
     writer.writerow(newrow)
 
 # Loop Starts Here
@@ -205,7 +205,7 @@ while(1):
 
     tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
     altitude = tHeight / 16.0
-    print "Altitude : %.2f m" %altitude
+    print("Altitude : %.2f m" %altitude)
 
     # Write Metadata
     # -------------------------------------
