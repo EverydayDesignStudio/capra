@@ -102,25 +102,25 @@ def timesincehike(_hikeno):
     return timesince, lasthikephoto
 
 # Select Cam Definition
-def camcapture(_cam):
-    print('selectcam( ', _cam , ' )')
-    if _cam < 1 or _cam > 3:
+def camcapture(_camno):
+    print('selectcam( ', _camno , ' )')
+    if _camno < 1 or _camno > 3:
         print('[selectcam] invalid cam number!')
     else:
-        if _cam == 1:
+        if _camno == 1:
              gpio.output(SEL_1, False)
              gpio.output(SEL_2, False)
-        if _cam == 2:
+        if _camno == 2:
              gpio.output(SEL_1, True)
              gpio.output(SEL_2, False)
-        if _cam == 3:
+        if _camno == 3:
              gpio.output(SEL_1, True)
              gpio.output(SEL_2, True)
         time.sleep(0.2)
-        photoname = dir + folder + str(photono) + '_cam' + str(_cam) + '.jpg'
+        photoname = dir + folder + str(photono) + '_cam' + str(_camno) + '.jpg'
         print(photoname)
         cam.capture(photoname)
-        print('cam', str(_cam), '- picture taken!')
+        print('cam', str(_camno), '- picture taken!')
 
 def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
@@ -146,6 +146,13 @@ if(sincelast > 43200): # determine whether to create new hike entry or continue 
     print('creating new hike:')
     folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
     os.makedirs(dir + folder)
+    # Create csv file and write header
+    csvfile = dir + folder + 'meta.csv'
+    with open(csvfile, 'a') as meta:
+        writer = csv.writer(meta)
+        newrow = ["index", "time", "altitude"]
+        print("HEADER ", newrow)
+        writer.writerow(newrow)
     blink(LED_GREEN, 2, 0.2)
 else:
     # append to last hike
@@ -156,14 +163,6 @@ else:
     blink(LED_AMBER, 2, 0.2)
 
 folder = 'hike' + str(hikeno) + '/' # change directory for actual hike record
-
-# Create csv file and write header
-csvfile = dir + folder + 'meta.csv'
-with open(csvfile, 'a') as meta:
-    writer = csv.writer(meta)
-    newrow = ["index", "time", "altitude"]
-    print("HEADER ", newrow)
-    writer.writerow(newrow)
 
 # Loop Starts Here
 # =================================================
