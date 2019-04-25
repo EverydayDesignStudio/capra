@@ -104,9 +104,8 @@ def timesincehike(_hikeno):
     return timesince, lasthikephoto
 
 # Select Cam Definition
-def selectcam(_cam):
+def camcapture(_cam):
     print('selectcam( ', _cam , ' )')
-    print('===============')
     if _cam < 1 or _cam > 3:
         print('[selectcam] invalid cam number!')
     else:
@@ -120,6 +119,8 @@ def selectcam(_cam):
              gpio.output(SEL_1, True)
              gpio.output(SEL_2, True)
         time.sleep(0.2)
+        cam.capture(dir + folder + str(photono) + '_cam' + str(_cam) + '.jpg')
+        print('cam', str(_cam), '- picture taken!')
 
 def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
@@ -132,7 +133,8 @@ blink(LED_GREEN, 2, 0.25) #computer says hello
 blink(LED_AMBER, 2, 0.25) #computer says hello
 
 # Initialize camera object
-selectcam(3)
+gpio.output(SEL_1, False)
+gpio.output(SEL_2, False)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
@@ -175,15 +177,9 @@ while(1):
 
     # Take pictures
     # -------------------------------------
-    selectcam(1)
-    cam.capture(dir + folder + str(photono) + '_cam1.jpg')
-    print("cam1 - picture taken!")
-    selectcam(2)
-    cam.capture(dir + folder + str(photono) + '_cam2.jpg')
-    print("cam2 - picture taken!")
-    selectcam(3)
-    cam.capture(dir + folder + str(photono) + '_cam3.jpg')
-    print("cam3 - picture taken!")
+    camcapture(1)
+    camcapture(2)
+    camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
