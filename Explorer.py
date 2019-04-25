@@ -66,19 +66,6 @@ def blink(pin, repeat, interval):
         gpio.output(pin, off)
         time.sleep(interval)
 
-def simplecounthikes():
-    print('simplecounthikes() - Counting previous hikes')
-    print('======================================')
-    number = 1
-    for file in os.listdir(dir):
-        if file.startswith('hike'):
-            print
-            number = number + 1
-            print(file + 'is instance: ' + str(number))
-    folder = 'hike' + str(number) + '/' # change directory for actual hike record
-    os.makedirs(dir + folder)
-    return number
-
 def counthikes():
     print('counthikes() - Counting previous hikes')
     print('======================================')
@@ -88,7 +75,7 @@ def counthikes():
             print
             number = number + 1
             print(file + 'is instance: ' + str(number))
-            print('new hike is number ', number)
+    print(number, ' hikes currently present')
     return number
 
 def timesincehike(_hikeno):
