@@ -107,7 +107,7 @@ def timesincehike(_hikeno):
             try:
                 lasthikedate = float(row[1])
                 lasthikephoto = int(row[0])
-            except():
+            except ValueError as e:
                 pass # empty rows
         print('last hike ended at: ', str(lasthikedate))
         # check if the last hike started less than half a day ago
