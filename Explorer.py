@@ -135,6 +135,7 @@ def writedata(index, timestamp, altitude):
 
 blink(LED_GREEN, 2, 0.1) #computer says hello
 blink(LED_AMBER, 2, 0.1) #computer says hello
+blink(LED_BTM, 2, 0.1) #hello
 blink(LED_GREEN, 2, 0.1) #computer says hello
 
 # Initialize camera object
