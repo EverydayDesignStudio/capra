@@ -139,8 +139,8 @@ blink(LED_BTM, 2, 0.1) #computer says hello
 # Initialize camera object
 gpio.output(SEL_1, False)
 gpio.output(SEL_2, False)
-cam = picamera.PiCamera()
 time.sleep(0.1)
+cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
 
 hikeno = counthikes() # Count existing hikes
@@ -181,7 +181,7 @@ while(1):
     # Take pictures
     # -------------------------------------
     camcapture(1)
-    camcapture(2)
+    #camcapture(2)
     #camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
