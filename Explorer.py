@@ -137,7 +137,7 @@ blink(LED_AMBER, 2, 0.1) #computer says hello
 blink(LED_BTM, 2, 0.1) #computer says hello
 
 # Initialize camera object
-gpio.output(SEL_1, True)
+gpio.output(SEL_1, False)
 gpio.output(SEL_2, False)
 cam = picamera.PiCamera()
 time.sleep(0.1)
@@ -182,7 +182,7 @@ while(1):
     # -------------------------------------
     camcapture(1)
     camcapture(2)
-    camcapture(3)
+    #camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
