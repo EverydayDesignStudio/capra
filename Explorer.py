@@ -140,6 +140,7 @@ blink(LED_BTM, 2, 0.1) #computer says hello
 gpio.output(SEL_1, True)
 gpio.output(SEL_2, False)
 cam = picamera.PiCamera()
+time.sleep(0.1)
 cam.resolution = (1280, 720)
 
 hikeno = counthikes() # Count existing hikes
