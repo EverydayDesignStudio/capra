@@ -43,8 +43,7 @@ time.sleep(0.1)
 gpio.output(LED_BTM, False)
 
 # Set Variables
-#dir = '/home/pi/Desktop/pics/'
-dir = '/home/pi/Desktop/test/'
+dir = '/home/pi/Desktop/pics/'
 photono = 0
 
 # Set Definitions
