@@ -137,7 +137,7 @@ blink(LED_AMBER, 2, 0.1) #computer says hello
 blink(LED_BTM, 2, 0.1) #computer says hello
 
 # Initialize camera object
-gpio.output(SEL_1, False)
+gpio.output(SEL_1, True)
 gpio.output(SEL_2, False)
 cam = picamera.PiCamera()
 cam.resolution = (1280, 720)
