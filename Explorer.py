@@ -141,10 +141,9 @@ print('initializing camera')
 gpio.output(SEL_1, False)
 gpio.output(SEL_2, False)
 time.sleep(0.1)
-try:
-    cam = picamera.PiCamera()
-except:
-    pass
+
+cam = picamera.PiCamera()
+
 cam.resolution = (1280, 720)
 
 hikeno = counthikes() # Count existing hikes
