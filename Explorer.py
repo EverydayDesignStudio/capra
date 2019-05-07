@@ -143,7 +143,6 @@ gpio.output(SEL_2, False)
 time.sleep(0.1)
 
 cam = picamera.PiCamera()
-
 cam.resolution = (1280, 720)
 
 hikeno = counthikes() # Count existing hikes
@@ -184,7 +183,7 @@ while(1):
     # Take pictures
     # -------------------------------------
     camcapture(1)
-    #camcapture(2)
+    camcapture(2)
     #camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
