@@ -138,8 +138,8 @@ blink(LED_BTM, 2, 0.1) #computer says hello
 
 # Initialize camera object
 print('initializing camera')
-gpio.output(SEL_1, False)
-gpio.output(SEL_2, False)
+gpio.output(SEL_1, True)
+gpio.output(SEL_2, True)
 time.sleep(0.1)
 
 cam = picamera.PiCamera()
