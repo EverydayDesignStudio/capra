@@ -208,8 +208,8 @@ while(1):
     # Blink on every fourth picture
     # -------------------------------------
     if (photono % 4 == 0):
-        blink(LED_GREEN, 2, 0.1)
-
+        blink(LED_GREEN, 1, 0.1)
+        blink(LED_AMBER, 1, 0.1)
     # wait until 2.5 seconds have passed since last picture
     # -------------------------------------
     while(time.time() < timestamp + 2.5):
