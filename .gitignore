@@ -1,1 +1,6 @@
+# Python
 *.pyc
+
+# Finder
+.DS_Store
+
