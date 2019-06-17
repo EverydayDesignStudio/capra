@@ -183,15 +183,15 @@ while(1):
     # Take pictures
     # -------------------------------------
     c1 = raw_input("cam1? (y/n)")
-    if(c1 = "y"):
+    if(c1 == "y"):
         camcapture(1)
 
     c2 = raw_input("cam2? (y/n)")
-    if(c2 = "y"):
+    if(c2 == "y"):
         camcapture(2)
 
     c3 = raw_input("cam3? (y/n)")
-    if(c3 = "y"):
+    if(c3 == "y"):
         camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
