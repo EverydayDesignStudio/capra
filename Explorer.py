@@ -182,15 +182,15 @@ while(1):
 
     # Take pictures
     # -------------------------------------
-    c1 = raw_input("cam1? (y/n)")
+    c1 = input("cam1? (y/n)")
     if(c1 == "y"):
         camcapture(1)
 
-    c2 = raw_input("cam2? (y/n)")
+    c2 = input("cam2? (y/n)")
     if(c2 == "y"):
         camcapture(2)
 
-    c3 = raw_input("cam3? (y/n)")
+    c3 = input("cam3? (y/n)")
     if(c3 == "y"):
         camcapture(3)
 
