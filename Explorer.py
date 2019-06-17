@@ -182,17 +182,10 @@ while(1):
 
     # Take pictures
     # -------------------------------------
-    c1 = input("cam1? (y/n)")
-    if(c1 == "y"):
-        camcapture(1)
 
-    c2 = input("cam2? (y/n)")
-    if(c2 == "y"):
-        camcapture(2)
-
-    c3 = input("cam3? (y/n)")
-    if(c3 == "y"):
-        camcapture(3)
+    camcapture(1)
+    camcapture(2)
+    camcapture(3)
 
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
