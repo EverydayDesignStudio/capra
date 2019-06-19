@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-#  ╔═╗╔═╗╔═╗╦═╗╔═╗       ╔═╗═╗ ╦╔═╗╦  ╔═╗╦═╗╔═╗╦═╗
-#  ║  ╠═╣╠═╝╠╦╝╠═╣  ───  ║╣ ╔╩╦╝╠═╝║  ║ ║╠╦╝║╣ ╠╦╝
-#  ╚═╝╩ ╩╩  ╩╚═╩ ╩       ╚═╝╩ ╚═╩  ╩═╝╚═╝╩╚═╚═╝╩╚═
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # =================================================
