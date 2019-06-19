@@ -143,7 +143,7 @@ gpio.output(SEL_2, True)
 time.sleep(0.1)
 
 cam = picamera.PiCamera()
-cam.resolution = (1280, 720)
+cam.resolution = (720, 405)
 
 hikeno = counthikes() # Count existing hikes
 sincelast = 43201 #timesincehike(hikeno - 1)[0] # check time since last hike
