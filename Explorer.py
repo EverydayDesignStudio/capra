@@ -105,7 +105,7 @@ def timesincehike(_hikeno):
 
 
 # Select Cam Definition
-def camcapture(_camno):
+def camcapture(_cam, _camno):
     print('selectcam( ', _camno, ' )')
     if _camno < 1 or _camno > 3:
         print('[selectcam] invalid cam number!')
@@ -125,7 +125,7 @@ def camcapture(_camno):
         time.sleep(0.2)
         photoname = dir + folder + str(photono) + '_cam' + str(_camno) + '.jpg'
         print(photoname)
-        cam.capture(photoname)
+        _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
 
 def writedata(index, timestamp, altitude):
@@ -187,9 +187,9 @@ def main():
 
         # Take pictures
         # -------------------------------------
-        camcapture(1)
-        camcapture(2)
-        camcapture(3)
+        camcapture(cam, 1)
+        camcapture(cam, 2)
+        camcapture(cam, 3)
 
         # MPL3115A2 address, 0x60(96)
         # Read data back from 0x00(00), 6 bytes
