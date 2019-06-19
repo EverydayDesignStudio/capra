@@ -147,6 +147,7 @@ def main():
     gpio.output(SEL_2, True)
     time.sleep(0.1)
 
+    photono = 0 # TODO: Should be removed later; was inserted to get program running
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
 
