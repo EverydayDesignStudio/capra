@@ -223,10 +223,12 @@ def main():
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
         # Wait until 2.5 seconds have passed since last picture
+        i = 0
         while(time.time() < timestamp + 2.5):
-            print('less')
+            i += 1
             pass
 
+        print(i)
 
 if __name__ == "__main__":
     main()
