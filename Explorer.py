@@ -43,7 +43,8 @@ dir = '/home/pi/Desktop/pics/'
 folder = ''
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
-photono = 0
+global photono = 0
+#photono = 0
 
 
 # Set Definitions
@@ -199,7 +200,7 @@ def main():
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = tHeight / 16.0
         print("Altitude : %.2f m" %altitude)
-
+        print("photono :" + str(photono))
         # Write Metadata
         timestamp = time.time()
         writedata(photono, timestamp, altitude)
