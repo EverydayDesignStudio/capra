@@ -40,6 +40,7 @@ gpio.output(LED_BTM, False)
 
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
+folder = ''
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
 photono = 0
