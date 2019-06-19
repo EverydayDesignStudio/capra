@@ -43,8 +43,7 @@ dir = '/home/pi/Desktop/pics/'
 folder = ''
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
-global photono = 0
-#photono = 0
+photono = 0
 
 
 # Set Definitions
