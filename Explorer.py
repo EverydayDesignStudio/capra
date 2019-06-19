@@ -14,8 +14,6 @@ import picamera
 import datetime
 import RPi.GPIO as gpio
 
-# this is not a test
-
 # Get I2C bus
 bus = smbus.SMBus(1)
 
@@ -28,6 +26,8 @@ gpio.setup(17, gpio.OUT)  # status led2
 
 # Set Variables
 dir = '/home/pi/Desktop/pics/'
+# RESOLUTION = (1280, 720)
+RESOLUTION = (720, 405)
 
 
 # Set Definitions
@@ -72,7 +72,7 @@ def main():
     # Initialize camera object
     selectcam(1)
     cam1 = picamera.PiCamera()
-    cam1.resolution = (1024, 768)
+    cam1.resolution = RESOLUTION
 
     # Create new folder
     hikeno = counthikes()
@@ -92,7 +92,7 @@ def main():
         # -------------------------------------
         # MPL3115A2 address, 0x60(96)
         # Select control register, 0x26(38)
-        #		0xB9(185)	Active mode, OSR = 128, Altimeter mode
+        # 0xB9(185)	Active mode, OSR = 128, Altimeter mode
         bus.write_byte_data(0x60, 0x26, 0xB9)
 
         # Take pictures
