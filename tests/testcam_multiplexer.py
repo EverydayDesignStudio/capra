@@ -26,18 +26,14 @@ def selectcam(_cam):
         if _cam == 1:
              gpio.output(22, False)
              gpio.output(23, False)
-             # gpio.output(24, False)
-             # gpio.output(25, False)
+
         if _cam == 2:
              gpio.output(22, True)
              gpio.output(23, False)
-             # gpio.output(24, False)
-             # gpio.output(25, True)
+
         if _cam == 3:
              gpio.output(22, True)
              gpio.output(23, True)
-             # gpio.output(24, True)
-             # gpio.output(25, False)
     time.sleep(0.1)
 
 
@@ -75,13 +71,10 @@ while(1):
     time.sleep(1)
     selectcam(1)
     cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam2.jpg')
-    time.sleep(0.2)
     selectcam(2)
     cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam1.jpg')
-    time.sleep(0.2)
     selectcam(3)
     cam1.capture('/home/pi/Desktop/pics/' + str(name) + '_cam3.jpg')
-    time.sleep(0.2)
     name += 1
     time.sleep(2.5)
 
