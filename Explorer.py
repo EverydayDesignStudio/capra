@@ -5,15 +5,16 @@
 # =================================================
 
 # Import Modules
-import os
-import csv
-import time
-import smbus
-import picamera
+import os  # used for counting folders and creating new folders
+import csv  # used for saving and reading information in/from CSV files
+import time  # for time keeping
+import smbus  # For interfacing over I2C with the altimeter
+import picamera  # For interfacting with the PiCamera
 import datetime
 import RPi.GPIO as gpio
 
 # Pin configuration
+# Will have more added later on to accomodate on/off switch
 BUTTON_PLAYPAUSE = 4
 SEL_1 = 22
 SEL_2 = 23
@@ -32,6 +33,7 @@ gpio.setup(LED_GREEN, gpio.OUT)  # status led1
 gpio.setup(LED_AMBER, gpio.OUT)  # status led2
 gpio.setup(LED_BTM, gpio.OUT)  # status led3
 
+# Turn off LEDs
 gpio.output(LED_GREEN, True)
 time.sleep(0.1)
 gpio.output(LED_AMBER, True)
@@ -39,6 +41,7 @@ time.sleep(0.1)
 gpio.output(LED_BTM, False)
 
 # Set Variables
+# TODO : variables are not updated / accesses correctly within main
 dir = '/home/pi/Desktop/pics/'
 folder = ''
 RESOLUTION = (1280, 720)
@@ -47,6 +50,7 @@ photono = 0
 
 
 # Set Definitions
+# For determining whether a row in a CSV is the last row
 def isLast(itr):
     old = itr.next()
     for new in itr:
@@ -55,6 +59,7 @@ def isLast(itr):
     yield True, old
 
 
+# For blinking LEDs
 def blink(pin, repeat, interval):
     on = False
     off = True
@@ -68,6 +73,7 @@ def blink(pin, repeat, interval):
         time.sleep(interval)
 
 
+# Counts previous hikes
 def counthikes():
     print('counthikes() - Counting previous hikes')
     print('======================================')
@@ -80,6 +86,8 @@ def counthikes():
     return number
 
 
+# For determining the time the most recent hike ended
+# TODO: check and fix
 def timesincehike(_hikeno):
     print('timesincehike()')
     print('===============')
@@ -104,7 +112,7 @@ def timesincehike(_hikeno):
     return timesince, lasthikephoto
 
 
-# Select Cam Definition
+# For Selecting Cam and taking + saving a picture
 def camcapture(_cam, _camno):
     print('selectcam( ', _camno, ' )')
     if _camno < 1 or _camno > 3:
@@ -128,6 +136,8 @@ def camcapture(_cam, _camno):
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
 
+
+# Write a row to csv file
 def writedata(index, timestamp, altitude):
     with open(dir + folder + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
@@ -141,18 +151,21 @@ def main():
     blink(LED_GREEN, 2, 0.1)
     blink(LED_AMBER, 2, 0.1)
     blink(LED_BTM, 2, 0.1)
+
+
     # Initialize camera object
     print('initializing camera')
     gpio.output(SEL_1, True)
     gpio.output(SEL_2, True)
     time.sleep(0.1)
-
-    photono = 0 # TODO: Should be removed later; was inserted to get program running
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
 
+
+    photono = 0 # TODO: Should be removed later; was inserted to get program running
     hikeno = counthikes()  # Count existing hikes
-    sincelast = 43201  # timesincehike(hikeno - 1)[0] # check time since last hike
+    sincelast = 43201  # Forced in order to bypass timesincehike
+    # sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
     if(sincelast > 43200):  # determine whether to create new hike entry or continue on last hike
         # create new hike folder
         print('creating new hike:')
@@ -172,7 +185,7 @@ def main():
         print('continuing last hike:')
         # retrieve last photo number
         hikeno -= 1
-        photono = timesincehike(hikeno)[1] + 1
+        photono = timesincehike(hikeno)[1] + 1  # TODO: fix
         blink(LED_AMBER, 2, 0.2)
 
     folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
@@ -199,11 +212,8 @@ def main():
 
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = tHeight / 16.0
-        print("Altitude : %.2f m" %altitude)
-        print("photono :" + str(photono))
-        # Write Metadata
         timestamp = time.time()
-        writedata(photono, timestamp, altitude)
+        writedata(photono, timestamp, altitude) # Write Metadata
 
         # Increase increment
         photono += 1
@@ -214,6 +224,7 @@ def main():
             blink(LED_AMBER, 1, 0.1)
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
+            print('less')
             pass
 
 
