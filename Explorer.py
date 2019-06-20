@@ -14,7 +14,7 @@ import datetime
 import RPi.GPIO as gpio
 
 # Pin configuration
-# Will have more added later on to accomodate on/off switch
+# TODO Will have more added later on to accomodate on/off switch
 BUTTON_PLAYPAUSE = 4
 SEL_1 = 22
 SEL_2 = 23
@@ -222,7 +222,7 @@ def main():
         if (photono % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            
+
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
             pass
