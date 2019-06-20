@@ -206,6 +206,7 @@ def main():
 
         # Take pictures
         # -------------------------------------
+        print(folder)
         camcapture(cam, 1)
         camcapture(cam, 2)
         camcapture(cam, 3)
