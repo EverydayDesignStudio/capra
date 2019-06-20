@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 
+#    _________ _____  _________ _
+#   / ___/ __ `/ __ \/ ___/ __ `/
+#  / /__/ /_/ / /_/ / /  / /_/ /
+#  \___/\__,_/ .___/_/   \__,_/
+#           /_/
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # =================================================
 
 # Import Modules
-import os  # used for counting folders and creating new folders
-import csv  # used for saving and reading information in/from CSV files
-import time  # for time keeping
+import os  # For counting folders and creating new folders
+import csv  # For saving and reading information in/from CSV files
+import time  # For time keeping
 import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
-import datetime
-import RPi.GPIO as gpio
+import datetime  # For translating POSIX timestamp to human readable date/time
+import RPi.GPIO as gpio  # For
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
