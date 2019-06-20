@@ -140,7 +140,7 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_2, True)
         time.sleep(0.2)
         photoname = dir + folder + str(photono) + '_cam' + str(_camno) + '.jpg'
-        print(photoname)
+        print("SAVE TO: " + str(photoname))
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
 
@@ -208,7 +208,6 @@ def main():
 
         # Take pictures
         # -------------------------------------
-        print(dir + folder)
         camcapture(cam, 1)
         camcapture(cam, 2)
         camcapture(cam, 3)
