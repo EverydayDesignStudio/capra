@@ -16,7 +16,7 @@ import time  # For time keeping
 import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
-import RPi.GPIO as gpio  # For
+import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
