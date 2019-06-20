@@ -18,6 +18,7 @@ import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
+
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
 BUTTON_PLAYPAUSE = 4
@@ -27,8 +28,10 @@ LED_GREEN = 24
 LED_BTM = 26
 LED_AMBER = 27
 
+
 # Get I2C bus
 bus = smbus.SMBus(1)
+
 
 # Initialize GPIO pins
 gpio.setmode(gpio.BCM)
@@ -199,14 +202,13 @@ def main():
     # =================================================
     while(True):
         # Query Altimeter first (takes a while)
-        # -------------------------------------
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
         # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
         bus.write_byte_data(0x60, 0x26, 0xB9)
 
         # Take pictures
         # -------------------------------------
-        print(folder)
+        print(dir + folder)
         camcapture(cam, 1)
         camcapture(cam, 2)
         camcapture(cam, 3)
