@@ -121,9 +121,9 @@ def timesincehike(_hikeno):
 
 # For Selecting Cam and taking + saving a picture
 def camcapture(_cam, _camno):
-    print('selectcam( ', _camno, ' )')
+    print('camcapture( ', _camno, ' )')
     if _camno < 1 or _camno > 3:
-        print('[selectcam] invalid cam number!')
+        print('[camcapture] invalid cam number!')
     else:
         if _camno == 1:
             print("select cam 1")
@@ -142,7 +142,7 @@ def camcapture(_cam, _camno):
         photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print '  cam', str(_camno), '- picture taken!' 
+        print '  cam', str(_camno), '- picture taken!'
 
 
 # Write a row to csv file
