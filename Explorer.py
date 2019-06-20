@@ -142,7 +142,7 @@ def camcapture(_cam, _camno):
         photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print('  cam', str(_camno), '- picture taken!')
+        print '  cam', str(_camno), '- picture taken!' 
 
 
 # Write a row to csv file
