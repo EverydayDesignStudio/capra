@@ -170,14 +170,16 @@ def main():
 
 
     photono = 0 # TODO: Should be removed later; was inserted to get program running
-    global hikeno = counthikes()  # Count existing hikes
+    global hikeno
+    hikeno = counthikes()  # Count existing hikes
     sincelast = 43201  # Forced in order to bypass timesincehike
     # sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
     if(sincelast > 43200):  # determine whether to create new hike entry or continue on last hike
         # create new hike folder
         print('creating new hike:')
         folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-        global dir = dir + folder
+        global dir
+        dir = dir + folder
         os.makedirs(dir)
 
         #create meta csv file
