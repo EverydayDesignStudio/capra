@@ -51,7 +51,6 @@ gpio.output(LED_BTM, False)
 # Set Variables
 # TODO : variables are not updated / accesses correctly within main
 dir = '/home/pi/Desktop/pics/'
-folder = ''
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
 photono = 0
@@ -139,7 +138,7 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
         time.sleep(0.2)
-        photoname = dir + folder + str(photono) + '_cam' + str(_camno) + '.jpg'
+        photoname = dir str(photono) + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname))
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
@@ -147,7 +146,7 @@ def camcapture(_cam, _camno):
 
 # Write a row to csv file
 def writedata(index, timestamp, altitude):
-    with open(dir + folder + 'meta.csv', 'a') as meta:
+    with open(dir + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
         newrow = [index, timestamp, altitude]
         print(newrow)
@@ -171,17 +170,18 @@ def main():
 
 
     photono = 0 # TODO: Should be removed later; was inserted to get program running
-    hikeno = counthikes()  # Count existing hikes
+    global hikeno = counthikes()  # Count existing hikes
     sincelast = 43201  # Forced in order to bypass timesincehike
     # sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
     if(sincelast > 43200):  # determine whether to create new hike entry or continue on last hike
         # create new hike folder
         print('creating new hike:')
         folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-        os.makedirs(dir + folder)
-        # Create csv file and write header
-        folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-        csvfile = dir + folder + 'meta.csv'
+        global dir = dir + folder
+        os.makedirs(dir)
+
+        #create meta csv file
+        csvfile = dir + 'meta.csv'
         with open(csvfile, 'a') as meta:
             writer = csv.writer(meta)
             newrow = ["index", "time", "altitude"]
@@ -196,8 +196,9 @@ def main():
         photono = timesincehike(hikeno)[1] + 1  # TODO: fix
         blink(LED_AMBER, 2, 0.2)
 
-    folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-
+    # folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
+    # global dir
+    
     # Loop Starts Here
     # =================================================
     while(True):
