@@ -138,7 +138,7 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
         time.sleep(0.2)
-        photoname = dir str(photono) + '_cam' + str(_camno) + '.jpg'
+        photoname = dir + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname))
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
@@ -198,7 +198,7 @@ def main():
 
     # folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
     # global dir
-    
+
     # Loop Starts Here
     # =================================================
     while(True):
