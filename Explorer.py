@@ -137,12 +137,12 @@ def camcapture(_cam, _camno):
             print("select cam 3")
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
-        time.sleep(0.2)
+        time.sleep(0.2) # moment for hardware to catch up
         global photono
         photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
-        print("SAVE TO: " + str(photoname))
+        print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print('cam', str(_camno), '- picture taken!')
+        print('  cam', str(_camno), '- picture taken!')
 
 
 # Write a row to csv file
