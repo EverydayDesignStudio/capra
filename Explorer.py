@@ -168,7 +168,7 @@ def main():
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
 
-
+    global photono
     photono = 0 # TODO: Should be removed later; was inserted to get program running
     global hikeno
     hikeno = counthikes()  # Count existing hikes
@@ -226,6 +226,7 @@ def main():
         writedata(photono, timestamp, altitude) # Write Metadata
 
         # Increase increment
+        global photono
         photono += 1
 
         # Blink on every fourth picture
