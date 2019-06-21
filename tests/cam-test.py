@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import time  # For time keeping
 import picamera  # For interfacting with the PiCamera
 import RPi.GPIO as gpio  # For
@@ -71,8 +73,8 @@ def main():
 
     # Initialize camera object
     print('initializing camera')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
     time.sleep(0.1)
     cam = picamera.PiCamera()
     cam.resolution = RESOLUTION
@@ -81,3 +83,6 @@ def main():
     camcapture(cam, 1)
     camcapture(cam, 2)
     camcapture(cam, 3)
+
+if __name__ == "__main__":
+    main()
