@@ -59,8 +59,8 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
         time.sleep(0.2)
-        dir = '/home/pi/Desktop/cam-test'
-        photoname = dir + folder + 'cam' + str(_camno) + '.jpg'
+        dir = '/home/pi/Desktop/cam-tests/'
+        photoname = dir + 'cam' + str(_camno) + '.jpg'
         print(photoname)
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
