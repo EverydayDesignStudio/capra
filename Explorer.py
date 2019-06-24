@@ -21,7 +21,7 @@ import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
-BUTTON_PLAYPAUSE = 4
+BUTTON_PLAYPAUSE = 17
 SEL_1 = 22
 SEL_2 = 23
 LED_GREEN = 24
