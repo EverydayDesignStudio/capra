@@ -21,12 +21,13 @@ import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
-BUTTON_PLAYPAUSE = 17
-SEL_1 = 22
-SEL_2 = 23
-LED_GREEN = 24
-LED_BTM = 26
-LED_AMBER = 27
+BUTTON_PLAYPAUSE = 17 # BOARD - 11
+BUTTON_OFF = 25 # BOARD - 22
+SEL_1 = 22 # BOARD - 15
+SEL_2 = 23 # BOARD - 16
+LED_GREEN = 24 # BOARD - 18
+LED_BTM = 26 # BOARD - 37
+LED_AMBER = 27 # BOARD - 13
 
 
 # Get I2C bus
@@ -142,7 +143,7 @@ def camcapture(_cam, _camno):
         photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print '  cam', str(_camno), '- picture taken!'
+        print('  cam', str(_camno), '- picture taken!')
 
 
 # Write a row to csv file
