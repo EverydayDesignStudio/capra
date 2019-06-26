@@ -152,7 +152,7 @@ def create_or_continue_hike():
 
         # Create folder in harddrive to save photos
         hike_num = sql_controller.get_last_hike_id()
-        print('LATEST HIKE NUM IS NOW: {n}'.format(hike_num))
+        print('LATEST HIKE NUM IS NOW: {n}'.format(n=hike_num))
         folder = 'hike{n}/'.format(n=hike_num)
         os.makedirs(DIRECTORY + folder)
 
@@ -167,7 +167,7 @@ def create_or_continue_hike():
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_ctrl: SQLController):
-    print('select cam{n}'.format(cam_num))
+    print('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
         print('[selectcam] invalid cam number!')
     else:
@@ -217,7 +217,7 @@ def main():
     # Get values for hike
     sql_controller = SQLController(database=DB)
     hike_num = sql_controller.get_last_hike_id()
-    print('IN MAIN HIKE NUM IS NOW: {n}'.format(hike_num))
+    print('IN MAIN HIKE NUM IS NOW: {n}'.format(n=hike_num))
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
     # =================================================
