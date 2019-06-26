@@ -246,8 +246,8 @@ def main():
         timestamp = time.time()
 
         # Update the database with metadata
-        sql_controller.set_picture_time_altitude(time, altitude, hike_num, photo_index)
-        sql_controller.set_hike_endtime_picture_count(time, photo_index, hike_num)
+        sql_controller.set_picture_time_altitude(timestamp, altitude, hike_num, photo_index)
+        sql_controller.set_hike_endtime_picture_count(timestamp, photo_index, hike_num)
 
         # Increase increment
         photo_index += 1
