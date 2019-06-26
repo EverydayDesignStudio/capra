@@ -8,7 +8,7 @@ from sql_controller import SQLController
 DB = '/Volumes/Capra/capra-storage/capra_explorer.db'
 DB_EMPTY = '/Volumes/Capra/capra-storage/capra_explorer_empty.db'
 
-controller = SQLController(database=DB)
+controller = SQLController(database=DB_EMPTY)
 
 
 def test_get_hike_count():
@@ -23,7 +23,7 @@ def test_get_last_hike_id():
     # assert hike_id == 5, 'Should be 5'
 
 
-def test_get_last_time():
+def test_get_last_hike_time():
     val = controller.get_time_since_last_hike()
     print('Last time: {t}'.format(t=val))
 
@@ -50,7 +50,7 @@ def test_create_new_picture():
 
 if __name__ == "__main__":
     # test_get_hike_count()
-    # test_get_last_time()
-    test_get_last_hike_id()
+    test_get_last_hike_time()
+    # test_get_last_hike_id()
 
     print('Everything passed')

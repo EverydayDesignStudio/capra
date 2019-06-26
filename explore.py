@@ -145,8 +145,8 @@ def create_or_continue_hike():
     sql_controller = SQLController(database=DB)
     time_since_last_hike = sql_controller.get_time_since_last_hike()
 
-    # Create a new hike
-    if (time_since_last_hike > NEW_HIKE_TIME):
+    # Create a new hike; -1 indicates this is the first hike in db
+    if time_since_last_hike > NEW_HIKE_TIME or time_since_last_hike == -1:
         print('Creating new hike:')
         sql_controller.create_new_hike()
 

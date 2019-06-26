@@ -246,7 +246,7 @@ class SQLController:
 
         # First hike on camera won't have a time to return yet
         if row is None:
-            return 0
+            return -1
         else:
             last_time = row[0]
             current_time = time.time()
