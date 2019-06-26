@@ -224,11 +224,20 @@ class SQLController:
         all_rows = cursor.fetchall()
         return self._build_hike_from_row(all_rows[0])
 
+    # Explorer
+    # --------------------------------------------------------------------------
     def get_hike_count(self) -> int:
         return self._get_num_from_statement(self.statements.select_hike_count())
 
     def get_last_hike_id(self) -> int:
-        return self._get_num_from_statement(self.statements.select_last_hike_id())
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_last_hike_id())
+        row = cursor.fetchone()
+
+        if row is None:
+            return 0
+        else:
+            return row[0]
 
     def get_time_since_last_hike(self) -> float:
         cursor = self.connection.cursor()
@@ -248,6 +257,7 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_last_photo_index_of_hike(hike_id))
         row = cursor.fetchone()
+
         # A new hike won't have an index to return yet, hence it will be null
         if row is None:
             return 0

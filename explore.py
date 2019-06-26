@@ -152,6 +152,7 @@ def create_or_continue_hike():
 
         # Create folder in harddrive to save photos
         hike_num = sql_controller.get_last_hike_id()
+        print('LATEST HIKE NUM IS NOW: {n}'.format(hike_num))
         folder = 'hike{n}/'.format(n=hike_num)
         os.makedirs(DIRECTORY + folder)
 
@@ -164,8 +165,7 @@ def create_or_continue_hike():
         # photono = timesincehike(hikeno)[1] + 1  # TODO: fix
 
 
-# For Selecting Cam and taking + saving a picture
-# TODO -- this should also create a new row in the db? or jsut update it?
+# Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_ctrl: SQLController):
     print('select cam{n}'.format(cam_num))
     if cam_num < 1 or cam_num > 3:
@@ -196,13 +196,12 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
 
 
 # Write a row to csv file
-# TODO -- update row of DB, this should be in SQL_Controller
-def writedata(index, timestamp, altitude):
-    with open(dir + folder + 'meta.csv', 'a') as meta:
-        writer = csv.writer(meta)
-        newrow = [index, timestamp, altitude]
-        print(newrow)
-        writer.writerow(newrow)
+# def writedata(index, timestamp, altitude):
+#     with open(dir + folder + 'meta.csv', 'a') as meta:
+#         writer = csv.writer(meta)
+#         newrow = [index, timestamp, altitude]
+#         print(newrow)
+#         writer.writerow(newrow)
 
 
 def main():
@@ -218,6 +217,7 @@ def main():
     # Get values for hike
     sql_controller = SQLController(database=DB)
     hike_num = sql_controller.get_last_hike_id()
+    print('IN MAIN HIKE NUM IS NOW: {n}'.format(hike_num))
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
     # =================================================
