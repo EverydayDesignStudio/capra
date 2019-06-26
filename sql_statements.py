@@ -191,11 +191,6 @@ class SQLStatements:
             ({h}, {p})'.format(h=hike_id, p=photo_index)
         return statement
 
-    # TODO -- finish
-    def update_hike(self, hike_id: float) -> str:
-        statement = ''
-        return statement
-
     def update_picture_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int) -> str:
         # Only difference between statements is cameraX=
         if cam_num == 1:

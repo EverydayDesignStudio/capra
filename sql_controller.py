@@ -231,10 +231,18 @@ class SQLController:
         return self._get_num_from_statement(self.statements.select_last_hike_id())
 
     def get_time_since_last_hike(self) -> float:
-        last_time = self._get_num_from_statement(self.statements.select_last_hike_end_time())
-        current_time = time.time()
-        time_since = current_time - last_time
-        return round(time_since, 0)
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_last_hike_end_time())
+        row = cursor.fetchone()
+
+        # First hike on camera won't have a time to return yet
+        if row is None:
+            return 0
+        else:
+            last_time = row[0]
+            current_time = time.time()
+            time_since = current_time - last_time
+            return round(time_since, 0)
 
     def get_last_photo_index_of_hike(self, hike_id: int) -> int:
         cursor = self.connection.cursor()

@@ -15,7 +15,7 @@ import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
 import RPi.GPIO as gpio
 
-is_RPi = False
+is_RPi = True
 if is_RPi:
     DB = '/home/pi/capra-storage/capra_explorer.db'
     DIRECTORY = '/home/pi/capra-storage/'
