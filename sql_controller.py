@@ -1,6 +1,7 @@
 # Controller to handle UI talking with the SQLite database
 
 import sqlite3
+import time
 from capra_data_types import Picture, Hike
 from sql_statements import SQLStatements
 
@@ -19,7 +20,7 @@ class SQLController:
         return picture
 
     def _build_hike_from_row(self, row: list) -> Hike:
-        hike = Hike(hike_id=row[0], average_altitude=row[1], average_color=row[2], start_time=row[3], 
+        hike = Hike(hike_id=row[0], average_altitude=row[1], average_color=row[2], start_time=row[3],
                     end_time=row[4], pictures_num=row[5])
         return hike
 
@@ -29,6 +30,12 @@ class SQLController:
         all_rows = cursor.fetchall()
         picture = self._build_picture_from_row(all_rows[0])
         return picture
+
+    def _get_num_from_statement(self, statement: str):
+        cursor = self.connection.cursor()
+        cursor.execute(statement)
+        row = cursor.fetchone()
+        return row[0]
 
     # Time - across hikes
     def get_first_time_picture(self) -> Picture:
@@ -201,6 +208,7 @@ class SQLController:
             return self._build_picture_from_row(all_rows[0])
 
     # Hikes
+    # --------------------------------------------------------------------------
     def get_size_of_hike(self, current_picture: Picture) -> int:
         cursor = self.connection.cursor()
         h = current_picture.hike_id
@@ -215,3 +223,51 @@ class SQLController:
         cursor.execute(self.statements.select_hike_by_id(hike_id=h))
         all_rows = cursor.fetchall()
         return self._build_hike_from_row(all_rows[0])
+
+    def get_hike_count(self) -> int:
+        return self._get_num_from_statement(self.statements.select_hike_count())
+
+    def get_last_hike_id(self) -> int:
+        return self._get_num_from_statement(self.statements.select_last_hike_id())
+
+    def get_time_since_last_hike(self) -> float:
+        last_time = self._get_num_from_statement(self.statements.select_last_hike_end_time())
+        current_time = time.time()
+        time_since = current_time - last_time
+        return round(time_since, 0)
+
+    def get_last_photo_index_of_hike(self, hike_id: int) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_last_photo_index_of_hike(hike_id))
+        row = cursor.fetchone()
+        # A new hike won't have an index to return yet, hence it will be null
+        if row is None:
+            return 0
+        else:
+            return row[0]
+
+    def create_new_hike(self):
+        cursor = self.connection.cursor()
+        t = time.time()
+        cursor.execute(self.statements.insert_new_hike(t))
+        self.connection.commit()
+
+    def create_new_picture(self, hike_id: int, photo_index: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.insert_new_picture(hike_id, photo_index))
+        self.connection.commit()
+
+    def set_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_picture_image_path(cam_num, path, hike_id, photo_index))
+        self.connection.commit()
+
+    def set_picture_time_altitude(self, timestamp: float, altitude: float, hike_id: int, photo_index: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_picture_time_altitude(timestamp, altitude, hike_id, photo_index))
+        self.connection.commit()
+
+    def set_hike_endtime_picture_count(self, timestamp: float, count: int, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hike_endtime_picture_count(timestamp, count, hike_id))
+        self.connection.commit()

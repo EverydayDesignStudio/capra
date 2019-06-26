@@ -9,6 +9,8 @@ class SQLStatements:
             index_in_hike={index}'.format(id=hike_id, index=index_in_hike)
         return statement
 
+    # Projector
+    # --------------------------------------------------------------------------
     # ********************     Time     ********************
 
     # Time - first & last across hikes
@@ -159,4 +161,66 @@ class SQLStatements:
 
     def select_hike_by_id(self, hike_id: float) -> str:
         statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
+        return statement
+
+    # Explorer
+    # --------------------------------------------------------------------------
+    def select_hike_count(self) -> str:
+        statement = 'SELECT count(*) FROM hikes'
+        return statement
+
+    def select_last_hike_id(self) -> str:
+        statement = 'SELECT hike_id FROM hikes ORDER BY hike_id DESC LIMIT 1'
+        return statement
+
+    def select_last_hike_end_time(self) -> str:
+        statement = 'SELECT end_time FROM hikes ORDER BY end_time DESC LIMIT 1'
+        return statement
+
+    def select_last_photo_index_of_hike(self, hike_id: int) -> str:
+        statement = 'SELECT index_in_hike FROM pictures WHERE hike={n} \
+            ORDER BY index_in_hike DESC LIMIT 1'.format(n=hike_id)
+        return statement
+
+    def insert_new_hike(self, time: float) -> str:
+        statement = 'INSERT INTO hikes(start_time) VALUES({t})'.format(t=time)
+        return statement
+
+    def insert_new_picture(self, hike_id: int, photo_index: int) -> str:
+        statement = 'INSERT INTO pictures(hike, index_in_hike) VALUES \
+            ({h}, {p})'.format(h=hike_id, p=photo_index)
+        return statement
+
+    # TODO -- finish
+    def update_hike(self, hike_id: float) -> str:
+        statement = ''
+        return statement
+
+    def update_picture_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int) -> str:
+        # Only difference between statements is cameraX=
+        if cam_num == 1:
+            statement = 'UPDATE pictures SET camera1="{p}", updated_date_time=datetime() \
+                WHERE hike={h} AND index_in_hike={i} \
+                    '.format(p=path, h=hike_id, i=photo_index)
+        elif cam_num == 2:
+            statement = 'UPDATE pictures SET camera2="{p}", updated_date_time=datetime() \
+                WHERE hike={h} AND index_in_hike={i} \
+                    '.format(p=path, h=hike_id, i=photo_index)
+        elif cam_num == 3:
+            statement = 'UPDATE pictures SET camera3="{p}", updated_date_time=datetime() \
+                WHERE hike={h} AND index_in_hike={i} \
+                    '.format(p=path, h=hike_id, i=photo_index)
+        else:
+            raise Exception('cam_num should be 1, 2, or 3. The value was: {n}'.format(n=cam_num))
+
+        return statement
+
+    def update_picture_time_altitude(self, timestamp: float, altitude: float, hike_id: int, photo_index: int) -> str:
+        statement = 'UPDATE pictures SET time={t}, altitude={a}, updated_date_time=datetime() \
+            WHERE hike={h} AND index_in_hike={p}'.format(t=timestamp, a=altitude, h=hike_id, p=photo_index)
+        return statement
+
+    def update_hike_endtime_picture_count(self, timestamp: float, count: int, hike_id: int) -> str:
+        statement = 'UPDATE hikes SET end_time={t}, pictures={c}, updated_date_time=datetime() WHERE hike_id={h} \
+            '.format(t=timestamp, c=count, h=hike_id)
         return statement
