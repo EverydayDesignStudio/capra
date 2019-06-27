@@ -1,7 +1,7 @@
 import time
 import shared
 import RPi.GPIO as gpio
-from threading import Thread
+
 
 shared.init() # initialize shared variables
 BUTTON_PLAYPAUSE = 17 # BOARD - 11
@@ -22,10 +22,11 @@ class Button:
             try:
                 print("waiting")
                 gpio.wait_for_edge(self.BUTTON, gpio.RISING)
-                STATUS = not STATUS
+                global pause
+                pause = not pause
                 print("=====================")
             except:
-                pass
+                print("~~~~ encountered error")
 
 
 

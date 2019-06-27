@@ -41,7 +41,6 @@ LED_AMBER = 27 # BOARD - 13
 
 # Initialize shared variables
 # shared.init()
-global pause
 pause = False
 
 
@@ -187,7 +186,7 @@ def main():
 
 
     # Start threading interrupt for Play/pause button
-    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE, pause) # Create class
+    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE) # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run) # Create Thread
     PP_THREAD.start() # Start Thread
 
