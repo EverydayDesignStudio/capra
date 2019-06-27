@@ -229,6 +229,7 @@ def main():
     while(True):
         while(shared.pause):
             print(">>PAUSED!<<")
+            blink(LED_BTM, 2, 0.2)
             time.sleep(1)
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
