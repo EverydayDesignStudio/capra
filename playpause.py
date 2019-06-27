@@ -8,13 +8,14 @@ BUTTON_PLAYPAUSE = 17 # BOARD - 11
 gpio.setmode(gpio.BCM)
 gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
-while(True):
-    try:
-        print("waiting for edge")
-        gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
-        shared.pause = not shared.pause
-        print("pause = ", shared.pause)
-        time.wait(0.5)
+def interrupt():
+    while(True):
+        try:
+            print("waiting for edge")
+            gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
+            shared.pause = not shared.pause
+            print("pause = ", shared.pause)
+            time.wait(0.5)
 
-    except KeyboardInterrupt:
-        print("Interrupted")
+        except KeyboardInterrupt:
+            print("Interrupted")
