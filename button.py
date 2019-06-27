@@ -19,7 +19,7 @@ class Button:
 
     def run(self):
         while self._running:
-            print("waiting")
+            print("=========Interrupt Start==========")
             gpio.wait_for_edge(self.BUTTON, gpio.RISING)
             shared.pause = not shared.pause
             print("Pause = ", shared.pause)
