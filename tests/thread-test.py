@@ -3,8 +3,10 @@ from threading import Thread
 import time
 import RPi.GPIO as gpio
 
+BUTTON_PLAYPAUSE = 17 # BOARD - 11
+
 gpio.setmode(gpio.BCM)
-gpio.setup(17, gpio.IN)
+gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
 
 global cycle
@@ -21,10 +23,13 @@ class Hello5Program:
     def run(self):
         global cycle
         while self._running:
-            gpio.wait_for_edge(17, gpio.RISING)
-            status = not status
-            print("=====================")
-            time.wait(2)
+            try:
+                gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
+                status = not status
+                print("=====================")
+                time.wait(2)
+            except:
+                pass
 
 class Hello2Program:
     def __init__(self):
