@@ -2,8 +2,7 @@
 
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
-# =================================================
-
+# ------------------------------------------------------------------------------
 
 # Import Modules
 import os  # used for counting folders and creating new folders
@@ -59,15 +58,6 @@ NEW_HIKE_TIME = 21600  # 6 hours
 # NEW_HIKE_TIME = 10800  # 3 hours
 
 
-# For determining whether a row in a CSV is the last row
-# def isLast(itr):
-#     old = itr.next()
-#     for new in itr:
-#         yield False, old
-#         old = new
-#     yield True, old
-
-
 # For blinking LEDs
 def blink(pin, repeat, interval):
     on = False
@@ -80,45 +70,6 @@ def blink(pin, repeat, interval):
         time.sleep(interval)
         gpio.output(pin, off)
         time.sleep(interval)
-
-
-# Counts previous hikes
-# def counthikes():
-#     print('counthikes() - Counting previous hikes')
-#     print('======================================')
-#     number = 1
-#     for file in os.listdir(dir):
-#         if file.startswith('hike'):
-#             number = number + 1
-#             print('{f} is instance {n}'.format(f=file, n=number))
-#             print('new hike is number: {n}'.format(n=number))
-#     return number
-
-
-# For determining the time the most recent hike ended
-# TODO: check and fix
-# def timesincehike(_hikeno):
-#     print('timesincehike()')
-#     print('===============')
-#     csvfile = dir + 'hike' + str(_hikeno) + '/' 'meta.csv'
-#     print('reading from ', csvfile)
-#     timesince = 0
-#     lasthikephoto = 0
-#     lasthikedate = 0
-#     with open(csvfile, 'r') as meta:
-#         reader = csv.reader(meta)
-#         for row in reversed(list(reader)):
-#             print("=-=-=-=-=-=-=-=-=-=-")
-#             print(row)
-#             break
-#         lasthikedate = float(row[1])
-#         lasthikephoto = int(row[0])
-#         print(lasthikedate, "  =  ", lasthikephoto)
-#         print('last hike ended at: ', str(lasthikedate))
-#         # check if the last hike started less than half a day ago
-#         timesince = time.time() - lasthikedate
-#     print('time since last: ', str(timesince))
-#     return timesince, lasthikephoto
 
 
 # Blink status lights on the camera
@@ -152,7 +103,6 @@ def create_or_continue_hike():
 
         # Create folder in harddrive to save photos
         hike_num = sql_controller.get_last_hike_id()
-        print('LATEST HIKE NUM IS NOW: {n}'.format(n=hike_num))
         folder = 'hike{n}/'.format(n=hike_num)
         os.makedirs(DIRECTORY + folder)
 
@@ -160,16 +110,13 @@ def create_or_continue_hike():
     else:
         print('Continuing last hike:')
         blink(LED_AMBER, 2, 0.2)
-        # retrieve last photo number
-        # hikeno -= 1
-        # photono = timesincehike(hikeno)[1] + 1  # TODO: fix
 
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_ctrl: SQLController):
     print('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
-        print('[selectcam] invalid cam number!')
+        raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
     else:
         if cam_num == 1:
             gpio.output(SEL_1, False)
@@ -195,33 +142,18 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         print('cam {c} -- picture taken!'.format(c=cam_num))
 
 
-# Write a row to csv file
-# def writedata(index, timestamp, altitude):
-#     with open(dir + folder + 'meta.csv', 'a') as meta:
-#         writer = csv.writer(meta)
-#         newrow = [index, timestamp, altitude]
-#         print(newrow)
-#         writer.writerow(newrow)
-
-
 def main():
     hello_blinks()
     pi_cam = initialize_picamera()
     create_or_continue_hike()
 
-    # photono = 0  # Should be removed later; was inserted to get program running - shouldn't need it
-    # hikeno = counthikes()  # Count existing hikes
-    # sincelast = 43201  # Forced in order to bypass timesincehike
-    # sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
-
     # Get values for hike
     sql_controller = SQLController(database=DB)
     hike_num = sql_controller.get_last_hike_id()
-    print('IN MAIN HIKE NUM IS NOW: {n}'.format(n=hike_num))
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
-    # =================================================
     # Start the time lapse
+    # --------------------------------------------------------------------------
     while(True):
         photo_index += 1  # new picture, so increment photo index
         timestamp = time.time()
@@ -243,14 +175,14 @@ def main():
         data = bus.read_i2c_block_data(0x60, 0x00, 6)
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = round(tHeight / 16.0, 2)
-
+        # Update the time
         timestamp = time.time()
 
-        # Update the database with metadata
+        # Update the database with metadata for picture & hike
         sql_controller.set_picture_time_altitude(timestamp, altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(timestamp, photo_index, hike_num)
 
-        # Increase increment
+        # Prepare for next picture
         photo_index += 1
 
         # Blink on every fourth picture
