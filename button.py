@@ -22,7 +22,8 @@ class Button:
             print("waiting")
             gpio.wait_for_edge(self.BUTTON, gpio.RISING)
             shared.pause = not shared.pause
-            print("=====================")
+            print("Pause = ", shared.pause)
+            time.sleep(0.5)
             # except:
             #     print("~~~~ encountered error")
 
