@@ -2,8 +2,8 @@
 
 import sqlite3
 import time
-from capra_data_types import Picture, Hike
-from sql_statements import SQLStatements
+from classes.capra_data_types import Picture, Hike
+from classes.sql_statements import SQLStatements
 
 
 class SQLController:

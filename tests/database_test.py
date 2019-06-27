@@ -2,8 +2,9 @@
 
 import os
 import sys
+import time
 sys.path.append('..')
-from sql_controller import SQLController
+from classes.sql_controller import SQLController
 
 DB = '/Volumes/Capra/capra-storage/capra_explorer.db'
 DB_EMPTY = '/Volumes/Capra/capra-storage/capra_explorer_empty.db'
@@ -45,7 +46,8 @@ def test_create_new_hike():
 
 
 def test_create_new_picture():
-    controller.create_new_picture(5, 25)
+    t = time.time()
+    controller.create_new_picture(t, 5, 25)
 
 
 if __name__ == "__main__":
