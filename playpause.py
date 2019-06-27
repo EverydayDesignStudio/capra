@@ -14,6 +14,7 @@ while(True):
         gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
         shared.pause = not shared.pause
         print("pause = ", shared.pause)
+        time.wait(0.5)
 
     except KeyboardInterrupt:
         print("Interrupted")
