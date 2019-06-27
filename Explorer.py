@@ -23,9 +23,9 @@ import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 import shared # For shared variables between main code and button interrupts
 import playpause # Play/Pause button interrupt
 
-
-playpause.interrupt()
-print("interrupt happening")
+#  TODO: implement threading for interrupt
+# playpause.interrupt()
+# print("interrupt happening")
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
