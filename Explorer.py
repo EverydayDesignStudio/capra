@@ -18,6 +18,7 @@ import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
+from button import Button  # for threading interrupts for button presses
 
 # Import Capra scripts and Variables
 import shared # For shared variables between main code and button interrupts
@@ -38,7 +39,9 @@ LED_BTM = 26 # BOARD - 37
 LED_AMBER = 27 # BOARD - 13
 
 # Initialize shared variables
-shared.init()
+# shared.init()
+global pause
+pause = False
 
 
 # Get I2C bus
@@ -180,6 +183,13 @@ def main():
     time.sleep(0.1)
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
+
+
+    # Start threading interrupt for Play/pause button
+    PP_INTERRUPT = Playpause(BUTTON_PLAYPAUSE, pause) # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run) # Create Thread
+    PP_THREAD.start() # Start Thread
+
 
     global photono
     photono = 0 # TODO: Should be removed later; was inserted to get program running
