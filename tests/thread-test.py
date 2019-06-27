@@ -23,6 +23,8 @@ class Hello5Program:
         while self._running:
             gpio.wait_for_edge(17, gpio.RISING)
             status = not status
+            print("=====================")
+            time.wait(2)
 
 class Hello2Program:
     def __init__(self):
