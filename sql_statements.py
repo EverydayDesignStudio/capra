@@ -183,12 +183,12 @@ class SQLStatements:
         return statement
 
     def insert_new_hike(self, time: float) -> str:
-        statement = 'INSERT INTO hikes(start_time) VALUES({t})'.format(t=time)
+        statement = 'INSERT INTO hikes(start_time, end_time, pictures) VALUES({t}, {t}, 0)'.format(t=time)
         return statement
 
-    def insert_new_picture(self, hike_id: int, photo_index: int) -> str:
-        statement = 'INSERT INTO pictures(hike, index_in_hike) VALUES \
-            ({h}, {p})'.format(h=hike_id, p=photo_index)
+    def insert_new_picture(self, time: float, hike_id: int, photo_index: int) -> str:
+        statement = 'INSERT INTO pictures(time, hike, index_in_hike) VALUES \
+            ({t}, {h}, {p})'.format(t=time, h=hike_id, p=photo_index)
         return statement
 
     def update_picture_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int) -> str:
@@ -210,13 +210,13 @@ class SQLStatements:
 
         return statement
 
-    def update_picture_time_altitude(self, timestamp: float, altitude: float, hike_id: int, photo_index: int) -> str:
+    def update_picture_time_altitude(self, time: float, altitude: float, hike_id: int, photo_index: int) -> str:
         statement = 'UPDATE pictures SET time={t}, altitude={a}, updated_date_time=datetime() \
-            WHERE hike={h} AND index_in_hike={p}'.format(t=timestamp, a=altitude, h=hike_id, p=photo_index)
+            WHERE hike={h} AND index_in_hike={p}'.format(t=time, a=altitude, h=hike_id, p=photo_index)
         print(statement)
         return statement
 
-    def update_hike_endtime_picture_count(self, timestamp: float, count: int, hike_id: int) -> str:
+    def update_hike_endtime_picture_count(self, time: float, count: int, hike_id: int) -> str:
         statement = 'UPDATE hikes SET end_time={t}, pictures={c}, updated_date_time=datetime() WHERE hike_id={h} \
-            '.format(t=timestamp, c=count, h=hike_id)
+            '.format(t=time, c=count, h=hike_id)
         return statement

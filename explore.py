@@ -224,7 +224,8 @@ def main():
     # Start the time lapse
     while(True):
         photo_index += 1  # new picture, so increment photo index
-        sql_controller.create_new_picture(hike_num, photo_index)
+        timestamp = time.time()
+        sql_controller.create_new_picture(timestamp, hike_num, photo_index)
 
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
