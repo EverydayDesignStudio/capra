@@ -23,6 +23,7 @@ class Hello5Program:
 
     def run(self):
         global cycle
+        global status
         while self._running:
             try:
                 print("waiting")
@@ -42,6 +43,7 @@ class Hello2Program:
 
     def run(self):
         global cycle
+        global status
         while self._running:
             print(status)
             time.sleep(1)
