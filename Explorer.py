@@ -22,7 +22,7 @@ from button import Button  # for threading interrupts for button presses
 
 # Import Capra scripts and Variables
 import shared # For shared variables between main code and button interrupts
-import playpause # Play/Pause button interrupt
+
 
 #  TODO: implement threading for interrupt
 # playpause.interrupt()
