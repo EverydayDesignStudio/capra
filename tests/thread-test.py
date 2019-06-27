@@ -28,7 +28,7 @@ class Hello5Program:
                 gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
                 status = not status
                 print("=====================")
-                time.wait(2)
+                time.sleep(2)
             except:
                 pass
 
@@ -43,7 +43,7 @@ class Hello2Program:
         global cycle
         while self._running:
             print(status)
-            time.wait(1)
+            time.sleep(1)
 
 #Create Class
 FiveSecond = Hello5Program()
