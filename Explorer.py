@@ -14,6 +14,7 @@ import os  # For counting folders and creating new folders
 import csv  # For saving and reading information in/from CSV files
 import time  # For time keeping
 import smbus  # For interfacing over I2C with the altimeter
+import shared # For shared variables between main code and button interrupts
 import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
@@ -28,6 +29,9 @@ SEL_2 = 23 # BOARD - 16
 LED_GREEN = 24 # BOARD - 18
 LED_BTM = 26 # BOARD - 37
 LED_AMBER = 27 # BOARD - 13
+
+# Initialize shared variables
+shared.init()
 
 
 # Get I2C bus
