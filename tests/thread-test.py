@@ -11,7 +11,7 @@ global cycle
 cycle = 0.0
 status = False
 
-class interrupt:
+class Hello5Program:
     def __init__(self):
         self._running = True
 
