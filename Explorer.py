@@ -19,6 +19,7 @@ import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
 from button import Button  # for threading interrupts for button presses
+from threading import Thread
 
 # Import Capra scripts and Variables
 import shared # For shared variables between main code and button interrupts
