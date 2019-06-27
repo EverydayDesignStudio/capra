@@ -14,11 +14,18 @@ import os  # For counting folders and creating new folders
 import csv  # For saving and reading information in/from CSV files
 import time  # For time keeping
 import smbus  # For interfacing over I2C with the altimeter
-import shared # For shared variables between main code and button interrupts
 import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
+
+# Import Capra scripts and Variables
+import shared # For shared variables between main code and button interrupts
+import playpause # Play/Pause button interrupt
+
+
+playpause.interrupt()
+print("interrupt happening")
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
