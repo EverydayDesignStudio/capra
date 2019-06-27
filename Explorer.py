@@ -227,6 +227,9 @@ def main():
     # Loop Starts Here
     # =================================================
     while(True):
+        while(shared.pause):
+            print(">>PAUSED!<<")
+            time.sleep(1)
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
         # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
@@ -237,10 +240,6 @@ def main():
         camcapture(cam, 1)
         camcapture(cam, 2)
         camcapture(cam, 3)
-
-        while(shared.pause):
-            print(">>PAUSED!<<")
-            time.sleep(1)
 
         # MPL3115A2 address, 0x60(96)
         # Read data back from 0x00(00), 6 bytes
