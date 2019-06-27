@@ -10,7 +10,7 @@ gpio.setmode(gpio.BCM)
 gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
 class Button:
-    def __init__(self, BUTTON, STATUS):
+    def __init__(self, BUTTON):
         self._running = True
         self.BUTTON = BUTTON
 
