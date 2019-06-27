@@ -239,7 +239,7 @@ def main():
         camcapture(cam, 3)
 
         while(shared.pause):
-            println(">>PAUSED!<<")
+            print(">>PAUSED!<<")
             time.sleep(1)
 
         # MPL3115A2 address, 0x60(96)
