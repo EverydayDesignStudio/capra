@@ -238,6 +238,10 @@ def main():
         camcapture(cam, 2)
         camcapture(cam, 3)
 
+        while(shared.pause):
+            println(">>PAUSED!<<")
+            time.sleep(1)
+
         # MPL3115A2 address, 0x60(96)
         # Read data back from 0x00(00), 6 bytes
         # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
