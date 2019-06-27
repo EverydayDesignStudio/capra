@@ -4,7 +4,7 @@
 def init():
     print("Initializing shared variables")
     global pause
-    pause = False
+    pause = True
 
     global shutdown
     shutdown = False
