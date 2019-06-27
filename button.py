@@ -9,31 +9,25 @@ BUTTON_PLAYPAUSE = 17 # BOARD - 11
 gpio.setmode(gpio.BCM)
 gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
-class Playpause:
-    def __init__(self):
+class Button:
+    def __init__(self, BUTTON, STATUS):
         self._running = True
+        self.BUTTON = BUTTON
 
     def terminate(self):
         self._running = False
 
     def run(self):
-        global pause
         while self._running:
             try:
                 print("waiting")
-                gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
-                status = not status
+                gpio.wait_for_edge(self.BUTTON, gpio.RISING)
+                STATUS = not STATUS
                 print("=====================")
-                time.sleep(2)
             except:
                 pass
 
-#Create Class
-PP_INTERRUPT = Playpause()
-#Create Thread
-PP_THREAD = Thread(target=PP_INTERRUPT.run)
-#Start Thread
-PP_THREAD.start()
+
 
 
 
