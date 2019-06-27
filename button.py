@@ -19,14 +19,13 @@ class Button:
 
     def run(self):
         while self._running:
-            try:
-                print("waiting")
-                gpio.wait_for_edge(self.BUTTON, gpio.RISING)
-                global pause
-                pause = not pause
-                print("=====================")
-            except:
-                print("~~~~ encountered error")
+            print("waiting")
+            gpio.wait_for_edge(self.BUTTON, gpio.RISING)
+            global pause
+            pause = not pause
+            print("=====================")
+            # except:
+            #     print("~~~~ encountered error")
 
 
 
