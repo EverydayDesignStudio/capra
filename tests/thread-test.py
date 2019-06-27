@@ -11,6 +11,7 @@ gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
 global cycle
 cycle = 0.0
+global status
 status = False
 
 class Hello5Program:
