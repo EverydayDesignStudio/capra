@@ -10,9 +10,9 @@ gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
 
 try:
 print("waiting for edge")
-  gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
-  shared.pause != shared.pause
-  print("pause = ", shared.pause)
+    gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
+    shared.pause != shared.pause
+    print("pause = ", shared.pause)
 
 except KeyboardInterrupt:
-  print("Interrupted")
+    print("Interrupted")
