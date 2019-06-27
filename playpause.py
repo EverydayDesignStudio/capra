@@ -1,6 +1,7 @@
 import time
 import shared
 import RPi.GPIO as gpio
+from threading import Thread
 
 shared.init() # initialize shared variables
 BUTTON_PLAYPAUSE = 17 # BOARD - 11
