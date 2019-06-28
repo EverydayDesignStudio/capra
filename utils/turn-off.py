@@ -5,7 +5,7 @@ import time
 import RPi.GPIO as gpio
 
 
-BUTTON_OFF = 3 #25 # BOARD - 22
+BUTTON_OFF = 25 # BOARD - 22
 
 
 gpio.setmode(gpio.BCM)
