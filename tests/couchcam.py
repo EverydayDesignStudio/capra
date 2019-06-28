@@ -17,31 +17,19 @@ import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
-
-from button import Button  # for threading interrupts for button presses
-from threading import Thread
-
-# Import Capra scripts and Variables
+from threading import Thread  # For threading processes
 import shared # For shared variables between main code and button interrupts
 
 
-#  TODO: implement threading for interrupt
-# playpause.interrupt()
-# print("interrupt happening")
-
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
-BUTTON_PLAYPAUSE = 17 # BOARD - 11
+BUTTON_PLAY = 17 # BOARD - 11
 BUTTON_OFF = 25 # BOARD - 22
 SEL_1 = 22 # BOARD - 15
 SEL_2 = 23 # BOARD - 16
-LED_GREEN = 24 # BOARD - 18
-LED_BTM = 26 # BOARD - 37
-LED_AMBER = 27 # BOARD - 13
-
-# Initialize shared variables
-# shared.init()
-pause = False
+LED_GRN = 24 # BOARD - 18 (smaller LED at top of board)
+LED_RED = 26 # BOARD - 37 (smaller LED at top of board)
+LED_AMB = 27 # BOARD - 13 (larger LED at bottom of board)
 
 
 # Get I2C bus
@@ -52,16 +40,18 @@ bus = smbus.SMBus(1)
 gpio.setmode(gpio.BCM)
 gpio.setup(SEL_1, gpio.OUT)  # select 1
 gpio.setup(SEL_2, gpio.OUT)  # select 2
-gpio.setup(LED_GREEN, gpio.OUT)  # status led1
-gpio.setup(LED_AMBER, gpio.OUT)  # status led2
-gpio.setup(LED_BTM, gpio.OUT)  # status led3
+gpio.setup(LED_GRN, gpio.OUT)  # status led1
+gpio.setup(LED_AMB, gpio.OUT)  # status led2
+gpio.setup(LED_RED, gpio.OUT)  # status led3
+
 
 # Turn off LEDs
-gpio.output(LED_GREEN, True)
+gpio.output(LED_GRN, True)
 time.sleep(0.1)
-gpio.output(LED_AMBER, True)
+gpio.output(LED_AMB, True)
 time.sleep(0.1)
-gpio.output(LED_BTM, False)
+gpio.output(LED_RED, False)
+
 
 # Set Variables
 # TODO : variables are not updated / accesses correctly within main
@@ -70,6 +60,24 @@ RESOLUTION = (1280, 720)
 INTERVAL = 30
 # RESOLUTION = (720, 405)
 photono = 0
+
+
+#  Class Definitions
+class Button:
+    def __init__(self, BUTTON):
+        self._running = True
+        self.BUTTON = BUTTON
+
+    def terminate(self):
+        self._running = False
+
+    def run(self):
+        while self._running:
+            print("=========Interrupt Start==========")
+            gpio.wait_for_edge(self.BUTTON, gpio.RISING)
+            shared.pause = not shared.pause
+            print("PRESSED! >>>>>>>> Pause = ", shared.pause)
+            time.sleep(0.5)
 
 
 # Set Definitions
@@ -86,7 +94,7 @@ def isLast(itr):
 def blink(pin, repeat, interval):
     on = False
     off = True
-    if pin == LED_BTM:
+    if pin == LED_RED:
         on = True
         off = False
     for i in range(repeat):
@@ -172,9 +180,9 @@ def writedata(index, timestamp, altitude):
 
 def main():
     # Hello blinks
-    blink(LED_GREEN, 2, 0.1)
-    blink(LED_AMBER, 2, 0.1)
-    blink(LED_BTM, 2, 0.1)
+    blink(LED_GRN, 2, 0.1)
+    blink(LED_AMB, 2, 0.1)
+    blink(LED_RED, 2, 0.1)
 
 
     # Initialize camera object
@@ -187,7 +195,7 @@ def main():
 
 
     # Start threading interrupt for Play/pause button
-    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE) # Create class
+    PP_INTERRUPT = Button(BUTTON_PLAY) # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run) # Create Thread
     PP_THREAD.start() # Start Thread
 
@@ -213,24 +221,22 @@ def main():
             newrow = ["index", "time", "altitude"]
             print("HEADER ", newrow)
             writer.writerow(newrow)
-        blink(LED_GREEN, 2, 0.2)
+        blink(LED_GRN, 2, 0.2)
     else:
         # append to last hike
         print('continuing last hike:')
         # retrieve last photo number
         hikeno -= 1
         photono = timesincehike(hikeno)[1] + 1  # TODO: fix
-        blink(LED_AMBER, 2, 0.2)
+        blink(LED_AMB, 2, 0.2)
 
-    # folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-    # global dir
 
     # Loop Starts Here
     # =================================================
     while(True):
         while(shared.pause):
             print(">>PAUSED!<<")
-            blink(LED_BTM, 2, 0.2)
+            blink(LED_RED, 2, 0.2)
             time.sleep(1)
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
@@ -247,7 +253,6 @@ def main():
         # Read data back from 0x00(00), 6 bytes
         # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
         data = bus.read_i2c_block_data(0x60, 0x00, 6)
-
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = tHeight / 16.0
         timestamp = time.time()
@@ -259,8 +264,7 @@ def main():
 
         # Blink on every fourth picture
         if (photono % 4 == 0):
-            blink(LED_GREEN, 1, 0.1)
-            blink(LED_AMBER, 1, 0.1)
+            blink(LED_AMB, 1, 0.1)
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + INTERVAL):
