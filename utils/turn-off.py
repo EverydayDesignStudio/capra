@@ -18,7 +18,7 @@ while(True):
     gpio.wait_for_edge(BUTTON_OFF, gpio.RISING)
     timer = 0
     while(gpio.input(BUTTON_OFF)):
-        print("turning off in: ", str(20 - 1)
+        print("turning off in: ", str(20 - timer)
         timer += 1
         if (timer > 20):
             subprocess.call(['shutdown', '-h', 'now'], shell=False)
