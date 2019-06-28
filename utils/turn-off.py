@@ -13,5 +13,6 @@ gpio.setup(BUTTON_OFF, gpio.IN)
 
 
 while(True):
+    print("waiting for turnoff")
     gpio.wait_for_edge(BUTTON_OFF, gpio.RISING)
     print("Turning off pi")
