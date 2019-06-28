@@ -5,7 +5,7 @@
 #  / /__/ /_/ / /_/ / /  / /_/ /
 #  \___/\__,_/ .___/_/   \__,_/
 #           /_/
-#  Script to run on the Explorer camera unit. Takes pictures with
+#  Script to run on the Collector camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # =================================================
 
@@ -229,7 +229,7 @@ def main():
     while(True):
         while(shared.pause):
             print(">>PAUSED!<<")
-            blink(LED_BTM, 2, 0.2)
+            blink(LED_BTM, 1, 0.3)
             time.sleep(1)
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
