@@ -17,10 +17,12 @@ while(True):
     print("waiting for turnoff")
     gpio.wait_for_edge(BUTTON_OFF, gpio.RISING)
     timer = 0
+    duration = 10
     while(gpio.input(BUTTON_OFF)):
-        print("turning off in: ", str(20 - timer))
+        print("turning off in: ", str(duration - timer))
         timer += 1
-        if (timer > 20):
+        time.sleep(0.1)
+        if (timer > duration):
             gpio.output(LED_BTM, True)
-            time.wait(2)
+            time.sleep(2)
             subprocess.call(['shutdown', '-h', 'now'], shell=False)
