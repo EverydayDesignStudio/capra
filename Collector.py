@@ -47,6 +47,7 @@ bus = smbus.SMBus(1)
 
 
 # Initialize GPIO pins
+gpio.setwarnings(False)
 gpio.setmode(gpio.BCM)
 gpio.setup(SEL_1, gpio.OUT)  # select 1
 gpio.setup(SEL_2, gpio.OUT)  # select 2
