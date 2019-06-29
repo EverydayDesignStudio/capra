@@ -8,8 +8,8 @@
 import os  # used for counting folders and creating new folders
 import time  # for time keeping
 import datetime
-from capra_data_types import Picture, Hike
-from sql_controller import SQLController
+from classes.capra_data_types import Picture, Hike
+from classes.sql_controller import SQLController
 import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
 import RPi.GPIO as gpio
