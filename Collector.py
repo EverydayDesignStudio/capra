@@ -178,7 +178,7 @@ def main():
     print('initializing camera')
     gpio.output(SEL_1, False)
     gpio.output(SEL_2, False)
-    time.sleep(0.1)
+    time.sleep(0.2)
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
 
