@@ -62,6 +62,7 @@ gpio.output(LED_AMBER, True)
 time.sleep(0.1)
 gpio.output(LED_BTM, False)
 
+
 # Set Variables
 # TODO : variables are not updated / accesses correctly within main
 dir = '/home/pi/Desktop/pics/'
@@ -204,7 +205,7 @@ def main():
         dir = dir + folder
         os.makedirs(dir)
 
-        logname = 'log-hike' + srt(hikeno) + '.log'
+        logname = 'log-hike' + str(hikeno) + '.log'
         logging.basicConfig(filename=logname,level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
         logging.info('START')
 
