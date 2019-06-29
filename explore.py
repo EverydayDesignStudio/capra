@@ -179,9 +179,6 @@ def main():
         sql_controller.set_picture_time_altitude(timestamp, altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(timestamp, photo_index, hike_num)
 
-        # Prepare for next picture
-        photo_index += 1
-
         # Blink on every fourth picture
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
