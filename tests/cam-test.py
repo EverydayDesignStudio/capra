@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import time  # For time keeping
 import picamera  # For interfacting with the PiCamera
 import RPi.GPIO as gpio  # For
@@ -57,8 +59,8 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
         time.sleep(0.2)
-        dir = '/home/pi/Desktop/cam-test'
-        photoname = dir + folder + 'cam' + str(_camno) + '.jpg'
+        dir = '/home/pi/Desktop/cam-tests/'
+        photoname = dir + 'cam' + str(_camno) + '.jpg'
         print(photoname)
         _cam.capture(photoname)
         print('cam', str(_camno), '- picture taken!')
@@ -71,8 +73,8 @@ def main():
 
     # Initialize camera object
     print('initializing camera')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
     time.sleep(0.1)
     cam = picamera.PiCamera()
     cam.resolution = RESOLUTION
@@ -81,3 +83,6 @@ def main():
     camcapture(cam, 1)
     camcapture(cam, 2)
     camcapture(cam, 3)
+
+if __name__ == "__main__":
+    main()

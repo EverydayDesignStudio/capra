@@ -5,7 +5,7 @@
 #  / /__/ /_/ / /_/ / /  / /_/ /
 #  \___/\__,_/ .___/_/   \__,_/
 #           /_/
-#  Script to run on the Explorer camera unit. Takes pictures with
+#  Script to run on the Collector camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # =================================================
 
@@ -18,15 +18,30 @@ import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
 
+from button import Button  # for threading interrupts for button presses
+from threading import Thread
+
+# Import Capra scripts and Variables
+import shared # For shared variables between main code and button interrupts
+
+
+#  TODO: implement threading for interrupt
+# playpause.interrupt()
+# print("interrupt happening")
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
-BUTTON_PLAYPAUSE = 4
-SEL_1 = 22
-SEL_2 = 23
-LED_GREEN = 24
-LED_BTM = 26
-LED_AMBER = 27
+BUTTON_PLAYPAUSE = 17 # BOARD - 11
+BUTTON_OFF = 25 # BOARD - 22
+SEL_1 = 22 # BOARD - 15
+SEL_2 = 23 # BOARD - 16
+LED_GREEN = 24 # BOARD - 18
+LED_BTM = 26 # BOARD - 37
+LED_AMBER = 27 # BOARD - 13
+
+# Initialize shared variables
+# shared.init()
+pause = False
 
 
 # Get I2C bus
@@ -142,7 +157,7 @@ def camcapture(_cam, _camno):
         photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
         print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print '  cam', str(_camno), '- picture taken!'
+        print('  cam', str(_camno), '- picture taken!')
 
 
 # Write a row to csv file
@@ -168,6 +183,13 @@ def main():
     time.sleep(0.1)
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
+
+
+    # Start threading interrupt for Play/pause button
+    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE) # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run) # Create Thread
+    PP_THREAD.start() # Start Thread
+
 
     global photono
     photono = 0 # TODO: Should be removed later; was inserted to get program running
@@ -205,6 +227,10 @@ def main():
     # Loop Starts Here
     # =================================================
     while(True):
+        while(shared.pause):
+            print(">>PAUSED!<<")
+            blink(LED_BTM, 1, 0.3)
+            time.sleep(1)
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
         # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
