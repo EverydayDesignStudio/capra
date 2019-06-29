@@ -26,10 +26,6 @@ from threading import Thread
 import shared # For shared variables between main code and button interrupts
 
 
-#  TODO: implement threading for interrupt
-# playpause.interrupt()
-# print("interrupt happening")
-
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
 BUTTON_PLAYPAUSE = 17 # BOARD - 11
@@ -39,6 +35,7 @@ SEL_2 = 23 # BOARD - 16
 LED_GREEN = 24 # BOARD - 18
 LED_BTM = 26 # BOARD - 37
 LED_AMBER = 27 # BOARD - 13
+
 
 # Initialize shared variables
 # shared.init()
@@ -70,9 +67,6 @@ dir = '/home/pi/Desktop/pics/'
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
 photono = 0
-
-
-
 
 
 # Set Definitions
