@@ -3,11 +3,12 @@ import shared
 import RPi.GPIO as gpio
 
 
-shared.init() # initialize shared variables
-BUTTON_PLAYPAUSE = 17 # BOARD - 11
+shared.init()  # Initialize shared variables
+BUTTON_PLAYPAUSE = 17  # BOARD - 11
 
 gpio.setmode(gpio.BCM)
 gpio.setup(BUTTON_PLAYPAUSE, gpio.IN)
+
 
 class Button:
     def __init__(self, BUTTON):
@@ -24,22 +25,3 @@ class Button:
             shared.pause = not shared.pause
             print("PRESSED! >>>>>>>> Pause = ", shared.pause)
             time.sleep(0.5)
-            # except:
-            #     print("~~~~ encountered error")
-
-
-
-
-
-
-# def interrupt():
-#     while(True):
-#         try:
-#             print("waiting for edge")
-#             gpio.wait_for_edge(BUTTON_PLAYPAUSE, gpio.RISING)
-#             shared.pause = not shared.pause
-#             print("pause = ", shared.pause)
-#             time.wait(0.5)
-#
-#         except KeyboardInterrupt:
-#             print("Interrupted")
