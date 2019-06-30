@@ -177,17 +177,17 @@ def main():
     PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
     PP_THREAD.start()  # Start Thread
 
-    # Initialize logger
-    logname = 'log-hike' + str(hikeno) + '.log'
-    logging.basicConfig(filename=logname,level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info('START')
-
     create_or_continue_hike()
 
     # Get values for hike
     sql_controller = SQLController(database=DB)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
+
+    # Initialize logger
+    logname = 'log-hike' + str(hike_num) + '.log'
+    logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.info('START')
 
     # Start the time lapse
     # --------------------------------------------------------------------------
