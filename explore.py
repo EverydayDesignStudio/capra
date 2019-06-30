@@ -4,7 +4,7 @@
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
 
-# Import Modules
+# Import system modules
 import datetime  # For translating POSIX timestamp to human readable date/time
 import logging
 import os  # For creating new folders
@@ -14,27 +14,28 @@ import smbus  # For interfacing over I2C with the altimeter
 import time  # For unix timestamps
 from threading import Thread
 
+# Import custom modules
+import shared  # For shared variables between main code and button interrupts
 from classes.button import Button  # For threading interrupts for button presses
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
-import shared  # For shared variables between main code and button interrupts
 
 
 DB = '/home/pi/capra-storage/capra_camera.db'
 DIRECTORY = '/home/pi/capra-storage/'
 
 # Pin configurations
-BUTTON_PLAYPAUSE = 17  # BOARD - 11
-SEL_1 = 22  # BOARD - 15
-SEL_2 = 23  # BOARD - 16
-LED_GREEN = 24  # BOARD - 18
-LED_BTM = 26  # BOARD - 37
-LED_AMBER = 27  # BOARD - 13
+BUTTON_PLAYPAUSE = 17   # BOARD - 11
+SEL_1 = 22              # BOARD - 15
+SEL_2 = 23              # BOARD - 16
+LED_GREEN = 24          # BOARD - 18
+LED_BTM = 26            # BOARD - 37
+LED_AMBER = 27          # BOARD - 13
 
-# Initialize shared variables
+# Set program wide shared variable
 pause = False
 
-# Set Variables
+# Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
 # NEW_HIKE_TIME = 43200  # 12 hours
@@ -46,14 +47,14 @@ NEW_HIKE_TIME = 21600  # 6 hours
 def initialize_GPIOs():
     gpio.setwarnings(False)
     gpio.setmode(gpio.BCM)
-    gpio.setup(SEL_1, gpio.OUT)  # select 1
-    gpio.setup(SEL_2, gpio.OUT)  # select 2
-    gpio.setup(LED_GREEN, gpio.OUT)  # status led1
-    gpio.setup(LED_AMBER, gpio.OUT)  # status led2
-    gpio.setup(LED_BTM, gpio.OUT)  # status led3
+    gpio.setup(SEL_1, gpio.OUT)         # select 1
+    gpio.setup(SEL_2, gpio.OUT)         # select 2
+    gpio.setup(LED_GREEN, gpio.OUT)     # status led1
+    gpio.setup(LED_AMBER, gpio.OUT)     # status led2
+    gpio.setup(LED_BTM, gpio.OUT)       # status led3
 
 
-# Turning off LEDs
+# Turn off LEDs
 def turn_off_leds():
     gpio.output(LED_GREEN, True)
     time.sleep(0.1)
@@ -62,7 +63,7 @@ def turn_off_leds():
     gpio.output(LED_BTM, False)
 
 
-# For blinking LEDs
+# Blink LEDs
 def blink(pin, repeat, interval):
     on = False
     off = True
@@ -76,7 +77,7 @@ def blink(pin, repeat, interval):
         time.sleep(interval)
 
 
-# Blink status lights on the camera
+# Blink status LEDs on camera
 def hello_blinks():
     blink(LED_GREEN, 2, 0.1)
     blink(LED_AMBER, 2, 0.1)
@@ -95,15 +96,15 @@ def initialize_picamera(resolution: tuple) -> picamera:
     return pi_cam
 
 
+# Start threading interrupt for Play/pause button
 def initialize_background_play_pause():
-    # Start threading interrupt for Play/pause button
     PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
     PP_THREAD.start()  # Start Thread
 
 
 # Select camera + take a photo + save photo in file system and db
-def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_ctrl: SQLController):
+def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
     print('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
         raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
@@ -128,16 +129,19 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
 
         # Take the picture
         pi_cam.capture(image_path)
-        sql_ctrl.set_image_path(cam_num, image_path, hike_num, photo_index)
+        sql_controller.set_image_path(cam_num, image_path, hike_num, photo_index)
         print('cam {c} -- picture taken!'.format(c=cam_num))
 
 
+# Tell altimeter to collect data; this process (takes a while)
+# TODO - define "a while"
 def query_altimeter(bus: smbus):
     # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
     # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
     bus.write_byte_data(0x60, 0x26, 0xB9)
 
 
+# Read currently collected altimeter data
 def read_altimeter(bus: smbus) -> float:
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
@@ -150,20 +154,21 @@ def read_altimeter(bus: smbus) -> float:
 
 
 def main():
-    initialize_GPIOs()  # Define the GPIO pin modes
-    i2c_bus = smbus.SMBus(1)  # Setup I2C bus
-    turn_off_leds()
-    hello_blinks()  # Say hello through LEDs
-    pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
-    initialize_background_play_pause()  # Setup play/pause button
+    # Initialize and setup hardware
+    initialize_GPIOs()                              # Define the GPIO pin modes
+    i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
+    turn_off_leds()                                 # TODO - why do we need to
+    hello_blinks()                                  # Say hello through LEDs
+    pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    initialize_background_play_pause()              # Setup play/pause button
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
 
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
-    if created:  # new hike created; blink green
+    if created:     # new hike created; blink green
         blink(LED_GREEN, 2, 0.2)
-    else:  # continuing last hike; blink orange
+    else:           # continuing last hike; blink orange
         blink(LED_AMBER, 2, 0.2)
 
     hike_num = sql_controller.get_last_hike_id()
@@ -177,6 +182,7 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
+        # TODO - explanation of what is happening here
         prev_pause = False
         while(shared.pause):
             if(not prev_pause):

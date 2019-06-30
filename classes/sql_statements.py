@@ -1,4 +1,5 @@
 # Holds all SQL statements for the program
+# The only class that should ever interact with is the SQL_Controller
 
 
 class SQLStatements:
@@ -11,7 +12,8 @@ class SQLStatements:
 
     # Projector
     # --------------------------------------------------------------------------
-    # ********************     Time     ********************
+
+    # ******************************     Time     ******************************
 
     # Time - first & last across hikes
     def select_by_time_first_picture(self) -> str:
@@ -55,7 +57,7 @@ class SQLStatements:
             ORDER BY time DESC LIMIT 1'.format(id=hike_id, t=time)
         return statement
 
-    # ********************     Altitude     ********************
+    # ****************************     Altitude     ****************************
 
     # Altitude - greatest & least across hikes
     def select_by_altitude_greatest_picture(self) -> str:

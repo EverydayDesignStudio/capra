@@ -1,4 +1,4 @@
-# Controller to handle UI talking with the SQLite database
+# Controller to handle the UI and camera talking with the SQLite database
 
 import os
 import sqlite3
