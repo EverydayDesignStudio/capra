@@ -270,9 +270,10 @@ class SQLController:
         cursor.execute(self.statements.insert_new_hike(t))
         self.connection.commit()
 
-    def create_new_picture(self, time: float, hike_id: int, photo_index: int):
+    def create_new_picture(self, hike_id: int, photo_index: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.insert_new_picture(time, hike_id, photo_index))
+        ts = time.time()
+        cursor.execute(self.statements.insert_new_picture(ts, hike_id, photo_index))
         self.connection.commit()
 
     def set_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int):
@@ -280,12 +281,14 @@ class SQLController:
         cursor.execute(self.statements.update_picture_image_path(cam_num, path, hike_id, photo_index))
         self.connection.commit()
 
-    def set_picture_time_altitude(self, time: float, altitude: float, hike_id: int, photo_index: int):
+    def set_picture_time_altitude(self, altitude: float, hike_id: int, photo_index: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_picture_time_altitude(time, altitude, hike_id, photo_index))
+        ts = time.time()
+        cursor.execute(self.statements.update_picture_time_altitude(ts, altitude, hike_id, photo_index))
         self.connection.commit()
 
-    def set_hike_endtime_picture_count(self, time: float, count: int, hike_id: int):
+    def set_hike_endtime_picture_count(self, count: int, hike_id: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_hike_endtime_picture_count(time, count, hike_id))
+        ts = time.time()
+        cursor.execute(self.statements.update_hike_endtime_picture_count(ts, count, hike_id))
         self.connection.commit()

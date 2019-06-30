@@ -5,44 +5,52 @@
 # ------------------------------------------------------------------------------
 
 # Import Modules
-import os  # used for counting folders and creating new folders
-import time  # for time keeping
-import datetime
-from classes.capra_data_types import Picture, Hike
-from classes.sql_controller import SQLController
-import smbus  # For interfacing over I2C with the altimeter
+import datetime  # For translating POSIX timestamp to human readable date/time
+import logging
+import os  # For creating new folders
 import picamera  # For interfacting with the PiCamera
-import RPi.GPIO as gpio
+import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
+import smbus  # For interfacing over I2C with the altimeter
+import time  # For unix timestamps
+from threading import Thread
+
+from classes.button import Button  # For threading interrupts for button presses
+from classes.capra_data_types import Picture, Hike
+from classes.sql_controller import SQLController  # For interacting with the DB
+import shared  # For shared variables between main code and button interrupts
+
 
 DB = '/home/pi/capra-storage/capra_camera.db'
 DIRECTORY = '/home/pi/capra-storage/'
 
-# Pin configuration -- will add more later to accomodate on/off switch
-BUTTON_PLAYPAUSE = 4
-SEL_1 = 22
-SEL_2 = 23
-LED_GREEN = 24
-LED_BTM = 26
-LED_AMBER = 27
+# Pin configurations
+BUTTON_PLAYPAUSE = 17  # BOARD - 11
+SEL_1 = 22  # BOARD - 15
+SEL_2 = 23  # BOARD - 16
+LED_GREEN = 24  # BOARD - 18
+LED_BTM = 26  # BOARD - 37
+LED_AMBER = 27  # BOARD - 13
 
-# Get I2C bus
-bus = smbus.SMBus(1)
-
-# Initialize GPIO pins
-gpio.setmode(gpio.BCM)
-gpio.setup(SEL_1, gpio.OUT)  # select 1
-gpio.setup(SEL_2, gpio.OUT)  # select 2
-gpio.setup(LED_GREEN, gpio.OUT)  # status led1
-gpio.setup(LED_AMBER, gpio.OUT)  # status led2
-gpio.setup(LED_BTM, gpio.OUT)  # status led3
+# Initialize shared variables
+pause = False
 
 # Set Variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
-
 # NEW_HIKE_TIME = 43200  # 12 hours
 NEW_HIKE_TIME = 21600  # 6 hours
 # NEW_HIKE_TIME = 10800  # 3 hours
+
+
+# Initialize GPIO pins
+def initialize_GPIOs():
+    gpio.setwarnings(False)
+    gpio.setmode(gpio.BCM)
+    gpio.setup(SEL_1, gpio.OUT)  # select 1
+    gpio.setup(SEL_2, gpio.OUT)  # select 2
+    gpio.setup(LED_GREEN, gpio.OUT)  # status led1
+    gpio.setup(LED_AMBER, gpio.OUT)  # status led2
+    gpio.setup(LED_BTM, gpio.OUT)  # status led3
 
 
 # Turning off LEDs
@@ -76,13 +84,13 @@ def hello_blinks():
 
 
 # Initialize and return picamera object
-def initialize_picamera() -> picamera:
+def initialize_picamera(resolution: tuple) -> picamera:
     print('Initialize camera object')
     gpio.output(SEL_1, True)
     gpio.output(SEL_2, True)
     time.sleep(0.1)
     pi_cam = picamera.PiCamera()
-    pi_cam.resolution = (1280, 720)
+    pi_cam.resolution = resolution
 
     return pi_cam
 
@@ -138,10 +146,42 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         print('cam {c} -- picture taken!'.format(c=cam_num))
 
 
+def query_altimeter(bus: smbus):
+    # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
+    # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
+    bus.write_byte_data(0x60, 0x26, 0xB9)
+
+
+def read_altimeter(bus: smbus) -> float:
+    # MPL3115A2 address, 0x60(96)
+    # Read data back from 0x00(00), 6 bytes
+    # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
+    data = bus.read_i2c_block_data(0x60, 0x00, 6)
+    tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
+    altitude = round(tHeight / 16.0, 2)
+
+    return altitude
+
+
 def main():
+    initialize_GPIOs()
+    i2c_bus = smbus.SMBus(1)  # Get I2C bus
+
     turn_off_leds()
     hello_blinks()
-    pi_cam = initialize_picamera()
+
+    pi_cam = initialize_picamera(RESOLUTION)
+
+    # Start threading interrupt for Play/pause button
+    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
+    PP_THREAD.start()  # Start Thread
+
+    # Initialize logger
+    logname = 'log-hike' + str(hikeno) + '.log'
+    logging.basicConfig(filename=logname,level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.info('START')
+
     create_or_continue_hike()
 
     # Get values for hike
@@ -152,37 +192,41 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
-        photo_index += 1  # new picture, so increment photo index
-        timestamp = time.time()
-        sql_controller.create_new_picture(timestamp, hike_num, photo_index)
+        prev_pause = False
+        while(shared.pause):
+            if(not prev_pause):
+                logging.info('Paused')
+                prev_pause = True
+            print(">>PAUSED!<<")
+            blink(LED_BTM, 1, 0.3)
+            time.sleep(1)
 
-        # Query Altimeter first (takes a while)
-        # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
-        # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
-        bus.write_byte_data(0x60, 0x26, 0xB9)
+        if(prev_pause):
+            logging.info('Unpaused')
+
+        # New picture: increment photo index & add row to database
+        photo_index += 1
+        sql_controller.create_new_picture(hike_num, photo_index)
+
+        query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
 
         # Take pictures
         camcapture(pi_cam, 1, hike_num, photo_index, sql_controller)
         camcapture(pi_cam, 2, hike_num, photo_index, sql_controller)
         camcapture(pi_cam, 3, hike_num, photo_index, sql_controller)
 
-        # MPL3115A2 address, 0x60(96)
-        # Read data back from 0x00(00), 6 bytes
-        # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
-        data = bus.read_i2c_block_data(0x60, 0x00, 6)
-        tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
-        altitude = round(tHeight / 16.0, 2)
-        # Update the time
-        timestamp = time.time()
-
         # Update the database with metadata for picture & hike
-        sql_controller.set_picture_time_altitude(timestamp, altitude, hike_num, photo_index)
-        sql_controller.set_hike_endtime_picture_count(timestamp, photo_index, hike_num)
+        altitude = read_altimeter(i2c_bus)
+        sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
+        sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
+
+        timestamp = time.time()
 
         # Blink on every fourth picture
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
+            logging.info('alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
