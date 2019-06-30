@@ -95,25 +95,11 @@ def initialize_picamera(resolution: tuple) -> picamera:
     return pi_cam
 
 
-# Determine whether to create new hike or continue the last hike
-def create_or_continue_hike():
-    sql_controller = SQLController(database=DB)
-    time_since_last_hike = sql_controller.get_time_since_last_hike()
-
-    # Create a new hike; -1 indicates this is the first hike in db
-    if time_since_last_hike > NEW_HIKE_TIME or time_since_last_hike == -1:
-        print('Creating new hike:')
-        sql_controller.create_new_hike()
-
-        # Create folder in harddrive to save photos
-        hike_num = sql_controller.get_last_hike_id()
-        folder = 'hike{n}/'.format(n=hike_num)
-        os.makedirs(DIRECTORY + folder)
-
-        blink(LED_GREEN, 2, 0.2)
-    else:
-        print('Continuing last hike:')
-        blink(LED_AMBER, 2, 0.2)
+def initialize_background_play_pause():
+    # Start threading interrupt for Play/pause button
+    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
+    PP_THREAD.start()  # Start Thread
 
 
 # Select camera + take a photo + save photo in file system and db
@@ -164,23 +150,22 @@ def read_altimeter(bus: smbus) -> float:
 
 
 def main():
-    initialize_GPIOs()
-    i2c_bus = smbus.SMBus(1)  # Get I2C bus
-
+    initialize_GPIOs()  # Define the GPIO pin modes
+    i2c_bus = smbus.SMBus(1)  # Setup I2C bus
     turn_off_leds()
-    hello_blinks()
+    hello_blinks()  # Say hello through LEDs
+    pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
+    initialize_background_play_pause()  # Setup play/pause button
 
-    pi_cam = initialize_picamera(RESOLUTION)
-
-    # Start threading interrupt for Play/pause button
-    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
-    PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
-    PP_THREAD.start()  # Start Thread
-
-    create_or_continue_hike()
-
-    # Get values for hike
+    # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
+
+    created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
+    if created:  # new hike created; blink green
+        blink(LED_GREEN, 2, 0.2)
+    else:  # continuing last hike; blink orange
+        blink(LED_AMBER, 2, 0.2)
+
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
@@ -226,7 +211,7 @@ def main():
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            logging.info('alive')
+            logging.info('cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):

@@ -1,5 +1,6 @@
 # Controller to handle UI talking with the SQLite database
 
+import os
 import sqlite3
 import time
 from classes.capra_data_types import Picture, Hike
@@ -224,22 +225,9 @@ class SQLController:
         all_rows = cursor.fetchall()
         return self._build_hike_from_row(all_rows[0])
 
-    # Explorer
+    # Camera
     # --------------------------------------------------------------------------
-    def get_hike_count(self) -> int:
-        return self._get_num_from_statement(self.statements.select_hike_count())
-
-    def get_last_hike_id(self) -> int:
-        cursor = self.connection.cursor()
-        cursor.execute(self.statements.select_last_hike_id())
-        row = cursor.fetchone()
-
-        if row is None:
-            return 0
-        else:
-            return row[0]
-
-    def get_time_since_last_hike(self) -> float:
+    def _get_time_since_last_hike(self) -> float:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_last_hike_end_time())
         row = cursor.fetchone()
@@ -253,6 +241,25 @@ class SQLController:
             time_since = current_time - last_time
             return round(time_since, 0)
 
+    def _create_new_hike(self):
+        cursor = self.connection.cursor()
+        t = time.time()
+        cursor.execute(self.statements.insert_new_hike(t))
+        self.connection.commit()
+
+    def get_hike_count(self) -> int:
+        return self._get_num_from_statement(self.statements.select_hike_count())
+
+    def get_last_hike_id(self) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_last_hike_id())
+        row = cursor.fetchone()
+
+        if row is None:
+            return 0
+        else:
+            return row[0]
+
     def get_last_photo_index_of_hike(self, hike_id: int) -> int:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_last_photo_index_of_hike(hike_id))
@@ -264,11 +271,24 @@ class SQLController:
         else:
             return row[0]
 
-    def create_new_hike(self):
-        cursor = self.connection.cursor()
-        t = time.time()
-        cursor.execute(self.statements.insert_new_hike(t))
-        self.connection.commit()
+    # Determine whether to create new hike or continue the last hike
+    def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY) -> bool:
+        time_since_last_hike = self._get_time_since_last_hike()
+
+        # Create a new hike; -1 indicates this is the first hike in db
+        if time_since_last_hike > NEW_HIKE_TIME or time_since_last_hike == -1:
+            print('Creating new hike:')
+            self._create_new_hike()
+
+            # Create folder in harddrive to save photos
+            hike_num = self.get_last_hike_id()
+            folder = 'hike{n}/'.format(n=hike_num)
+            os.makedirs(DIRECTORY + folder)
+
+            return True
+        else:
+            print('Continuing last hike:')
+            return False
 
     def create_new_picture(self, hike_id: int, photo_index: int):
         cursor = self.connection.cursor()
