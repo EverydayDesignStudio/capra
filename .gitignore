@@ -1,5 +1,6 @@
 # Python
 *.pyc
+*.log
 
 # Finder
 .DS_Store

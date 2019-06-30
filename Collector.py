@@ -17,6 +17,7 @@ import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
 import datetime  # For translating POSIX timestamp to human readable date/time
 import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
+import logging  # For logging
 
 from button import Button  # for threading interrupts for button presses
 from threading import Thread
@@ -24,10 +25,6 @@ from threading import Thread
 # Import Capra scripts and Variables
 import shared # For shared variables between main code and button interrupts
 
-
-#  TODO: implement threading for interrupt
-# playpause.interrupt()
-# print("interrupt happening")
 
 # Pin configuration
 # TODO Will have more added later on to accomodate on/off switch
@@ -39,6 +36,7 @@ LED_GREEN = 24 # BOARD - 18
 LED_BTM = 26 # BOARD - 37
 LED_AMBER = 27 # BOARD - 13
 
+
 # Initialize shared variables
 # shared.init()
 pause = False
@@ -49,6 +47,7 @@ bus = smbus.SMBus(1)
 
 
 # Initialize GPIO pins
+gpio.setwarnings(False)
 gpio.setmode(gpio.BCM)
 gpio.setup(SEL_1, gpio.OUT)  # select 1
 gpio.setup(SEL_2, gpio.OUT)  # select 2
@@ -62,6 +61,7 @@ time.sleep(0.1)
 gpio.output(LED_AMBER, True)
 time.sleep(0.1)
 gpio.output(LED_BTM, False)
+
 
 # Set Variables
 # TODO : variables are not updated / accesses correctly within main
@@ -178,9 +178,9 @@ def main():
 
     # Initialize camera object
     print('initializing camera')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
-    time.sleep(0.1)
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
+    time.sleep(0.2)
     cam = picamera.PiCamera()
     cam.resolution = (1280, 720)
 
@@ -205,6 +205,10 @@ def main():
         dir = dir + folder
         os.makedirs(dir)
 
+        logname = 'log-hike' + str(hikeno) + '.log'
+        logging.basicConfig(filename=logname,level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+        logging.info('START')
+
         #create meta csv file
         csvfile = dir + 'meta.csv'
         with open(csvfile, 'a') as meta:
@@ -227,10 +231,17 @@ def main():
     # Loop Starts Here
     # =================================================
     while(True):
+        prev_pause = False
         while(shared.pause):
+            if(not prev_pause):
+                logging.info('Paused')
+                prev_pause = True
             print(">>PAUSED!<<")
             blink(LED_BTM, 1, 0.3)
             time.sleep(1)
+
+        if(prev_pause):
+            logging.info('Unpaused')
         # Query Altimeter first (takes a while)
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
         # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
@@ -246,7 +257,6 @@ def main():
         # Read data back from 0x00(00), 6 bytes
         # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
         data = bus.read_i2c_block_data(0x60, 0x00, 6)
-
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = tHeight / 16.0
         timestamp = time.time()
@@ -260,6 +270,7 @@ def main():
         if (photono % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
+            logging.info('alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
