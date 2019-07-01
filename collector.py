@@ -39,16 +39,23 @@ RESOLUTION = (1280, 720)
 NEW_HIKE_TIME = 21600  # 6 hours
 # NEW_HIKE_TIME = 10800  # 3 hours
 
+gpio.setwarnings(False)
+gpio.setmode(gpio.BCM)
+gpio.setup(SEL_1, gpio.OUT)         # select 1
+gpio.setup(SEL_2, gpio.OUT)         # select 2
+gpio.setup(LED_GREEN, gpio.OUT)     # status led1
+gpio.setup(LED_AMBER, gpio.OUT)     # status led2
+gpio.setup(LED_BTM, gpio.OUT)       # status led3
 
 # Initialize GPIO pins
-def initialize_GPIOs():
-    gpio.setwarnings(False)
-    gpio.setmode(gpio.BCM)
-    gpio.setup(SEL_1, gpio.OUT)         # select 1
-    gpio.setup(SEL_2, gpio.OUT)         # select 2
-    gpio.setup(LED_GREEN, gpio.OUT)     # status led1
-    gpio.setup(LED_AMBER, gpio.OUT)     # status led2
-    gpio.setup(LED_BTM, gpio.OUT)       # status led3
+# def initialize_GPIOs():
+#     gpio.setwarnings(False)
+#     gpio.setmode(gpio.BCM)
+#     gpio.setup(SEL_1, gpio.OUT)         # select 1
+#     gpio.setup(SEL_2, gpio.OUT)         # select 2
+#     gpio.setup(LED_GREEN, gpio.OUT)     # status led1
+#     gpio.setup(LED_AMBER, gpio.OUT)     # status led2
+#     gpio.setup(LED_BTM, gpio.OUT)       # status led3
 
 
 # Turn off LEDs
@@ -164,7 +171,7 @@ def read_altimeter(bus: smbus) -> float:
 
 def main():
     # Initialize and setup hardware
-    initialize_GPIOs()                              # Define the GPIO pin modes
+    #initialize_GPIOs()                              # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
