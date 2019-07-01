@@ -283,7 +283,10 @@ class SQLController:
             # Create folder in harddrive to save photos
             hike_num = self.get_last_hike_id()
             folder = 'hike{n}/'.format(n=hike_num)
-            os.makedirs(DIRECTORY + folder)
+            path = DIRECTORY + folder
+
+            os.makedirs(path)
+            self._set_hike_path(hike_num, path)
 
             return True
         else:
@@ -294,6 +297,11 @@ class SQLController:
         cursor = self.connection.cursor()
         ts = time.time()
         cursor.execute(self.statements.insert_new_picture(ts, hike_id, photo_index))
+        self.connection.commit()
+
+    def _set_hike_path(self, hike_id: int, hike_path: str):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hike_path(hike_path, hike_id))
         self.connection.commit()
 
     def set_image_path(self, cam_num: int, path: str, hike_id: int, photo_index: int):

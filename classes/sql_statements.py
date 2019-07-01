@@ -218,6 +218,11 @@ class SQLStatements:
         print(statement)
         return statement
 
+    def update_hike_path(self, path: str, hike_id: int) -> str:
+        statement = 'UPDATE hikes SET path="{p}", updated_date_time=datetime() \
+            WHERE hike_id={h}'.format(p=path, h=hike_id)
+        return statement
+
     def update_hike_endtime_picture_count(self, time: float, count: int, hike_id: int) -> str:
         statement = 'UPDATE hikes SET end_time={t}, pictures={c}, updated_date_time=datetime() WHERE hike_id={h} \
             '.format(t=time, c=count, h=hike_id)
