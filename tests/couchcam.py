@@ -1,52 +1,83 @@
 #!/usr/bin/env python3
 
+#    _________ _____  _________ _
+#   / ___/ __ `/ __ \/ ___/ __ `/
+#  / /__/ /_/ / /_/ / /  / /_/ /
+#  \___/\__,_/ .___/_/   \__,_/
+#           /_/
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # =================================================
 
 # Import Modules
-import os  # used for counting folders and creating new folders
-import csv  # used for saving and reading information in/from CSV files
-import time  # for time keeping
+import os  # For counting folders and creating new folders
+import csv  # For saving and reading information in/from CSV files
+import time  # For time keeping
 import smbus  # For interfacing over I2C with the altimeter
 import picamera  # For interfacting with the PiCamera
-import datetime
-import RPi.GPIO as gpio
+import datetime  # For translating POSIX timestamp to human readable date/time
+import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
+from threading import Thread  # For threading processes
+import shared # For shared variables between main code and button interrupts
+
 
 # Pin configuration
-# Will have more added later on to accomodate on/off switch
-BUTTON_PLAYPAUSE = 4
-SEL_1 = 22
-SEL_2 = 23
-LED_GREEN = 24
-LED_BTM = 26
-LED_AMBER = 27
+# TODO Will have more added later on to accomodate on/off switch
+BUTTON_PLAY = 17 # BOARD - 11
+BUTTON_OFF = 25 # BOARD - 22
+SEL_1 = 22 # BOARD - 15
+SEL_2 = 23 # BOARD - 16
+LED_GRN = 24 # BOARD - 18 (smaller LED at top of board)
+LED_RED = 26 # BOARD - 37 (smaller LED at top of board)
+LED_AMB = 27 # BOARD - 13 (larger LED at bottom of board)
+
 
 # Get I2C bus
 bus = smbus.SMBus(1)
+
 
 # Initialize GPIO pins
 gpio.setmode(gpio.BCM)
 gpio.setup(SEL_1, gpio.OUT)  # select 1
 gpio.setup(SEL_2, gpio.OUT)  # select 2
-gpio.setup(LED_GREEN, gpio.OUT)  # status led1
-gpio.setup(LED_AMBER, gpio.OUT)  # status led2
-gpio.setup(LED_BTM, gpio.OUT)  # status led3
+gpio.setup(LED_GRN, gpio.OUT)  # status led1
+gpio.setup(LED_AMB, gpio.OUT)  # status led2
+gpio.setup(LED_RED, gpio.OUT)  # status led3
+
 
 # Turn off LEDs
-gpio.output(LED_GREEN, True)
+gpio.output(LED_GRN, True)
 time.sleep(0.1)
-gpio.output(LED_AMBER, True)
+gpio.output(LED_AMB, True)
 time.sleep(0.1)
-gpio.output(LED_BTM, False)
+gpio.output(LED_RED, False)
+
 
 # Set Variables
 # TODO : variables are not updated / accesses correctly within main
 dir = '/home/pi/Desktop/pics/'
-folder = ''
 RESOLUTION = (1280, 720)
+INTERVAL = 30
 # RESOLUTION = (720, 405)
 photono = 0
+
+
+#  Class Definitions
+class Button:
+    def __init__(self, BUTTON):
+        self._running = True
+        self.BUTTON = BUTTON
+
+    def terminate(self):
+        self._running = False
+
+    def run(self):
+        while self._running:
+            print("=========Interrupt Start==========")
+            gpio.wait_for_edge(self.BUTTON, gpio.RISING)
+            shared.pause = not shared.pause
+            print("PRESSED! >>>>>>>> Pause = ", shared.pause)
+            time.sleep(0.5)
 
 
 # Set Definitions
@@ -63,7 +94,7 @@ def isLast(itr):
 def blink(pin, repeat, interval):
     on = False
     off = True
-    if pin == LED_BTM:
+    if pin == LED_RED:
         on = True
         off = False
     for i in range(repeat):
@@ -114,9 +145,9 @@ def timesincehike(_hikeno):
 
 # For Selecting Cam and taking + saving a picture
 def camcapture(_cam, _camno):
-    print('selectcam( ', _camno, ' )')
+    print('camcapture( ', _camno, ' )')
     if _camno < 1 or _camno > 3:
-        print('[selectcam] invalid cam number!')
+        print('[camcapture] invalid cam number!')
     else:
         if _camno == 1:
             print("select cam 1")
@@ -130,16 +161,17 @@ def camcapture(_cam, _camno):
             print("select cam 3")
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
-        time.sleep(0.2)
-        photoname = dir + folder + str(photono) + '_cam' + str(_camno) + '.jpg'
-        print(photoname)
+        time.sleep(0.2) # moment for hardware to catch up
+        global photono
+        photoname = dir + str(photono) + '_cam' + str(_camno) + '.jpg'
+        print("SAVE TO: " + str(photoname)),
         _cam.capture(photoname)
-        print('cam', str(_camno), '- picture taken!')
+        print('  cam', str(_camno), '- picture taken!')
 
 
 # Write a row to csv file
 def writedata(index, timestamp, altitude):
-    with open(dir + folder + 'meta.csv', 'a') as meta:
+    with open(dir + 'meta.csv', 'a') as meta:
         writer = csv.writer(meta)
         newrow = [index, timestamp, altitude]
         print(newrow)
@@ -148,9 +180,9 @@ def writedata(index, timestamp, altitude):
 
 def main():
     # Hello blinks
-    blink(LED_GREEN, 2, 0.1)
-    blink(LED_AMBER, 2, 0.1)
-    blink(LED_BTM, 2, 0.1)
+    blink(LED_GRN, 2, 0.1)
+    blink(LED_AMB, 2, 0.1)
+    blink(LED_RED, 2, 0.1)
 
 
     # Initialize camera object
@@ -162,7 +194,15 @@ def main():
     cam.resolution = (1280, 720)
 
 
+    # Start threading interrupt for Play/pause button
+    PP_INTERRUPT = Button(BUTTON_PLAY) # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run) # Create Thread
+    PP_THREAD.start() # Start Thread
+
+
+    global photono
     photono = 0 # TODO: Should be removed later; was inserted to get program running
+    global hikeno
     hikeno = counthikes()  # Count existing hikes
     sincelast = 43201  # Forced in order to bypass timesincehike
     # sincelast = timesincehike(hikeno - 1)[0] # check time since last hike
@@ -170,31 +210,35 @@ def main():
         # create new hike folder
         print('creating new hike:')
         folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-        os.makedirs(dir + folder)
-        # Create csv file and write header
-        folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
-        csvfile = dir + folder + 'meta.csv'
+        global dir
+        dir = dir + folder
+        os.makedirs(dir)
+
+        #create meta csv file
+        csvfile = dir + 'meta.csv'
         with open(csvfile, 'a') as meta:
             writer = csv.writer(meta)
             newrow = ["index", "time", "altitude"]
             print("HEADER ", newrow)
             writer.writerow(newrow)
-        blink(LED_GREEN, 2, 0.2)
+        blink(LED_GRN, 2, 0.2)
     else:
         # append to last hike
         print('continuing last hike:')
         # retrieve last photo number
         hikeno -= 1
         photono = timesincehike(hikeno)[1] + 1  # TODO: fix
-        blink(LED_AMBER, 2, 0.2)
+        blink(LED_AMB, 2, 0.2)
 
-    folder = 'hike' + str(hikeno) + '/'  # change directory for actual hike record
 
     # Loop Starts Here
     # =================================================
     while(True):
+        while(shared.pause):
+            print(">>PAUSED!<<")
+            blink(LED_RED, 2, 0.2)
+            time.sleep(1)
         # Query Altimeter first (takes a while)
-        # -------------------------------------
         # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
         # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
         bus.write_byte_data(0x60, 0x26, 0xB9)
@@ -209,22 +253,21 @@ def main():
         # Read data back from 0x00(00), 6 bytes
         # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
         data = bus.read_i2c_block_data(0x60, 0x00, 6)
-
         tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
         altitude = tHeight / 16.0
         timestamp = time.time()
         writedata(photono, timestamp, altitude) # Write Metadata
 
         # Increase increment
+        global photono
         photono += 1
 
         # Blink on every fourth picture
         if (photono % 4 == 0):
-            blink(LED_GREEN, 1, 0.1)
-            blink(LED_AMBER, 1, 0.1)
-            
+            blink(LED_AMB, 1, 0.1)
+
         # Wait until 2.5 seconds have passed since last picture
-        while(time.time() < timestamp + 2.5):
+        while(time.time() < timestamp + INTERVAL):
             pass
 
 
