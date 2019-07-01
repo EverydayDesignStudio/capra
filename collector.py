@@ -5,14 +5,14 @@
 # ------------------------------------------------------------------------------
 
 # Import system modules
-import datetime  # For translating POSIX timestamp to human readable date/time
-import logging
-import os  # For creating new folders
-import picamera  # For interfacting with the PiCamera
-import RPi.GPIO as gpio  # For interfacing with the pins of the Raspberry Pi
-import smbus  # For interfacing over I2C with the altimeter
-import time  # For unix timestamps
-from threading import Thread
+import datetime              # For translating POSIX timestamp to human readable date/time
+import logging               # For creating a log
+import os                    # For creating new folders
+import picamera              # For interfacting with the PiCamera
+import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
+import smbus                 # For interfacing over I2C with the altimeter
+import time                  # For unix timestamps
+from threading import Thread #
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
@@ -175,8 +175,21 @@ def main():
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
+
+
+    print('Initializing camera object')
+    gpio.output(SEL_1, True)
+    gpio.output(SEL_2, True)
+    time.sleep(0.2)
+    print('Select pins OK')
+    pi_cam = picamera.PiCamera()
+    time.sleep(0.2)
+    print('Cam init OK')
+    pi_cam.resolution = resolution
+    print('Resolution OK')
+
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
