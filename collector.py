@@ -83,12 +83,16 @@ def hello_blinks():
 
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
-    print('Initialize camera object')
+    print('Initializing camera object')
     gpio.output(SEL_1, True)
     gpio.output(SEL_2, True)
-    time.sleep(0.1)
+    time.sleep(0.2)
+    print('Select pins OK')
     pi_cam = picamera.PiCamera()
+    time.sleep(0.2)
+    print('Cam init OK')
     pi_cam.resolution = resolution
+    print('Resolution OK')
 
     return pi_cam
 
