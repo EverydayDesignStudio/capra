@@ -100,6 +100,14 @@ def initialize_background_play_pause():
     PP_THREAD.start()  # Start Thread
 
 
+# Initialize the logger
+def initialize_logger(hike_num: int):
+    # logname = 'log-hike' + str(hike_num) + '.log'
+    logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
+    logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.info('START')
+
+
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
     print('select cam{n}'.format(n=cam_num))
@@ -172,9 +180,7 @@ def main():
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
     # Initialize logger
-    logname = 'log-hike' + str(hike_num) + '.log'
-    logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info('START')
+    initialize_logger(hike_num)
 
     # Start the time lapse
     # --------------------------------------------------------------------------
