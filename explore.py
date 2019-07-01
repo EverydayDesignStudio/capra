@@ -32,9 +32,6 @@ LED_GREEN = 24          # BOARD - 18
 LED_BTM = 26            # BOARD - 37
 LED_AMBER = 27          # BOARD - 13
 
-# Set program wide shared variable
-pause = False
-
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
