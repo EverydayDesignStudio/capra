@@ -177,7 +177,7 @@ def main():
     hello_blinks()                                  # Say hello through LEDs
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
-
+    prev_pause = True
 
     print('Initializing camera object')
     gpio.output(SEL_1, True)
