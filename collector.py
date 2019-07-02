@@ -209,7 +209,7 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
-        # TODO - explanation of what is happening here
+        # Pause the program if applicable
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
@@ -217,9 +217,10 @@ def main():
             print(">>PAUSED!<<")
             blink(LED_BTM, 1, 0.3)
             time.sleep(1)
-
+        # If applicable, log 'unpaused'
         if(prev_pause):
             logging.info('Unpaused')
+            prev_pause= False
 
         # New picture: increment photo index & add row to database
         photo_index += 1
