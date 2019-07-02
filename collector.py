@@ -210,7 +210,6 @@ def main():
     # --------------------------------------------------------------------------
     while(True):
         # TODO - explanation of what is happening here
-        prev_pause = False
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
