@@ -12,7 +12,7 @@ import picamera              # For interfacting with the PiCamera
 import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import smbus                 # For interfacing over I2C with the altimeter
 import time                  # For unix timestamps
-from threading import Thread #
+from threading import Thread # For threading
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
@@ -187,7 +187,7 @@ def main():
     pi_cam = picamera.PiCamera()
     time.sleep(0.2)
     print('Cam init OK')
-    pi_cam.resolution = resolution
+    pi_cam.resolution = RESOLUTION
     print('Resolution OK')
 
 
