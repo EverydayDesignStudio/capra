@@ -12,7 +12,7 @@ def initialize_logger():
 initialize_logger
 
 try:
-    gpio.setmode(gpio.BCM)
+    gpio.setup(1, gpio.OUT)
 except Exception as error:
     logging.exception('message')
     logging.exception(error)
