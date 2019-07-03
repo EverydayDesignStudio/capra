@@ -18,6 +18,8 @@ The (on/off) button is controlled by the service: `/lib/systemd/system/capra-lis
 | LED   | Location | Meaning |
 | ------|:-------|:-------|
 | 💚 solid/blinking   | Raspberry pi Zero | Raspberry pi is on  |
+| 💚    | Capra PCB | Unassigned  |
+| 🧡    | Capra PCB | Unassigned  |
 | 🔴 blinking   | Capra PCB | collector.py is PAUSED  |
 | 🔵 solid | Adafruit Powerbooster | Adafruit Powerbooster has power |
 | 💚 solid   | Adafruit Powerbooster | Batteries fully charged  |
