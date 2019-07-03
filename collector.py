@@ -36,8 +36,9 @@ LED_AMBER = 27          # BOARD - 13
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
 # NEW_HIKE_TIME = 43200  # 12 hours
-NEW_HIKE_TIME = 21600  # 6 hours
+# NEW_HIKE_TIME = 21600  # 6 hours
 # NEW_HIKE_TIME = 10800  # 3 hours
+NEW_HIKE_TIME = 1800 # 1/2 hour
 
 gpio.setwarnings(False)
 gpio.setmode(gpio.BCM)
@@ -46,16 +47,6 @@ gpio.setup(SEL_2, gpio.OUT)         # select 2
 gpio.setup(LED_GREEN, gpio.OUT)     # status led1
 gpio.setup(LED_AMBER, gpio.OUT)     # status led2
 gpio.setup(LED_BTM, gpio.OUT)       # status led3
-
-# Initialize GPIO pins
-# def initialize_GPIOs():
-#     gpio.setwarnings(False)
-#     gpio.setmode(gpio.BCM)
-#     gpio.setup(SEL_1, gpio.OUT)         # select 1
-#     gpio.setup(SEL_2, gpio.OUT)         # select 2
-#     gpio.setup(LED_GREEN, gpio.OUT)     # status led1
-#     gpio.setup(LED_AMBER, gpio.OUT)     # status led2
-#     gpio.setup(LED_BTM, gpio.OUT)       # status led3
 
 
 # Turn off LEDs
@@ -116,7 +107,7 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info('START')
+    logging.info('==== START')
 
 
 # Select camera + take a photo + save photo in file system and db
@@ -244,7 +235,7 @@ def main():
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            logging.info('cameras still alive')
+            logging.info('Cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
@@ -252,4 +243,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as error:
+        logging.exception('==Error==')
+        logging.exception(error)
