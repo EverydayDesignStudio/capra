@@ -162,11 +162,11 @@ def read_altimeter(bus: smbus) -> float:
 
 def main():
     # Initialize and setup hardware
-    #initialize_GPIOs()                              # Define the GPIO pin modes
+    # initialize_GPIOs()                            # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    #pi_cam = initialize_picamera(RESOLUTION)       # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
@@ -196,7 +196,7 @@ def main():
 
     # Initialize logger
     initialize_logger(hike_num)
-    er = 1/0
+
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
@@ -211,7 +211,7 @@ def main():
         # If applicable, log 'unpaused'
         if(prev_pause):
             logging.info('Unpaused')
-            prev_pause= False
+            prev_pause = False
 
         # New picture: increment photo index & add row to database
         photo_index += 1
