@@ -248,3 +248,6 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('==Error==')
         logging.exception(error)
+        while(True):
+            blink(LED_BTM, 4, 0.1)
+            time.sleep(0.5)
