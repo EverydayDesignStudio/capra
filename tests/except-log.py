@@ -1,4 +1,4 @@
-# import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
+import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import logging
 
 
