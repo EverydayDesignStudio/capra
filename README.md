@@ -1,4 +1,4 @@
-# Capra 🎥
+# Capra 🎥⛰️
 
 > Capra is a system for hikers to document and revisit their past hikes.
 
