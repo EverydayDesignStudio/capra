@@ -169,7 +169,7 @@ def main():
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
-    er = 1/0
+
     print('Initializing camera object')
     gpio.output(SEL_1, True)
     gpio.output(SEL_2, True)
@@ -196,7 +196,7 @@ def main():
 
     # Initialize logger
     initialize_logger(hike_num)
-
+    er = 1/0
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
