@@ -9,7 +9,7 @@ def initialize_logger():
     logging.info('==== START')
 
 
-initialize_logger
+initialize_logger()
 
 try:
     gpio.setup(1, gpio.OUT)
