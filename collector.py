@@ -248,6 +248,9 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('==Error==')
         logging.exception(error)
-        while(True):
+        blink_time = 0
+        while(blink_time < 10):
             blink(LED_BTM, 4, 0.1)
             time.sleep(0.5)
+            blink_time += 1
+        PP_THREAD.terminate()
