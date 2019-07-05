@@ -1,6 +1,6 @@
-# Capra 🎥⛰️
+# Capra 🎥 ⛰️
 
-> Capra is a system for hikers to document and revisit their past hikes.
+*A system for hikers to document and revisit their past hikes.*
 
 ---
 
@@ -29,5 +29,3 @@ The (on/off) button is controlled by the service: `/lib/systemd/system/capra-lis
 ## Explorer
 
 
----
-**[Home](README.md)** | **[olo radio](olo.md)**
