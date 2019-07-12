@@ -165,7 +165,6 @@ def read_altimeter(bus: smbus) -> float:
     data = bus.read_i2c_block_data(0x60, 0x00, 6)
     tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
     altitude = round(tHeight / 16.0, 2)
-
     return altitude
 
 
