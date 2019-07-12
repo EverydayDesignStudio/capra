@@ -180,8 +180,8 @@ def main():
     prev_pause = True
 
     print('Initializing camera object')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
     time.sleep(0.2)
     print('Select pins OK')
     pi_cam = picamera.PiCamera()
