@@ -3,7 +3,6 @@
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
-
 # Import system modules
 import datetime              # For translating POSIX timestamp to human readable date/time
 import logging               # For creating a log
