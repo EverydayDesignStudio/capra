@@ -93,6 +93,8 @@ def initialize_picamera(resolution: tuple) -> picamera:
     print('Cam init OK')
     pi_cam.resolution = resolution
     print('Resolution OK')
+    pi_cam.rotation = 180
+    print('Rotation OK')
 
     return pi_cam
 
