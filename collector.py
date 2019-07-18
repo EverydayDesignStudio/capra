@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-
+#   _______ ____  _______ _
+#  / __/ _ `/ _ \/ __/ _ `/
+#  \__/\_,_/ .__/_/  \_,_/
+#         /_/
+# ------------------------------------------------------------------------------
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
@@ -176,6 +180,7 @@ def main():
     time.sleep(0.2)
     print('Cam init OK')
     pi_cam.resolution = RESOLUTION
+    pi_cam.rotation = 180
     print('Resolution OK')
 
 
@@ -183,11 +188,13 @@ def main():
     sql_controller = SQLController(database=DB)
 
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
-    if created:     # new hike created; blink green
-        blink(LED_GREEN, 2, 0.2)
-    else:           # continuing last hike; blink orange
-        blink(LED_AMBER, 2, 0.2)
-
+    if created:     # new hike created; blink four times
+        blink(LED_BTM, 4, 0.2)
+        os.chmod(DIRECTORY, 666) # set permissions to be read and written to when run manually
+        os.chmod(DB , 666)
+    else:           # continuing last hike; blink two times
+        blink(LED_BTM, 2, 0.2)
+    time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
