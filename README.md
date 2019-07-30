@@ -54,15 +54,15 @@ This PCB is placed towards the lower end of the Capra enclosure; and is fixed ag
 
 The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows:
 
-| ButtonBoard | Cam Multiplexer |
-| ----------- | --------------- |
-| GND         | GND (⏚ symbol) |
-| LED_R       | LED             |
-| LED_G       | LED2            |
-| 3V3         | 3V3             |
-| OFF         | OFF             |
-| PAUSE       | PLAY            |
-| SCL         | SCL             |
+| ButtonBoard | ↔ | Cam Multiplexer |
+| ----------- | - | --------------- |
+| GND         | ↔ |GND (⏚ symbol) |
+| LED_R       | ↔ | LED             |
+| LED_G       | ↔ | LED2            |
+| 3V3         | ↔ | 3V3             |
+| OFF         | ↔ | OFF             |
+| PAUSE       | ↔ | PLAY            |
+| SCL         | ↔ | SCL             |
 
 These connections can be found here on the Cam Multiplexer board, (Note that the 'OFF' connection is at an unexpected spot):
 ![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
@@ -81,13 +81,13 @@ LiPo batteries do require a specific circuit to regulate their charging. For Cap
 
 **!! NEVER EVER SOLDER WIRES DIRECTLY TO THE BATTERIES !!**
 
-On the Collectors' back piece, there are recessed areas where the battery clips go. There are two types of battery clips used in the assembly. The one meant for the '+' terminal of the battery has a little circular marking on it; the one meant for the '-' terminal of the battery has a texturised surface and is springy. These parts are shown below:![Battery Clips](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryClips.png)
+On the Collectors' back piece, there are recessed areas where the battery clips go. There are two types of battery clips used in the assembly. The one meant for the '+' terminal of the battery has a little circular marking on it (Product code [36-228-ND](https://www.digikey.ca/product-detail/en/keystone-electronics/228/36-228-ND/528660); the one meant for the '-' terminal of the battery has a texturised surface and is springy (Product code [Keystone 36-209](https://www.digikey.ca/product-detail/en/keystone-electronics/209/36-209-ND/151583). These parts are shown below:![Battery Clips](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryClips.png)
 
 The '+' and '-' terminals should be connected in parallel to the JST-PH2 connector on the PowerBoost module. The output of the PowerBoost module should be connected to the following positions of the Cam Multiplexer:
 ![Power connection on Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/batteries.jpg)
 
 | PowerBoost | ↔ | Cam Multiplexer |
-| ---------- |   | --------------- |
+| ---------- | - | --------------- |
 | +          | ↔ | 5V              |
 | -          | ↔ | GND (⏚ symbol) |
 
@@ -106,13 +106,13 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 #### LED Meanings
 | LED                | Location          | Meaning       |
 | ------------------ | ----------------- | ------------- |
-| 💚 solid/blinking  | Raspberry Pi | RPi is on  |
-| 💚 blinking        | Button board | collector.py is PAUSED  |
-| 🔴 blinking        | Button board | program is running  |
-| 🔵 solid           | Powerbooster | Powerbooster has power |
-| 💚 solid           | Powerbooster | Batteries fully charged  |
-| 🔴 solid           | Powerbooster | Batteries low  |
-| 🧡 solid           | Powerbooster | Batteries charging  |
+| 💚 solid/blinking  | Raspberry Pi      | RPi is on     |
+| 💚 blinking        | Button board      | collector.py is PAUSED  |
+| 🔴 blinking        | Button board      | program is running  |
+| 🔵 solid           | Powerbooster      | Powerbooster has power |
+| 💚 solid           | Powerbooster      | Batteries fully charged  |
+| 🔴 solid           | Powerbooster      | Batteries low  |
+| 🧡 solid           | Powerbooster      | Batteries charging  |
 
 ## Explorer (Projector unit)
 The Explorers functionality is twofold:
