@@ -27,7 +27,10 @@ In the image below, a systematic view of the respective components is given. Not
 ![Capra system](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/CapraPCBprinciple.jpg)
 
 #### Cam Multiplexer
-The Cam Muliplexer is a 30x70mm board directly placed on top of the RPi. While the RPi is typically only capable of connecting to a single camera the _'Cam Multiplexer V4'_ enables the RPi to switch between cameras and take pictures. The CamMultiplexer also contains a MPL3115A2 Altimeter that allows the RPi to sense the altitude of the Collector. Lastly, there is a DS3231 Real Time Clock on the board that allows the RPi to keep its internal clock synchronised. The DS3231 which will continue to run even when the RPi is off (or even runs out of battery) because it is connected to a small CR1220 Coincell battery. This battery will slowly drain, but will keep the collector running for several years!
+The Cam Muliplexer is a 30x70mm board directly placed on top of the RPi. While the RPi is typically only capable of connecting to a single camera the _'Cam Multiplexer V4'_ enables the RPi to switch between cameras and take pictures. The CamMultiplexer also contains a MPL3115A2 Altimeter that allows the RPi to sense the altitude of the Collector. Lastly, there is a DS3231 Real Time Clock on the board that allows the RPi to keep its internal clock synchronised. The DS3231 which will continue to run even when the RPi is off (or even runs out of battery) because it is connected to a small CR1220 Coincell battery. This battery will slowly drain, but will keep the Collectors' timekeeping accurate for several years!
+
+![Capra Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PH.png)
+
 
 The flat cables (called 'FFC' - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. These signals can be categorised in two protocols:
 
@@ -49,7 +52,7 @@ This PCB is placed towards the lower end of the Capra enclosure; and is fixed ag
 
 ![Button Board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra_Buttonboard.png)
 
-The Buttonboard has a row of connections labelled `'To_Raspberry'`. These connections have individual names and should be routed as follows:
+The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows:
 
 | ButtonBoard | Cam Multiplexer |
 | ----------- | --------------- |
@@ -61,19 +64,29 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. These connec
 | PAUSE       | PLAY            |
 | SCL         | SCL             |
 
+On the Cam Multiplexer board, these connections can be found here (Note that the 'OFF' connection is at an unexpected spot):
+![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
 
 #### Batteries
-Capra uses two 21700 LiPo batteries. More specifically, the batteries used are the Samsung 40T batteries. This specific battery was chosen because two such batteries placed in parallel fit the shape of Capra perfectly and because the 40T model packs an impressive 4000 mAh capacity. The name _21700_ refers to the diameter (21mm) and the height (70mm) of the battery - this is common naming convention with cylindrical LiPo batteries.
-> Fun Fact: 21700 batteries were initially [developed for electric vehicles](https://electrek.co/2017/01/09/samsung-2170-battery-cell-tesla-panasonic/). However, their main use nowadays is to power e-cigarettes.
+Capra uses two 21700 LiPo batteries. More specifically, the batteries used are the Samsung 40T batteries. This specific battery type was chosen because two such batteries placed in parallel fit the shape of Capra perfectly and because the 40T model packs an impressive 4000 mAh capacity. The name _21700_ refers to the diameter (21mm) and the height (70mm) of the battery - this is common naming convention with cylindrical LiPo batteries.
+> Fun Fact: 21700 batteries were initially [developed for electric vehicles](https://electrek.co/2017/01/09/samsung-2170-battery-cell-tesla-panasonic/). However, their main use nowadays is to power e-cigarettes. Hence, you will find them readily for sale at vape shops.
 
 At an average draw of approximately 800mA @ 5V by the Capra system, the two batteries are able to power the system for an approximate 7,5 hours.
 
 ![Samsung 40T](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/40T.jpg)
 
-LiPo batteries do require a specific circuit to regulate their charging. For Capra, I chose the Adafruit PowerBoost 1000. This module is able to provide the necessary 800mA to the RPi and has a load-sharing circuit. The load sharing circuit is what makes it possible to connect the Collector to a 5V USB power source (e.g. 5V powerbank, 5V wall outlet, etc.). Connecting such a power source will have the Collector run on that power AND charge the batteries while connected.
+LiPo batteries do require a specific circuit to regulate their charging. For Capra, I chose the Adafruit PowerBoost 1000. This module 'boosts' the nominal 3.7V of the LiPo battery to 5V @ 800mA required by the RPI and has a load-sharing circuit. The load sharing circuit is what makes it possible to connect the Collector to a 5V USB power source (e.g. 5V powerbank, 5V wall outlet, etc.). Connecting such a power source will have the Collector run on that power AND charge the batteries while connected.
 
-**NEVER ATTEMPT TO CHARGE THESE BATTERIES WITHOUT AN APPROPRIATE CIRCUIT OR MODULE.**
+**!! NEVER ATTEMPT TO CHARGE THESE BATTERIES WITHOUT AN APPROPRIATE CIRCUIT OR MODULE !!**
 
+**!! NEVER EVER SOLDER WIRES DIRECTLY TO THE BATTERIES !!**
+
+On the Collectors' back piece, there are recessed areas where the battery clips go. There are two types of battery clips used in the assembly. The one meant for the '+' terminal of the battery has a little circular marking on it; the one meant for the '-' terminal of the battery has a texturised surface and is springy. These parts are shown below:![Battery Clips](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryClips.png)
+
+The '+' and '-' terminals should be connected in parallel to the JST-PH2 connector on the PowerBoost module. The output of the PowerBoost module should be connected to the following positions of the Cam Multiplexer:
+![Power connection on Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PB.png)
+
+##### Safety and Batteries
 21700 batteries have poorly indicated '+' and '-' terminals. This is **_extremely_** important to remain aware of while inserting them into the battery holders. If inserted the wrong way around, the batteries will immediately short circuit, resulting in **melting wires** at best and **exploding batteries** at worst. This will also irreparably damage the PowerBoost module. To mitigate such mistakes, mark the '-' side of new batteries with tape or permanent marker. The '+' terminal is recognisable by a round indentation. The '-' terminal is entirely flat.
 
 ![Battery Marking](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryMarking.JPG)
@@ -84,17 +97,15 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 
 
 #### LED Meanings
-| LED   | Location   | Meaning |
-| ----- |:----------:|--------:|
-| 💚 solid/blinking  | Raspberry pi Zero | Raspberry pi is on  |
-| 💚    | Capra PCB | Unassigned  |
-| 🧡    | Capra PCB | Unassigned  |
-| 💚 blinking   | Button board | collector.py is PAUSED  |
-| 🔴 blinking    | Button board | program is running  |
-| 🔵 solid | Adafruit Powerbooster | Adafruit Powerbooster has power |
-| 💚 solid   | Adafruit Powerbooster | Batteries fully charged  |
-| 🔴 solid   | Adafruit Powerbooster | Batteries low  |
-| 🧡 solid   | Adafruit Powerbooster | Batteries charging  |
+| LED                | Location          | Meaning       |
+| ------------------ | ----------------- | ------------- |
+| 💚 solid/blinking  | Raspberry Pi | RPi is on  |
+| 💚 blinking        | Button board | collector.py is PAUSED  |
+| 🔴 blinking        | Button board | program is running  |
+| 🔵 solid           | Powerbooster | Powerbooster has power |
+| 💚 solid           | Powerbooster | Batteries fully charged  |
+| 🔴 solid           | Powerbooster | Batteries low  |
+| 🧡 solid           | Powerbooster | Batteries charging  |
 
 ## Explorer (Projector unit)
 The Explorers functionality is twofold:
