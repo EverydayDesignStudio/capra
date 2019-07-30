@@ -34,10 +34,10 @@ The Cam Muliplexer is a 30x70mm board directly placed on top of the RPi. While t
 
 The flat cables (called 'FFC' - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. These signals can be categorised in two protocols:
 
-| Protocol   | Function   | Through |
-| ---------- | ---------- | ------- |
-| [I2C](https://en.wikipedia.org/wiki/I%C2%B2C)        | RPI issue commands to the camera. | VideoCore (GPU) of RPi and Camera through Analog Multiplexer 74HC4051 |
-| [MIPI](https://mipi.org/specifications/d-phy)       | Contains all the data that comprise the image taken by the camera. | VideoCore (GPU) of RPi and Camera through (one or both) FSA642UMX |
+| Protocol   | Function   | Connects | Through |
+| ---------- | ---------- | -------- | ------- |
+| [I2C](https://en.wikipedia.org/wiki/I%C2%B2C)        | RPI issue commands to the camera (e.g. set resolution, take picture) | VideoCore (GPU) of RPi <-> Camera (Bidirectional) | Through Analog Multiplexer 74HC4051 |
+| [MIPI](https://mipi.org/specifications/d-phy)       | Contains all the data that comprise the image taken by the camera. | Camera -> VideoCore (GPU) of RPi (Unidirectional) | Through (one or both) FSA642UMX |
 
 The table above echoes the systematic drawing in that it shows the signals between the RPi and the cameras being split up and switched via two different chips; this is due to the vastly different electronic requirements of those signals.
 
@@ -56,7 +56,7 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 
 | ButtonBoard | Cam Multiplexer |
 | ----------- | --------------- |
-| GND         | GND             |
+| GND         | GND (⏚ symbol) |
 | LED_R       | LED             |
 | LED_G       | LED2            |
 | 3V3         | 3V3             |
@@ -64,11 +64,11 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 | PAUSE       | PLAY            |
 | SCL         | SCL             |
 
-On the Cam Multiplexer board, these connections can be found here (Note that the 'OFF' connection is at an unexpected spot):
+These connections can be found here on the Cam Multiplexer board, (Note that the 'OFF' connection is at an unexpected spot):
 ![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
 
 #### Batteries
-Capra uses two 21700 LiPo batteries. More specifically, the batteries used are the Samsung 40T batteries. This specific battery type was chosen because two such batteries placed in parallel fit the shape of Capra perfectly and because the 40T model packs an impressive 4000 mAh capacity. The name _21700_ refers to the diameter (21mm) and the height (70mm) of the battery - this is common naming convention with cylindrical LiPo batteries.
+Capra uses two 21700 LiPo batteries. More specifically, the batteries used are the Samsung 40T batteries. This specific battery type was chosen because two such batteries placed in parallel fit the shape of Capra perfectly and because the 40T model packs an impressive 4000 mAh capacity per unit. In the Collector, I've placed two such batteries in parallel to create a battery pack of 8000mAh @ 3.7V. The name _21700_ refers to the diameter (21mm) and the height (70mm) of the battery - this is a common naming convention with cylindrical LiPo batteries.
 > Fun Fact: 21700 batteries were initially [developed for electric vehicles](https://electrek.co/2017/01/09/samsung-2170-battery-cell-tesla-panasonic/). However, their main use nowadays is to power e-cigarettes. Hence, you will find them readily for sale at vape shops.
 
 At an average draw of approximately 800mA @ 5V by the Capra system, the two batteries are able to power the system for an approximate 7,5 hours.
@@ -84,14 +84,21 @@ LiPo batteries do require a specific circuit to regulate their charging. For Cap
 On the Collectors' back piece, there are recessed areas where the battery clips go. There are two types of battery clips used in the assembly. The one meant for the '+' terminal of the battery has a little circular marking on it; the one meant for the '-' terminal of the battery has a texturised surface and is springy. These parts are shown below:![Battery Clips](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryClips.png)
 
 The '+' and '-' terminals should be connected in parallel to the JST-PH2 connector on the PowerBoost module. The output of the PowerBoost module should be connected to the following positions of the Cam Multiplexer:
-![Power connection on Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PB.png)
+![Power connection on Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/batteries.jpg)
+
+| PowerBoost | ↔ | Cam Multiplexer |
+| ---------- |   | --------------- |
+| +          | ↔ | 5V              |
+| -          | ↔ | GND (⏚ symbol) |
+
+Note the sides of the PH2 connector: the connection closest to the USB port on the Powerboost should be GND; the other should be +3.7V (power from battery pack).
 
 ##### Safety and Batteries
 21700 batteries have poorly indicated '+' and '-' terminals. This is **_extremely_** important to remain aware of while inserting them into the battery holders. If inserted the wrong way around, the batteries will immediately short circuit, resulting in **melting wires** at best and **exploding batteries** at worst. This will also irreparably damage the PowerBoost module. To mitigate such mistakes, mark the '-' side of new batteries with tape or permanent marker. The '+' terminal is recognisable by a round indentation. The '-' terminal is entirely flat.
 
 ![Battery Marking](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryMarking.JPG)
 
-The + terminal should be pointed upwards. The '-' terminal should be pointed down (towards the buttonboard). There is also a marking on the back piece that shows the orientation of the batteries:
+The + terminal should be pointed upwards. The '-' terminal should be pointed down (towards the buttonboard). There is also a recessed marking on the back piece that shows the orientation of the batteries:
 
 ![Battery Orientation](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/BatteryOrientation.JPG)
 
