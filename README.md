@@ -31,7 +31,6 @@ The Cam Muliplexer is a 30x70mm board directly placed on top of the RPi. While t
 
 ![Capra Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PH.png)
 
-
 The flat cables (called 'FFC' - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. These signals can be categorised in two protocols:
 
 | Protocol   | Function   | Connects | Through |
@@ -42,6 +41,11 @@ The flat cables (called 'FFC' - Flat Flexible Cable) contain all signals that tr
 The table above echoes the systematic drawing in that it shows the signals between the RPi and the cameras being split up and switched via two different chips; this is due to the vastly different electronic requirements of those signals.
 
 Note that the I2C meant in the context of the cameras is NOT easily directly programmable. The I2C bus that runs between the cameras and the RPi is called I2C-0. I2C-0 is controlled by the 'GPU' of the RPi (also referred to as the VideoCore). The 'regular' I2C bus (BCM 2 & BCM3) is an entirely separate I2C bus and is controlled by the ARM processor on the RPi. The latter bus talks to the Altimeter and the RTC and is called I2C-1.
+
+##### A tiny bit about I2C
+I²C (or I2C, because that is easier to type) is a data protocol that allows multiple devices to be connected to the same pins of a microcontroller. In Capra's case, the Altimeter and RTC are both connected to BCM2 (SCL, _short for 'Slave CLock'_) and BCM3 (SDA, _short for 'Slave DAta'_); yet their functionality does not interfere with each other. This works through something called **addressing**. Each I2C device has a specific address; whenever the microcontoller wants to 'talk'to any of the devices, it first sends out an 'adress': string of 1's and 0's over its data line (SDA). This address will correspond with one of the devices; then that device starts listening to whatever commands the microcontroller sends next. Compare this with a phone call; you first dial a number (analogous to an address) and then start talking (analogous to 'whatever commands the microcontroller sends next').
+
+Using I2C is different for per device. Typically, you can find documentation of how to address the device and what kinds of commands you can send to it in its datasheet. For the altimeter on Capra for example, [its datasheet](https://media.digikey.com/pdf/Data%20Sheets/NXP%20PDFs/MPL3115A2.pdf) will tell you how to address it. However, the process of writing this kind of code is very tedious. If you can, find an existing breakout board from Sparkfun or Adafruit with a component that fulfills your intended functionality. You can then integrate that circuit into your own (Sparkfun and Adafruit open-source their designs!!) and use their code to interface with the chip. Do attribute the author of the code you're importing in the header of your code and link to the respective originating github repo!!
 
 #### Buttonboard
 This PCB is placed towards the lower end of the Capra enclosure; and is fixed against the back piece. A 7-cable ribbon connects the buttonboard with the Cam Multiplexer. The following components are on the buttonboard:
