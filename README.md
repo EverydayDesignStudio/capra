@@ -15,12 +15,12 @@ The (on/off) button is controlled by the service: `/lib/systemd/system/capra-lis
 
 ### Hardware
 Electronically, the Capra Collector consists of the following components _(items with an asterisk are further elaborated on)_:
-- Raspberry Pi Zero
+- [Raspberry Pi Zero](https://www.adafruit.com/product/3400)
 - [Adafruit Powerboost 1000](https://www.adafruit.com/product/2465)
-- Custom PCB: Cam Multiplexer *
+- [Custom PCB: Cam Multiplexer](#Cam Multiplexer) *
 - Custom PCB: Buttonboard *
 - 2 x 21700 LiPo Batteries *
-- 3 x Raspberry Pi Camera V2's.
+- 3 x [Raspberry Pi Camera V2's](https://www.adafruit.com/product/3099)
 
 In the image below, a systematic view of the respective components is given. Note that power and GND connections are typically not shown in this image.
 
@@ -60,7 +60,7 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 
 | ButtonBoard | ↔ | Cam Multiplexer |
 | ----------- | - | --------------- |
-| GND         | ↔ |GND (⏚ symbol) |
+| GND         | ↔ | GND (⏚ symbol) |
 | LED_R       | ↔ | LED             |
 | LED_G       | ↔ | LED2            |
 | 3V3         | ↔ | 3V3             |
@@ -108,15 +108,15 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 
 
 #### LED Meanings
-| LED                | Location          | Meaning       |
-| ------------------ | ----------------- | ------------- |
-| 💚 solid/blinking  | Raspberry Pi      | RPi is on     |
+| LED                | Location          | Meaning                 |
+| ------------------ | ----------------- | ----------------------- |
+| 💚 solid/blinking  | Raspberry Pi      | RPi is on               |
 | 💚 blinking        | Button board      | collector.py is PAUSED  |
-| 🔴 blinking        | Button board      | program is running  |
-| 🔵 solid           | Powerbooster      | Powerbooster has power |
-| 💚 solid           | Powerbooster      | Batteries fully charged  |
-| 🔴 solid           | Powerbooster      | Batteries low  |
-| 🧡 solid           | Powerbooster      | Batteries charging  |
+| 🔴 blinking        | Button board      | program is running      |
+| 🔵 solid           | Powerbooster      | Powerbooster has power  |
+| 💚 solid           | Powerbooster      | Batteries fully charged |
+| 🔴 solid           | Powerbooster      | Batteries low           |
+| 🧡 solid           | Powerbooster      | Batteries charging      |
 
 ## Explorer (Projector unit)
 The Explorers functionality is twofold:
