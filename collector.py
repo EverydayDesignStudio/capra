@@ -74,7 +74,7 @@ def blink(pin, repeat, interval):
         time.sleep(interval)
 
 
-# Blink status LEDs on camera
+# Blink status LEDs on camera - TODO Remove instances of nonexistent LEDS
 def hello_blinks():
     blink(LED_GREEN, 2, 0.1)
     blink(LED_AMBER, 2, 0.1)
