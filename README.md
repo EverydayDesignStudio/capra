@@ -65,7 +65,7 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 | 3V3         | ↔ | 3V3             |
 | OFF         | ↔ | OFF             |
 | PAUSE       | ↔ | PLAY            |
-| SCL         | ↔ | SCL             |
+| SCL         | ↔ | ON              |
 
 These connections can be found here on the Cam Multiplexer board, (Note that the 'OFF' connection is at an unexpected spot):
 ![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
