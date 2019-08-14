@@ -320,3 +320,14 @@ class SQLController:
         ts = time.time()
         cursor.execute(self.statements.update_hike_endtime_picture_count(ts, count, hike_id))
         self.connection.commit()
+
+    # Transfer
+    # --------------------------------------------------------------------------
+    def delete_picture_and_hikes_tables(self):
+        cursor = self.connection.cursor()
+
+        cursor.execute(self.statements.delete_pictures())
+        self.connection.commit()
+
+        cursor.execute(self.statements.delete_hikes())
+        self.connection.commit()

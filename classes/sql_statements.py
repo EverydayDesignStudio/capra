@@ -227,3 +227,13 @@ class SQLStatements:
         statement = 'UPDATE hikes SET end_time={t}, pictures={c}, updated_date_time=datetime() WHERE hike_id={h} \
             '.format(t=time, c=count, h=hike_id)
         return statement
+
+    # Transfer
+    # --------------------------------------------------------------------------
+    def delete_pictures(self) -> str:
+        statement = 'DELETE FROM pictures'
+        return statement
+
+    def delete_hikes(self) -> str:
+        statement = 'DELETE FROM hikes'
+        return statement
