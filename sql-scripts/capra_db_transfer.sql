@@ -34,5 +34,6 @@ INSERT INTO pictures (time, altitude, color, hike, index_in_hike, camera1, camer
 
 ----------------------------------------------------------------
 -- Delete all items from a table
-DELETE FROM hikes;
 DELETE FROM pictures;
+DELETE FROM hikes;
+
