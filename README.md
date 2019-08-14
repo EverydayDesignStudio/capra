@@ -127,6 +127,11 @@ The Explorers functionality is twofold:
 - Providing storage for the photos from the Collector  
 - Playing the photos back via its internal projector.
 
+### Software Setup
+| Scripts to Run     | Purpose           |
+| ------------------ | ----------------- |
+| `sudo apt-get install exfat-fuse exfat-utils` | enables Raspberry Pi to read ExFat hard drives |
+
 ### File transfer
 File transfer from the Collector to the Explorer is initiated when the Collector is physically placed over the Explorers controls. This is registered by the Explorer by a magnetometer that senses the magnetic field of a small magnet in the Collectors' housing.
 At this point, the Explorer starts two parallel processes: the file transfer is initiated and a __transfer animation__ is started.
