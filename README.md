@@ -4,9 +4,6 @@
 
 ---
 
-## Remote Connection
-There is a RealVNC Capra group for connecting to both the cameras and projectors remotely. Login details can be found in the Dropbox.
-
 ## Collector (Camera unit)
 ### Services
 The timelapse program is started on power up by the service: `/lib/systemd/system/capra-startup.service`
@@ -119,6 +116,11 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 | 💚 solid           | Powerbooster      | Batteries fully charged |
 | 🔴 solid           | Powerbooster      | Batteries low           |
 | 🧡 solid           | Powerbooster      | Batteries charging      |
+
+
+### Remote Connection
+There is a RealVNC Capra group for connecting to both the Collector and Explorer remotely. Login details can be found in the Dropbox.
+
 
 ## Explorer (Projector unit)
 The Explorers functionality is twofold:
