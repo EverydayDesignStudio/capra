@@ -97,12 +97,6 @@ def blink_after_crash():
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     print('Initializing camera object')
-    # <<<<<<< HEAD
-    #     logging.info('Initializing camera object')
-    #     gpio.output(SEL_1, True)
-    #     gpio.output(SEL_2, True)
-    # =======
-    # TODO - Is this the proper way to initialize the camera object?
     logging.info('Initializing camera object')
     gpio.output(SEL_1, False)
     gpio.output(SEL_2, False)
@@ -220,8 +214,8 @@ def main():
     # =======
     if created:     # new hike created; blink four times
         blink(LED_BTM, 4, 0.2)
-        os.chmod(DIRECTORY, 666) # set permissions to be read and written to when run manually
-        os.chmod(DB , 666)
+        os.chmod(DIRECTORY, 666)  # set permissions to be read and written to when run manually
+        os.chmod(DB, 666)
     else:           # continuing last hike; blink two times
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
