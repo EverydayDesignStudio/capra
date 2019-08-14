@@ -10,14 +10,19 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 
+from adafruit_mcp3xxx.analog_in import AnalogIn
+from gpiozero import Button             # Rotary encoder, detected as button
 from PIL import ImageTk, Image          # Pillow image functions
+from RPi import GPIO                    # GPIO pin detection for Raspberry Pi
 from tkinter import Tk, Canvas, Label   # Tkinter, GUI framework in use
-import time
 from time import sleep
-import datetime
 
-from gpiozero import Button         # Rotary encoder, detected as button
-from RPi import GPIO                # GPIO pin detection for Raspberry Pi
+import adafruit_mcp3xxx.mcp3008 as MCP
+import board
+import busio
+import digitalio
+import datetime
+import math
 
 # Database location
 DB = '/home/pi/Pictures/capra-projector.db'
@@ -44,8 +49,7 @@ SLIDER_SWITCH_MODE_1 = 2
 SLIDER_SWITCH_MODE_2 = 1
 SLIDER_SWITCH_MODE_3 = 0
 
-
-# Setup GPIO
+# SETUP BCM PINS
 GPIO.setmode(GPIO.BCM)
 
 # Rotary encoder
@@ -56,17 +60,31 @@ GPIO.setup(clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(cnt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(rotary_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Rotary switch
-mode1 = 13
-mode2 = 19
-mode3 = 26
-GPIO.setup(mode1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(mode2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(mode3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# Buttons
+GPIO.setup(BUTTON_PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_NEXT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_PREVIOUS, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Play / Pause button
-play_pause_button = 5
-GPIO.setup(play_pause_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# SETUP ADC CHANNELS
+# Mode switch
+# mode1 = 13
+# mode2 = 19
+# mode3 = 26
+# GPIO.setup(mode1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# GPIO.setup(mode2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+# GPIO.setup(mode3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# Accelerometer
+spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+cs = digitalio.DigitalInOut(board.D8)
+mcp = MCP.MCP3008(spi, cs)
+
+chan0 = AnalogIn(mcp, MCP.P7)
+chan1 = AnalogIn(mcp, MCP.P6)
+chan2 = AnalogIn(mcp, MCP.P5)
+ax = chan0.value
+ay = chan1.value
+az = chan2.value
 
 
 # Slideshow class which is the main class that runs and is listening for events
@@ -87,7 +105,7 @@ class Slideshow:
         # self.canvas.configure(bg='#444')
         self.canvas.pack(expand='yes', fill='both')
 
-        # Bind to hardware control events
+        # Hardware control events
         self.window.bind(GPIO.add_event_detect(clk, GPIO.BOTH, callback=self.detected_rotary_change))
         self.clkLastState = GPIO.input(clk)
 
@@ -96,6 +114,11 @@ class Slideshow:
         self.window.bind(GPIO.add_event_detect(rotary_button, GPIO.BOTH, callback=self.rotary_button_pressed))
         self.rotary_button_state = GPIO.input(rotary_button)
         self.rotary_button_state = not self.rotary_button_state  # default is True, so set it to False
+
+        self.window.bind(GPIO.add_event_detect(BUTTON_PLAY_PAUSE, GPIO.FALLING, callback=self.button_pressed_play_pause))
+        self.window.bind(GPIO.add_event_detect(BUTTON_NEXT, GPIO.FALLING, callback=self.button_pressed_next))
+        self.window.bind(GPIO.add_event_detect(BUTTON_PREVIOUS, GPIO.FALLING, callback=self.button_pressed_previous))
+
 
         # Initialization for database implementation
         self.sql_controller = SQLController(database=DB)
@@ -147,6 +170,9 @@ class Slideshow:
         # Start continual fading function, will loop for life of the class
         root.after(0, func=self.fade_image)
         # root.after(self.TRANSITION_DELAY, func=self.auto_increment_slideshow)
+
+        # Start continual check of accelerometer
+        root.after(0, func=self.check_accelerometer)
 
     def _build_next_raw_images(self, next_picture: Picture):
         # print('build images')
@@ -218,7 +244,7 @@ class Slideshow:
 
         root.after(self.TRANSITION_DELAY, self.auto_increment_slideshow)
 
-    # HARDWARE CONTROLS
+    # BCM HARDWARE CONTROLS
     def detected_rotary_change(self, event):
         clkState = GPIO.input(clk)
         cntState = GPIO.input(cnt)
@@ -271,6 +297,43 @@ class Slideshow:
         print('Rotary button state: {i}'.format(i=self.rotary_button_state))
 
         sleep(0.1)
+
+    def button_pressed_play_pause(self, event):
+        print('Play Pause pressed')
+
+    def button_pressed_next(self, event):
+        print('Next pressed')
+
+    def button_pressed_previous(self, event):
+        print('Previous pressed')
+
+    # ADC HARDWARE CONTROLS
+    def check_accelerometer(self):
+        chan0 = AnalogIn(mcp, MCP.P7)
+        chan1 = AnalogIn(mcp, MCP.P6)
+        chan2 = AnalogIn(mcp, MCP.P5)
+        ax = chan0.value
+        ay = chan1.value
+        az = chan2.value
+
+        pitch = 180 * math.atan(ax/math.sqrt(ay*ay + az*az))/math.pi
+        roll = 180 * math.atan(ay/math.sqrt(ax*ax + az*az))/math.pi
+        
+        #if roll > -45 and roll < 45:
+        #    orientation = 'landscape'
+        #elif roll >= 45 or roll <= -45:
+        #    orientation = 'vertical'
+        
+        if pitch > 35 and roll < 34:
+                orientation = 'correct vertical'
+        elif pitch < 31 and roll > 34:
+                orientation = 'upside down vertical'
+        else:
+                orientation = 'horizontal'
+
+        print(orientation)
+
+        root.after(500, self.check_accelerometer)
 
 
 # Create the root window

@@ -98,12 +98,6 @@ def blink_after_crash():
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     print('Initializing camera object')
-    # <<<<<<< HEAD
-    #     logging.info('Initializing camera object')
-    #     gpio.output(SEL_1, True)
-    #     gpio.output(SEL_2, True)
-    # =======
-    # TODO - Is this the proper way to initialize the camera object?
     logging.info('Initializing camera object')
     gpio.output(SEL_1, False)
     gpio.output(SEL_2, False)
