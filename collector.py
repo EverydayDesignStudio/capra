@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-
+#   _______ ____  _______ _
+#  / __/ _ `/ _ \/ __/ _ `/
+#  \__/\_,_/ .__/_/  \_,_/
+#         /_/
+# ------------------------------------------------------------------------------
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
-
 # Import system modules
 import datetime              # For translating POSIX timestamp to human readable date/time
 import logging               # For creating a log
@@ -35,18 +38,23 @@ LED_AMBER = 27          # BOARD - 13
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
-# NEW_HIKE_TIME = 43200  # 12 hours
-# NEW_HIKE_TIME = 21600  # 6 hours
-# NEW_HIKE_TIME = 10800  # 3 hours
-NEW_HIKE_TIME = 1800 # 1/2 hour
 
-gpio.setwarnings(False)
-gpio.setmode(gpio.BCM)
-gpio.setup(SEL_1, gpio.OUT)         # select 1
-gpio.setup(SEL_2, gpio.OUT)         # select 2
-gpio.setup(LED_GREEN, gpio.OUT)     # status led1
-gpio.setup(LED_AMBER, gpio.OUT)     # status led2
-gpio.setup(LED_BTM, gpio.OUT)       # status led3
+# NEW_HIKE_TIME = 43200     # 12 hours
+# NEW_HIKE_TIME = 21600     # 6 hours
+# NEW_HIKE_TIME = 10800     # 3 hours
+NEW_HIKE_TIME = 5400        # 1 1/2 hours
+# NEW_HIKE_TIME = 1800      # 1/2 hour
+
+
+# Initialize GPIO pins
+def initialize_GPIOs():
+    gpio.setwarnings(False)
+    gpio.setmode(gpio.BCM)
+    gpio.setup(SEL_1, gpio.OUT)         # select 1
+    gpio.setup(SEL_2, gpio.OUT)         # select 2
+    gpio.setup(LED_GREEN, gpio.OUT)     # status led1
+    gpio.setup(LED_AMBER, gpio.OUT)     # status led2
+    gpio.setup(LED_BTM, gpio.OUT)       # status led3
 
 
 # Turn off LEDs
@@ -72,25 +80,44 @@ def blink(pin, repeat, interval):
         time.sleep(interval)
 
 
-# Blink status LEDs on camera
+# Blink status LEDs on camera - TODO Remove instances of nonexistent LEDS
 def hello_blinks():
     blink(LED_GREEN, 2, 0.1)
     blink(LED_AMBER, 2, 0.1)
     blink(LED_BTM, 2, 0.1)
 
 
+def blink_after_crash():
+    blink_time = 0
+    while (blink_time < 10):
+        blink(LED_BTM, 4, 0.1)
+        time.sleep(0.5)
+        blink_time += 1
+
+
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     print('Initializing camera object')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
+    # <<<<<<< HEAD
+    #     logging.info('Initializing camera object')
+    #     gpio.output(SEL_1, True)
+    #     gpio.output(SEL_2, True)
+    # =======
+    # TODO - Is this the proper way to initialize the camera object?
+    logging.info('Initializing camera object')
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
+
     time.sleep(0.2)
-    print('Select pins OK')
+    logging.info('Select pins OK')
     pi_cam = picamera.PiCamera()
     time.sleep(0.2)
-    print('Cam init OK')
+    logging.info('Cam init OK')
     pi_cam.resolution = resolution
+    logging.info('Resolution OK')
     print('Resolution OK')
+    pi_cam.rotation = 180
+    print('Rotation OK')
 
     return pi_cam
 
@@ -107,7 +134,8 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info('==== START')
+    os.chmod(logname, 666)  # Make logfile accessible to writing by both root and user
+    logging.info('START')
 
 
 # Select camera + take a photo + save photo in file system and db
@@ -119,15 +147,15 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         if cam_num == 1:
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, False)
-            print("cam 1 selected")
+            logging.info('cam 1 selected')
         if cam_num == 2:
             gpio.output(SEL_1, False)
             gpio.output(SEL_2, False)
-            print("cam 2 selected")
+            logging.info('cam 2 selected')
         if cam_num == 3:
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
-            print("cam 3 selected")
+            logging.info('cam 3 selected')
         time.sleep(0.2)  # it takes some time for the pin selection
 
         # Build image file path
@@ -156,23 +184,22 @@ def read_altimeter(bus: smbus) -> float:
     data = bus.read_i2c_block_data(0x60, 0x00, 6)
     tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
     altitude = round(tHeight / 16.0, 2)
-
     return altitude
 
 
 def main():
-    # Initialize and setup hardware
-    # initialize_GPIOs()                            # Define the GPIO pin modes
+    # Initialize PINs, LEDs, and GPIO logger
+    initialize_GPIOs()                              # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    #pi_cam = initialize_picamera(RESOLUTION)       # Setup the camera
+    # pi_cam = initialize_picamera(RESOLUTION)      # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
     print('Initializing camera object')
-    gpio.output(SEL_1, True)
-    gpio.output(SEL_2, True)
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
     time.sleep(0.2)
     print('Select pins OK')
     pi_cam = picamera.PiCamera()
@@ -180,22 +207,35 @@ def main():
     print('Cam init OK')
     pi_cam.resolution = RESOLUTION
     print('Resolution OK')
-
+    pi_cam.rotation = 180
+    print('Rotation OK')
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
-
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
-    if created:     # new hike created; blink green
-        blink(LED_GREEN, 2, 0.2)
-    else:           # continuing last hike; blink orange
-        blink(LED_AMBER, 2, 0.2)
-
+    # <<<<<<< HEAD
+    #     if created:     # new hike created: blink green
+    #         blink(LED_GREEN, 2, 0.2)
+    #     else:           # continuing last hike: blink orange
+    #         blink(LED_AMBER, 2, 0.2)
+    # =======
+    if created:     # new hike created; blink four times
+        blink(LED_BTM, 4, 0.2)
+        os.chmod(DIRECTORY, 666)  # set permissions to be read and written to when run manually
+        os.chmod(DB, 666)
+    else:           # continuing last hike; blink two times
+        blink(LED_BTM, 2, 0.2)
+    time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
-    # Initialize logger
+    # Initialize the logger for this specific hike
     initialize_logger(hike_num)
+
+    # Initialize camera and buttons
+    pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    initialize_background_play_pause()              # Setup play/pause button
+    prev_pause = True
 
     # Start the time lapse
     # --------------------------------------------------------------------------
@@ -246,11 +286,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as error:
-        logging.exception('==Error==')
+        logging.exception('===== Error ===== ')
         logging.exception(error)
-        blink_time = 0
-        while(blink_time < 10):
-            blink(LED_BTM, 4, 0.1)
-            time.sleep(0.5)
-            blink_time += 1
-        PP_THREAD.terminate()
+        blink_after_crash()
