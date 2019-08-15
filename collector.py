@@ -235,6 +235,7 @@ def main():
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
+    print('HIKENO: ', hike_num, " =======")
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
     # Initialize the logger for this specific hike
