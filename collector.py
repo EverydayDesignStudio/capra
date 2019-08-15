@@ -36,6 +36,11 @@ LED_BTM = 26            # BOARD - 37
 LED_AMBER = 27          # BOARD - 13
 PIEZO = 18              # BOARD - 12
 
+# TODO enable these values when switching to manufactured Buttonboard
+# LED_GREEN = 26         # BOARD - 37
+# LED_AMBER = 12         # BOARD - 33
+
+
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
@@ -140,7 +145,7 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    os.chmod(logname, 755)  # Make logfile accessible to writing by both root and user
+    os.chmod(logname, 765)  # Make logfile accessible to writing by both root and user
     logging.info('START')
 
 
@@ -225,8 +230,8 @@ def main():
     # =======
     if created:     # new hike created; blink four times
         blink(LED_BTM, 4, 0.2)
-        os.chmod(DIRECTORY, 755)  # set permissions to be read and written to when run manually
-        os.chmod(DB, 755)
+        os.chmod(DIRECTORY, 765)  # set permissions to be read and written to when run manually
+        os.chmod(DB, 765)
     else:           # continuing last hike; blink two times
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
@@ -279,7 +284,7 @@ def main():
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            logging.info('cameras still alive')
+            logging.info('Cameras OK')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
