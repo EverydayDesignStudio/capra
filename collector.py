@@ -105,7 +105,7 @@ def blink_after_crash():
 # Sound a beep from the piezo element
 def beep(tone, duration, repeat):
     pzo = gpio.pwm(PIEZO, 0) # initialize piezo object
-    for(r in range(repeat)):
+    for r in range(repeat):
         pzo.start(100)
         pzo.ChangeFrequency(tone)
         time.sleep(duration)
