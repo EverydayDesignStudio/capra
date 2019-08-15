@@ -253,3 +253,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except Exception as error:
+        logging.exception('===== Error ===== ')
+        logging.exception(error)
+        blink_after_crash()
