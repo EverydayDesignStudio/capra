@@ -127,7 +127,7 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    os.chmod(logname, 666)  # Make logfile accessible to writing by both root and user
+    os.chmod(logname, 755)  # Make logfile accessible to writing by both root and user
     logging.info('START')
 
 
