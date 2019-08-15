@@ -55,7 +55,7 @@ This PCB is placed towards the lower end of the Capra enclosure; and is fixed ag
 
 ![Button Board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra_Buttonboard.png)
 
-The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows:
+The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows (BCM and BOARD numbers are shown for programming purposes):
 
 | ButtonBoard | ↔ | Cam Multiplexer | BCM | BOARD |
 | ----------- | - | --------------- | --- | ----- |
