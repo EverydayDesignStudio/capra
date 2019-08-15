@@ -55,17 +55,17 @@ This PCB is placed towards the lower end of the Capra enclosure; and is fixed ag
 
 ![Button Board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra_Buttonboard.png)
 
-The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows:
+The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is where the 7-cable ribbon connects to the button board. These connections have individual names and should be routed as follows (BCM and BOARD numbers are shown for programming purposes):
 
-| ButtonBoard | ↔ | Cam Multiplexer |
-| ----------- | - | --------------- |
-| GND         | ↔ | GND (⏚ symbol) |
-| LED_R       | ↔ | LED             |
-| LED_G       | ↔ | LED2            |
-| 3V3         | ↔ | 3V3             |
-| OFF         | ↔ | OFF             |
-| PAUSE       | ↔ | PLAY            |
-| SCL         | ↔ | ON              |
+| ButtonBoard | ↔ | Cam Multiplexer | BOARD | BCM |
+| ----------- | - | --------------- | ----- | --- |
+| GND         | ↔ | GND (⏚ symbol) | n/a   | n/a |
+| LED_R       | ↔ | LED             | 33    | 12  |
+| LED_G       | ↔ | LED2            | 37    | 26  |
+| 3V3         | ↔ | 3V3             | n/a   | n/a |
+| OFF         | ↔ | OFF             | 22    | 25  |
+| PAUSE       | ↔ | PLAY            | 11    | 17  |
+| SCL         | ↔ | ON              | 5     | 3   |
 
 These connections can be found here on the Cam Multiplexer board, (Note that the 'OFF' connection is at an unexpected spot):
 ![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
