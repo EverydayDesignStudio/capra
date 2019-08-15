@@ -81,6 +81,11 @@ def hello_blinks():
     blink(LED_BTM, 2, 0.1)
 
 
+def blink_after_crash():
+    for i in range(4):
+        blink(LED_BTM, 4, 0.1)
+
+
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     print('Initializing camera object')
