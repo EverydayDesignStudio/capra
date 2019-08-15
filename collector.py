@@ -36,6 +36,11 @@ LED_BTM = 26            # BOARD - 37
 LED_AMBER = 27          # BOARD - 13
 PIEZO = 18              # BOARD - 12
 
+# Pin numbers for manufactured ButtonBoard
+# LED_GREEN = 12         # BOARD - 33
+# LED_RED = 26      # BOARD 37
+
+
 # Tone frequencies for piezo
 c = 261
 d = 294
@@ -99,7 +104,7 @@ def blink_after_crash():
 
 
 def beep(tone, duration, pause, repeat):
-    pzo = gpio.PWM(PIEZO, 100)    
+    pzo = gpio.PWM(PIEZO, 100)
     for i in range(repeat):
         pzo.ChangeFrequency(tone)
         time.sleep(duration)
@@ -196,6 +201,7 @@ def main():
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
+    beep(C, 0.25, 0.1, 3)
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
@@ -238,6 +244,7 @@ def main():
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
+                beep(a, 0.1, 0.1, 2)
                 prev_pause = True
             print(">>PAUSED!<<")
             blink(LED_BTM, 1, 0.3)
@@ -282,4 +289,5 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('===== Error ===== ')
         logging.exception(error)
+        beep(c, 1, 0.5, 3)
         blink_after_crash()
