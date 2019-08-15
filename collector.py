@@ -47,8 +47,9 @@ RESOLUTION = (1280, 720)
 # NEW_HIKE_TIME = 43200     # 12 hours
 # NEW_HIKE_TIME = 21600     # 6 hours
 # NEW_HIKE_TIME = 10800     # 3 hours
-NEW_HIKE_TIME = 5400        # 1 1/2 hours
+# NEW_HIKE_TIME = 5400        # 1 1/2 hours
 # NEW_HIKE_TIME = 1800      # 1/2 hour
+NEW_HIKE_TIME = 1
 
 # Piezo frequencies
 c = 261
@@ -215,6 +216,21 @@ def main():
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
     initialize_picamera(RESOLUTION) # Setup the camera
+
+    # print('Initializing camera object')
+    # logging.info('Initializing camera object')
+    # gpio.output(SEL_1, False)
+    # gpio.output(SEL_2, False)
+    # time.sleep(0.2)
+    # logging.info('Select pins OK')
+    # pi_cam = picamera.PiCamera()
+    # time.sleep(0.2)
+    # logging.info('Cam init OK')
+    # pi_cam.resolution = resolution
+    # logging.info('Resolution OK')
+    # print('Resolution OK')
+    # pi_cam.rotation = 180
+    # print('Rotation OK')
 
     # TODO Integrate this into sql_controller to overwrite any existing database data
     # and use the previous folder if it is empty.
