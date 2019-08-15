@@ -34,16 +34,17 @@ SEL_2 = 23              # BOARD - 16
 LED_GREEN = 24          # BOARD - 18
 LED_BTM = 26            # BOARD - 37
 LED_AMBER = 27          # BOARD - 13
+PIEZO = 18              # BOARD - 12
 
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
-
 # NEW_HIKE_TIME = 43200     # 12 hours
 # NEW_HIKE_TIME = 21600     # 6 hours
 # NEW_HIKE_TIME = 10800     # 3 hours
 NEW_HIKE_TIME = 5400        # 1 1/2 hours
 # NEW_HIKE_TIME = 1800      # 1/2 hour
+
 
 
 # Initialize GPIO pins
@@ -55,6 +56,7 @@ def initialize_GPIOs():
     gpio.setup(LED_GREEN, gpio.OUT)     # status led1
     gpio.setup(LED_AMBER, gpio.OUT)     # status led2
     gpio.setup(LED_BTM, gpio.OUT)       # status led3
+    gpio.setup(PIEZO, gpio.OUT)         # PIEZO
 
 
 # Turn off LEDs
@@ -95,13 +97,23 @@ def blink_after_crash():
         blink_time += 1
 
 
+# Sound a beep from the piezo element
+def beep(tone, duration, repeat):
+    pzo = gpio.pwm(PIEZO, 0) # initialize piezo object
+    for in in range(repeat):
+        pzo.start(100)
+        pzo.ChangeFrequency(tone)
+        time.sleep(duration)
+        pzo.stop()
+        time.sleep(0.1)
+
+
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     print('Initializing camera object')
     logging.info('Initializing camera object')
     gpio.output(SEL_1, False)
     gpio.output(SEL_2, False)
-
     time.sleep(0.2)
     logging.info('Select pins OK')
     pi_cam = picamera.PiCamera()
@@ -184,25 +196,23 @@ def read_altimeter(bus: smbus) -> float:
 def main():
     # Initialize PINs, LEDs, and GPIO logger
     initialize_GPIOs()                              # Define the GPIO pin modes
-    i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
-    turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    # pi_cam = initialize_picamera(RESOLUTION)      # Setup the camera
+    turn_off_leds()                                 # TODO - why do we need to
+    i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
+    initialize_picamera(RESOLUTION) # Setup the camera
 
-    print('Initializing camera object')
-    gpio.output(SEL_1, False)
-    gpio.output(SEL_2, False)
-    time.sleep(0.2)
-    print('Select pins OK')
-    pi_cam = picamera.PiCamera()
-    time.sleep(0.2)
-    print('Cam init OK')
-    pi_cam.resolution = RESOLUTION
-    print('Resolution OK')
-    pi_cam.rotation = 180
-    print('Rotation OK')
+    # TODO Integrate this into sql_controller to overwrite any existing database data
+    # and use the previous folder if it is empty.
+    # ALTERNATIVELY, move folder creation to after pause is taken out.
+    FOLDER = '{d}hike{h}/'.format(d=DIRECTORY, h=hike_num)
+    for dirpath, dirnames, files in os.walk(FOLDER):
+        if files:
+            print(dirpath, 'has files')
+        if not files:
+            print(dirpath, 'is empty')
+
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
@@ -269,7 +279,7 @@ def main():
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            logging.info('Cameras still alive')
+            logging.info('cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
