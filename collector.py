@@ -153,9 +153,10 @@ def initialize_background_play_pause():
 def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
+    print(logname, "LOGNAME")
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.info('START')
     os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
+    logging.info('START')
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
