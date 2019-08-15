@@ -146,7 +146,7 @@ def initialize_logger(hike_num: int):
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info('START')
-    os.chmod(logname, 765)  # Make logfile accessible to writing by both root and user
+    os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
@@ -229,8 +229,8 @@ def main():
     # =======
     if created:     # new hike created; blink four times
         blink(LED_BTM, 4, 0.2)
-        os.chmod(DIRECTORY, 775)  # set permissions to be read and written to when run manually
-        os.chmod(DB, 775)
+        os.chmod(DIRECTORY, 777)  # set permissions to be read and written to when run manually
+        os.chmod(DB, 777)
     else:           # continuing last hike; blink two times
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
