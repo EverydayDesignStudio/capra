@@ -50,6 +50,15 @@ RESOLUTION = (1280, 720)
 NEW_HIKE_TIME = 5400        # 1 1/2 hours
 # NEW_HIKE_TIME = 1800      # 1/2 hour
 
+# Piezo frequencies
+c = 261
+d = 294
+e = 329
+f = 349
+g = 392
+a = 440
+b = 493
+C = 423
 
 
 # Initialize GPIO pins
@@ -146,7 +155,7 @@ def initialize_logger(hike_num: int):
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info('START')
-
+    os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
@@ -178,8 +187,7 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         print('cam {c} -- picture taken!'.format(c=cam_num))
 
 
-# Tell altimeter to collect data; this process (takes a while)
-# TODO - define "a while"
+# Tell altimeter to collect data; this process takes a while
 def query_altimeter(bus: smbus):
     # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
     # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
@@ -240,7 +248,7 @@ def main():
 
     # Initialize the logger for this specific hike
     initialize_logger(hike_num)
-    os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
+
     # Initialize camera and buttons
     pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
