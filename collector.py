@@ -155,7 +155,7 @@ def initialize_logger(hike_num: int):
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     print(logname, "LOGNAME")
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
+    #os.chmod(logname, 777)  # Make logfile accessible to writing by both root and user
     logging.info('START')
 
 # Select camera + take a photo + save photo in file system and db
