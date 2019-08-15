@@ -66,6 +66,7 @@ gpio.setup(SEL_2, gpio.OUT)         # select 2
 gpio.setup(LED_GREEN, gpio.OUT)     # status led1
 gpio.setup(LED_AMBER, gpio.OUT)     # status led2
 gpio.setup(LED_BTM, gpio.OUT)       # status led3
+gpio.setup(PIEZO, gpio.OUT)
 
 
 # Turn off LEDs
