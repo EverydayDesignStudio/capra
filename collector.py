@@ -215,22 +215,23 @@ def main():
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
-    initialize_picamera(RESOLUTION) # Setup the camera
 
-    # print('Initializing camera object')
-    # logging.info('Initializing camera object')
-    # gpio.output(SEL_1, False)
-    # gpio.output(SEL_2, False)
-    # time.sleep(0.2)
-    # logging.info('Select pins OK')
-    # pi_cam = picamera.PiCamera()
-    # time.sleep(0.2)
-    # logging.info('Cam init OK')
-    # pi_cam.resolution = resolution
-    # logging.info('Resolution OK')
-    # print('Resolution OK')
-    # pi_cam.rotation = 180
-    # print('Rotation OK')
+    #initialize_picamera(RESOLUTION) # Setup the camera
+
+    print('Initializing camera object')
+    logging.info('Initializing camera object')
+    gpio.output(SEL_1, False)
+    gpio.output(SEL_2, False)
+    time.sleep(0.2)
+    logging.info('Select pins OK')
+    pi_cam = picamera.PiCamera()
+    time.sleep(0.2)
+    logging.info('Cam init OK')
+    pi_cam.resolution = resolution
+    logging.info('Resolution OK')
+    print('Resolution OK')
+    pi_cam.rotation = 180
+    print('Rotation OK')
 
     # TODO Integrate this into sql_controller to overwrite any existing database data
     # and use the previous folder if it is empty.
