@@ -214,8 +214,8 @@ def main():
     # =======
     if created:     # new hike created; blink four times
         blink(LED_BTM, 4, 0.2)
-        os.chmod(DIRECTORY, 666)  # set permissions to be read and written to when run manually
-        os.chmod(DB, 666)
+        os.chmod(DIRECTORY, 755)  # set permissions to be read and written to when run manually
+        os.chmod(DB, 755)
     else:           # continuing last hike; blink two times
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
