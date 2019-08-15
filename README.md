@@ -30,7 +30,7 @@ Lastly, there is a DS3231 Real Time Clock (or _RTC_, for short) on the board tha
 
 ![Capra Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PH.png)
 
-The flat cables (called _'FFC'_ - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. These signals can be categorised in two protocols:
+The flat cables (called _'FFC'_ - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. [This article here](https://www.petervis.com/Raspberry_PI/Raspberry_Pi_CSI/raspberry-pi-csi-interface-connector-pinout.html) explains what each single line in the FFC cable transmits. Shortly speaking, these signals can be categorised in two protocols:
 
 | Protocol   | Function   | Connects | Through |
 | ---------- | ---------- | -------- | ------- |
