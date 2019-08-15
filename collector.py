@@ -211,12 +211,12 @@ def main():
     # TODO Integrate this into sql_controller to overwrite any existing database data
     # and use the previous folder if it is empty.
     # ALTERNATIVELY, move folder creation to after pause is taken out.
-    FOLDER = '{d}hike{h}/'.format(d=DIRECTORY, h=hike_num)
-    for dirpath, dirnames, files in os.walk(FOLDER):
-        if files:
-            print(dirpath, 'has files')
-        if not files:
-            print(dirpath, 'is empty')
+    # FOLDER = '{d}hike{h}/'.format(d=DIRECTORY, h=hike_num)
+    # for dirpath, dirnames, files in os.walk(FOLDER):
+    #     if files:
+    #         print(dirpath, 'has files')
+    #     if not files:
+    #         print(dirpath, 'is empty')
 
 
     # Create SQL controller and update hike information
