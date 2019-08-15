@@ -38,6 +38,7 @@ LED_AMBER = 27          # BOARD - 13
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
 # RESOLUTION = (720, 405)
+
 # NEW_HIKE_TIME = 43200     # 12 hours
 # NEW_HIKE_TIME = 21600     # 6 hours
 # NEW_HIKE_TIME = 10800     # 3 hours
@@ -268,7 +269,7 @@ def main():
         if (photo_index % 4 == 0):
             blink(LED_GREEN, 1, 0.1)
             blink(LED_AMBER, 1, 0.1)
-            logging.info('cameras still alive')
+            logging.info('Cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
         while(time.time() < timestamp + 2.5):
