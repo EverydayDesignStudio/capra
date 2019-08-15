@@ -34,6 +34,18 @@ SEL_2 = 23              # BOARD - 16
 LED_GREEN = 24          # BOARD - 18
 LED_BTM = 26            # BOARD - 37
 LED_AMBER = 27          # BOARD - 13
+PIEZO = 18              # BOARD - 12
+
+# Tone frequencies for piezo
+c = 261
+d = 294
+e = 329
+f = 349
+g = 392
+a = 440
+b = 493
+C = 423
+
 
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
@@ -84,6 +96,15 @@ def hello_blinks():
 def blink_after_crash():
     for i in range(4):
         blink(LED_BTM, 4, 0.1)
+
+
+def beep(tone, duration, pause, repeat):
+    pzo = gpio.PWM(PIEZO, 100)    
+    for i in range(repeat):
+        pzo.ChangeFrequency(tone)
+        time.sleep(duration)
+        pzo.stop()
+        time.sleep(pause)
 
 
 # Initialize and return picamera object
