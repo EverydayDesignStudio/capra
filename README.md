@@ -119,19 +119,18 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 
 
 ### Software
-####New hike creation 
+#### New hike creation 
 New hikes are created from `collector.py` with the following line:
 ```python
 created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
 ```
-<br><br>
+
 This function is defined in `classes/sql_controller.py` with
 ```python
 def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY) -> bool:
 ```
 
-This class struction is based on a software design principle called _Model-View-Controller_. The idea is that a _Controller_ class handles or controls the talking between two layers of logic. This way the UI (_View_) classes are never directly making database (_Model_) calls. Also, any additional logic checks, or in this case file system instructions, can be handled neatly outside of the UI class.
-
+This class struction is based on a software design patter called _**Model View Controller**_. The idea is that a _Controller_ class handles or controls the talking between two layers of logic. This way the UI (**_View_**) classes are never directly making database (_**Model**_) calls. Also, any additional logic checks, or in this case file system instructions, can be handled neatly outside of the UI class.
 
 ```python
 # Determine whether to create new hike or continue the last hike
@@ -156,7 +155,7 @@ This class struction is based on a software design principle called _Model-View-
             print('Continuing last hike:')
             return False
 ```
-Line 15 is what actually makes the call to create a new directory/folder.
+**Line 15** of the above function is what actually makes the call to create a new directory/folder.
 
 ### Remote Connection
 There is a RealVNC Capra group for connecting to both the Collector and Explorer remotely. Login details can be found in the Dropbox.
