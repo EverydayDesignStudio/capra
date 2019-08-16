@@ -1,4 +1,4 @@
-# Controller to handle the UI and camera talking with the SQLite database
+# Controller to handle the projector UI and camera mainloop talking with the SQLite database
 
 import os
 import sqlite3
@@ -14,6 +14,7 @@ class SQLController:
         self.statements = SQLStatements()
 
     # Helper methods
+    # _underscores signify that they should be treated as private functions to  this class
     def _build_picture_from_row(self, row: list) -> Picture:
         picture = Picture(picture_id=row[0], time=row[1], altitude=row[2],
                           color=row[3], hike_id=row[4], index_in_hike=row[5],
@@ -37,6 +38,48 @@ class SQLController:
         cursor.execute(statement)
         row = cursor.fetchone()
         return row[0]
+
+    # Projector
+    # --------------------------------------------------------------------------
+    def get_next_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
+        if is_across_hikes:     # Across all hikes: rotary encoder is pressed
+            if mode == 0:       # Time
+                return self.next_time_picture_across_hikes(current_picture)
+            elif mode == 1:     # Altitude
+                return self.next_altitude_picture_across_hikes(current_picture)
+            elif mode == 2:     # Color
+                # TODO return self.next_color_picture_across_hikes(current_picture)
+                print('Color across hikes not implemented yet')
+                return current_picture
+        else:                   # In current hike: rotary encoder not pressed
+            if mode == 0:       # Time
+                return self.next_time_picture_in_hike(current_picture)
+            elif mode == 1:     # Altitude
+                return self.next_altitude_picture_in_hike(current_picture)
+            elif mode == 2:     # Color
+                # TODO return self.next_altitude_picture_in_hike(current_picture)
+                print('Color in hikes is not implemented yet')
+                return current_picture
+
+    def get_previous_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
+        if is_across_hikes:     # Across all hikes: rotary encoder is pressed
+            if mode == 0:       # Time
+                return self.previous_time_picture_across_hikes(current_picture)
+            elif mode == 1:     # Altitude
+                return self.previous_altitude_picture_across_hikes(current_picture)
+            elif mode == 2:     # Color
+                # TODO return self.previous_color_picture_in_hike(current_picture)
+                print('Color across hikes not implemented yet')
+                return current_picture
+        else:                   # In current hike: rotary encoder not pressed
+            if mode == 0:       # Time
+                return self.previous_time_picture_in_hike(current_picture)
+            elif mode == 1:     # Altitude
+                return self.previous_altitude_picture_in_hike(current_picture)
+            elif mode == 2:     # Color
+                # TODO return self.previous_altitude_picture_in_hike(current_picture)
+                print('Color in hikes is not implemented yet')
+                return current_picture
 
     # Time - across hikes
     def get_first_time_picture(self) -> Picture:

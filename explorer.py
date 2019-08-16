@@ -10,17 +10,17 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 
-from adafruit_mcp3xxx.analog_in import AnalogIn
+from adafruit_mcp3xxx.analog_in import AnalogIn  # Reading values from MCP3008
 from gpiozero import Button             # Rotary encoder, detected as button
 from PIL import ImageTk, Image          # Pillow image functions
 from RPi import GPIO                    # GPIO pin detection for Raspberry Pi
 from tkinter import Tk, Canvas, Label   # Tkinter, GUI framework in use
-from time import sleep
+from time import sleep                  # Sleep
 
-import adafruit_mcp3xxx.mcp3008 as MCP
-import board
-import busio
-import digitalio
+import adafruit_mcp3xxx.mcp3008 as MCP  # Interfacing with MCP3008
+import board                            # Dependancy of MCP3008
+import busio                            # Dependancy of MCP3008
+import digitalio                        # Dependancy of MCP3008
 import datetime
 import math
 
@@ -51,7 +51,6 @@ ACCELEROMETER_Y = MCP.P6
 ACCELEROMETER_Z = MCP.P5
 
 # BUTTON_MODE = MCP.P2
-
 # SLIDER_SWITCH_MODE_0 = MCP.P2
 # SLIDER_SWITCH_MODE_1 = MCP.P1
 # SLIDER_SWITCH_MODE_2 = MCP.P0
@@ -86,12 +85,13 @@ mcp = MCP.MCP3008(spi, cs)
 # Slideshow class which is the main class that runs and is listening for events
 class Slideshow:
     # GLOBAL CLASS STATE VARIABLES (COUNTERS, BOOLS, ETC)
-    TRANSITION_DELAY = 4000         # Time between pictures in milliseconds
-    IS_TRANSITION_FORWARD = True    # Update  auto-advance direction
-    PLAY = True                     # Play/Pause bool
-    ROTARY_COUNT = 0                # Used exclusively for testing
-    MODE = 0                        # 0 = Time | 1 = Altitude | 2 = Color
-
+    MODE = 0                        # 0 = Time | 1 = Altitude | 2 = Color # TODO - make into struct
+    TRANSITION_DELAY = 4000         # Autoplay time between pictures (in milliseconds)
+    IS_TRANSITION_FORWARD = True    # Autoplay direction (forward or backward)
+    PLAY = True                     # Autoplay (Play/Pause) bool
+    IS_ACROSS_HIKES = False         # Is rotary encoder pressed down
+    ROTARY_COUNT = 0                # Used exclusively for testing rotary encoder steps
+    
     def __init__(self, win):
         # Setup the window
         self.window = win
@@ -131,7 +131,6 @@ class Slideshow:
 
         # Initialization for images and associated properties
         self.alpha = 0
-        self.is_across_hikes = False
 
         # Initialize current and next images
         self.current_raw_top = Image.open(self._build_filename(self.picture_starter.camera1), 'r')
@@ -230,20 +229,22 @@ class Slideshow:
 
         root.after(1000, self.update_text)
 
-    # TODO - track down where the print is coming from
+    # TODO - track down where the random number being printed to the terminal is coming from
     def auto_play_slideshow(self):
         # print('Auto incremented slideshow')
         if (self.PLAY):
-            if self.IS_TRANSITION_FORWARD:
-                self.picture = self.sql_controller.next_altitude_picture_across_hikes(self.picture)
-                # self.picture.print_obj()
+            if self.IS_TRANSITION_FORWARD:          # Advance forward on autoplay
+                self.picture = self.sql_controller.get_next_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
                 self._build_next_raw_images(self.picture)
                 self.alpha = .2
-            else:
-                self.picture = self.sql_controller.previous_altitude_picture_across_hikes(self.picture)
-                # self.picture.print_obj()
+                self.picture.print_obj()            # This is a print()
+            else:                                   # Advance backward on autoplay
+                self.picture = self.sql_controller.get_previous_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
                 self._build_next_raw_images(self.picture)
                 self.alpha = .2
+                self.picture.print_obj()            # This is a print()
 
         root.after(self.TRANSITION_DELAY, self.auto_play_slideshow)
 
@@ -257,50 +258,41 @@ class Slideshow:
             self.determine_switch_mode()
             # Increment
             if cntState != clkState:
-                self.IS_TRANSITION_FORWARD = True  # For auto slideshow
                 # Next picture
-                if (self.rotary_button_state):
-                    print('INCREMENT ACROSS ALL HIKES')
-                    self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
-                else:
-                    self.ROTARY_COUNT += 1
-                    # print("Rotary +: ", self.ROTARY_COUNT)
-                    self.picture = self.sql_controller.next_time_picture_in_hike(self.picture)
-                    # self.picture.print_obj()
-                    self._build_next_raw_images(self.picture)
-                    self.alpha = .2     # Resets amount of fade between pictures
+                self.IS_TRANSITION_FORWARD = True   # For auto slideshow
+                self.ROTARY_COUNT += 1
+                print("Rotary +: ", self.ROTARY_COUNT)
+
+                self.picture = self.sql_controller.get_next_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2                     # Resets amount of fade between pictures
+                self.picture.print_obj()            # This is a print()
             # Decrement
             else:
-                self.IS_TRANSITION_FORWARD = False  # For auto slideshow
                 # Previous picture
-                if (self.rotary_button_state):
-                    print('DECREMENT ACROSS ALL HIKES')
-                    self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
-                else:
-                    self.ROTARY_COUNT -= 1
-                    # print("Rotary -: ", self.ROTARY_COUNT)
-                    self.picture = self.sql_controller.previous_time_picture_in_hike(self.picture)
-                    # self.picture.print_obj()
-                    self._build_next_raw_images(self.picture)
-                    self.alpha = .2     # Resets amount of fade between pictures
+                self.IS_TRANSITION_FORWARD = False  # For auto slideshow
+                self.ROTARY_COUNT -= 1
+                print("Rotary -: ", self.ROTARY_COUNT)
+
+                self.picture = self.sql_controller.get_previous_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2                     # Resets amount of fade between pictures
+                self.picture.print_obj()            # This is a print()
         self.clkLastState = clkState
         # TODO - try around with this in or out depending on the rotary encoder
         # sleep(0.1)
 
-    def rotary_button_down(self, event):
-        print('DOWN rotary button')
-
-    def rotary_button_up(self, event):
-        print('UP rotary button')
-
     def rotary_button_pressed(self, event):
         print('rotary pressed')
+        self.IS_ACROSS_HIKES = not self.IS_ACROSS_HIKES
+        print('Is across hikes: {i}'.format(i=self.IS_ACROSS_HIKES))
 
-        self.is_across_hikes = not self.is_across_hikes
-        print('Is across hikes: {i}'.format(i=self.is_across_hikes))
+        # Another way to detect rotary encoder button press
+        # self.rotary_button_state = not self.rotary_button_state
+        # print('Rotary button state: {i}'.format(i=self.rotary_button_state))
 
-        self.rotary_button_state = not self.rotary_button_state
-        print('Rotary button state: {i}'.format(i=self.rotary_button_state))
         # sleep(0.1)
 
     def button_pressed_play_pause(self, event):
