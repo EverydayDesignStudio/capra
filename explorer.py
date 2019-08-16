@@ -77,16 +77,7 @@ GPIO.setup(SLIDER_SWITCH_MODE_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SLIDER_SWITCH_MODE_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(SLIDER_SWITCH_MODE_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# SETUP ADC CHANNELS
-# Mode switch
-# mode1 = 13
-# mode2 = 19
-# mode3 = 26
-# GPIO.setup(mode1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-# GPIO.setup(mode2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-# GPIO.setup(mode3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# MCP3008
+# SETUP ADC CHANNELS - MCP3008
 spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
 cs = digitalio.DigitalInOut(board.D8)
 mcp = MCP.MCP3008(spi, cs)
@@ -95,16 +86,11 @@ mcp = MCP.MCP3008(spi, cs)
 # Slideshow class which is the main class that runs and is listening for events
 class Slideshow:
     # GLOBAL CLASS STATE VARIABLES (COUNTERS, BOOLS, ETC)
-    TRANSITION_DELAY = 2000         # Time between pictures in milliseconds
+    TRANSITION_DELAY = 4000         # Time between pictures in milliseconds
     IS_TRANSITION_FORWARD = True    # Update  auto-advance direction
+    PLAY = True                     # Play/Pause bool
     ROTARY_COUNT = 0                # Used exclusively for testing
-    ROTARY_BOTH = 0
-    ROTARY_RISE_FALL = 0
-
-    # 0 = Time
-    # 1 = Altitude
-    # 2 = Color
-    MODE = 0
+    MODE = 0                        # 0 = Time | 1 = Altitude | 2 = Color
 
     def __init__(self, win):
         # Setup the window
@@ -135,6 +121,7 @@ class Slideshow:
         # self.window.bind(GPIO.add_event_detect(SLIDER_SWITCH_MODE_1, GPIO.BOTH, callback=self.switch_mode_1))
         # self.window.bind(GPIO.add_event_detect(SLIDER_SWITCH_MODE_2, GPIO.FALLING, callback=self.switch_mode_2))
 
+        self.determine_switch_mode()
         self.window.bind(GPIO.add_event_detect(BUTTON_MODE, GPIO.FALLING, callback=self.button_mode))
 
         # Initialization for database implementation
@@ -185,8 +172,8 @@ class Slideshow:
         root.after(0, func=self.check_accelerometer)
         root.after(10, func=self.update_text)
         root.after(15, func=self.fade_image)
+        root.after(self.TRANSITION_DELAY, func=self.auto_play_slideshow)
         # root.after(0, func=self.check_mode)
-        # root.after(self.TRANSITION_DELAY, func=self.auto_increment_slideshow)
 
     def _build_next_raw_images(self, next_picture: Picture):
         # print('build images')
@@ -243,25 +230,25 @@ class Slideshow:
 
         root.after(1000, self.update_text)
 
-    def auto_increment_slideshow(self):
+    # TODO - track down where the print is coming from
+    def auto_play_slideshow(self):
         # print('Auto incremented slideshow')
-        if self.IS_TRANSITION_FORWARD:
-            self.picture = self.sql_controller.next_altitude_picture_across_hikes(self.picture)
-            # self.picture.print_obj()
-            self._build_next_raw_images(self.picture)
-            self.alpha = .2
-        else:
-            self.picture = self.sql_controller.previous_altitude_picture_across_hikes(self.picture)
-            # self.picture.print_obj()
-            self._build_next_raw_images(self.picture)
-            self.alpha = .2
+        if (self.PLAY):
+            if self.IS_TRANSITION_FORWARD:
+                self.picture = self.sql_controller.next_altitude_picture_across_hikes(self.picture)
+                # self.picture.print_obj()
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2
+            else:
+                self.picture = self.sql_controller.previous_altitude_picture_across_hikes(self.picture)
+                # self.picture.print_obj()
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2
 
-        root.after(self.TRANSITION_DELAY, self.auto_increment_slideshow)
+        root.after(self.TRANSITION_DELAY, self.auto_play_slideshow)
 
     # BCM HARDWARE CONTROLS
     def detected_rotary_change(self, event):
-        # print('Rotary Clockwise: {cl}'.format(cl=self.ROTARY_BOTH))
-        # self.ROTARY_BOTH += 1
         clkState = GPIO.input(clk)
         cntState = GPIO.input(cnt)
 
@@ -271,7 +258,7 @@ class Slideshow:
             # Increment
             if cntState != clkState:
                 self.IS_TRANSITION_FORWARD = True  # For auto slideshow
-
+                # Next picture
                 if (self.rotary_button_state):
                     print('INCREMENT ACROSS ALL HIKES')
                     self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
@@ -282,12 +269,10 @@ class Slideshow:
                     # self.picture.print_obj()
                     self._build_next_raw_images(self.picture)
                     self.alpha = .2     # Resets amount of fade between pictures
-                    # self.update_text()
-                    # self.update_tick()
             # Decrement
             else:
                 self.IS_TRANSITION_FORWARD = False  # For auto slideshow
-
+                # Previous picture
                 if (self.rotary_button_state):
                     print('DECREMENT ACROSS ALL HIKES')
                     self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
@@ -298,8 +283,6 @@ class Slideshow:
                     # self.picture.print_obj()
                     self._build_next_raw_images(self.picture)
                     self.alpha = .2     # Resets amount of fade between pictures
-                    # self.update_text()
-                    # self.update_tick()
         self.clkLastState = clkState
         # TODO - try around with this in or out depending on the rotary encoder
         # sleep(0.1)
@@ -318,11 +301,14 @@ class Slideshow:
 
         self.rotary_button_state = not self.rotary_button_state
         print('Rotary button state: {i}'.format(i=self.rotary_button_state))
-
         # sleep(0.1)
 
     def button_pressed_play_pause(self, event):
-        print('Play Pause pressed')
+        self.PLAY = not self.PLAY
+        if self.PLAY:
+            print('Pressed Play')
+        else:
+            print('Pressed Pause')
 
     def button_pressed_next(self, event):
         print('Next pressed')
@@ -330,10 +316,10 @@ class Slideshow:
     def button_pressed_previous(self, event):
         print('Previous pressed')
 
-    # def button_mode(self, event):
-    #     self.MODE += 1
-    #     self.MODE = self.MODE % 3  # to loop count back to 0 from 3
-    #     print('mode = {n}'.format(n=self.MODE))
+    def button_mode(self, event):
+        # self.MODE += 1
+        # self.MODE = self.MODE % 3  # to loop count back to 0 from 3
+        print('Mode button not incrementing | Current mode = {n}'.format(n=self.MODE))
 
     def determine_switch_mode(self):
         switch_mode_0_state = GPIO.input(SLIDER_SWITCH_MODE_0)
