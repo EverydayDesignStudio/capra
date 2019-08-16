@@ -4,7 +4,9 @@ import neopixel
 
 PIXEL_AMOUNT = 11       # The amount of NeoPixels on the strip
 
-pixels = neopixel.NeoPixel(board.D4, PIXEL_AMOUNT)
+pixels = neopixel.NeoPixel(board.D18, PIXEL_AMOUNT)
+
+pixels.fill((0, 255, 0))
 
 def indicator1(position: float):
     brights = position - 1
