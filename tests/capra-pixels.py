@@ -14,6 +14,7 @@ pos = 8
 
 def reset_pixels():
     pixels.fill((0, 0, 0))
+    pixels.show()
 
 # progression of intense pixels followed by a last fade in pixel
 def indicator1(position: float):
@@ -77,26 +78,25 @@ while(1):
         time.sleep(0.1)
         pos += 0.05
     pos = 0
-    reset_pixels
+    reset_pixels()
 
     while(int(pos) < PIXEL_AMOUNT):
         indicator2(pos)
         time.sleep(0.1)
         pos += 0.05
     pos = 0
-    reset_pixels
+    reset_pixels()
 
     while(int(pos) < PIXEL_AMOUNT):
         indicator3(pos)
         time.sleep(0.1)
         pos += 0.05
     pos = 0
-    reset_pixels
+    reset_pixels()
 
     while(int(pos) < PIXEL_AMOUNT):
         indicator4(pos)
         time.sleep(0.1)
         pos += 0.05
     pos = 0
-    reset_pixels
-    
+    reset_pixels()
