@@ -43,6 +43,8 @@ def indicator2(position: float):
         if(abs(distance) < spread):
             intensity = int(brightstep * int(abs(distance)))
             pixels[p] = (0, intensity, intensity)
+        else:
+            pixels[p] = (0, 0, 0)
     pixels.show()
 
 # bright light at position and exponential fade out to either side
@@ -56,6 +58,8 @@ def indicator3(position: float):
             if(intensity > 255):
                 intensity = 255
             pixels[p] = (0, intensity, intensity)
+        else:
+            pixels[p] = (0, 0, 0)
     pixels.show()
 
 # bright light at position and exponential fade out to either side; brighter, less saturated
@@ -66,7 +70,9 @@ def indicator4(position: float):
     for p in range(PIXEL_AMOUNT):
         distance = float(p) - position
         if(abs(distance) < spread):
-            intensity = int(brightstep * int(pow(abs(distance)), 1.7))
+            intensity = int(brightstep * int(pow(abs(distance), 1.7)))
+            if(intensity > 255):
+                intensity = 255
             secondary_intensity = 0
             if(intensity > 170):
                 secondary_intensity = intensity/3
