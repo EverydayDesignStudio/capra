@@ -75,7 +75,7 @@ def indicator4(position: float):
                 intensity = 255
             secondary_intensity = 0
             if(intensity > 170):
-                secondary_intensity = intensity/3
+                secondary_intensity = int(intensity/3)
             pixels[p] = (secondary_intensity, intensity, secondary_intensity)
     pixels.show()
 
