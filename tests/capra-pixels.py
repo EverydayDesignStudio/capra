@@ -53,6 +53,8 @@ def indicator3(position: float):
         distance = float(p) - position
         if(abs(distance) < spread):
             intensity = int(brightstep * int(pow(abs(distance), 1.7)))
+            if(intensity > 255):
+                intensity = 255
             pixels[p] = (0, intensity, intensity)
     pixels.show()
 
