@@ -72,9 +72,31 @@ def indicator4(position: float):
 
 
 while(1):
-    pos += 0.05
-    if(int(pos - (pos % 1)) >= PIXEL_AMOUNT): # if position > number of pixels, return to position 0
-        pos = 0
-        reset_pixels()
-    indicator1(pos)
-    time.sleep(0.1)
+    while(int(pos) < PIXEL_AMOUNT):
+        indicator1(pos)
+        time.sleep(0.1)
+        pos += 0.05
+    pos = 0
+    reset_pixels
+
+    while(int(pos) < PIXEL_AMOUNT):
+        indicator2(pos)
+        time.sleep(0.1)
+        pos += 0.05
+    pos = 0
+    reset_pixels
+
+    while(int(pos) < PIXEL_AMOUNT):
+        indicator3(pos)
+        time.sleep(0.1)
+        pos += 0.05
+    pos = 0
+    reset_pixels
+
+    while(int(pos) < PIXEL_AMOUNT):
+        indicator4(pos)
+        time.sleep(0.1)
+        pos += 0.05
+    pos = 0
+    reset_pixels
+    
