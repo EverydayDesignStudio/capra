@@ -52,7 +52,7 @@ def indicator3(position: float):
     for p in range(PIXEL_AMOUNT):
         distance = float(p) - position
         if(abs(distance) < spread):
-            intensity = int(brightstep * int(pow(abs(distance)), 1.7))
+            intensity = int(brightstep * int(pow(abs(distance), 1.7)))
             pixels[p] = (0, intensity, intensity)
     pixels.show()
 
@@ -73,19 +73,19 @@ def indicator4(position: float):
 
 
 while(1):
-    while(int(pos) < PIXEL_AMOUNT):
-        indicator1(pos)
-        time.sleep(0.1)
-        pos += 0.05
-    pos = 0
-    reset_pixels()
-
-    while(int(pos) < PIXEL_AMOUNT):
-        indicator2(pos)
-        time.sleep(0.1)
-        pos += 0.05
-    pos = 0
-    reset_pixels()
+    # while(int(pos) < PIXEL_AMOUNT):
+    #     indicator1(pos)
+    #     time.sleep(0.1)
+    #     pos += 0.05
+    # pos = 0
+    # reset_pixels()
+    #
+    # while(int(pos) < PIXEL_AMOUNT):
+    #     indicator2(pos)
+    #     time.sleep(0.1)
+    #     pos += 0.05
+    # pos = 0
+    # reset_pixels()
 
     while(int(pos) < PIXEL_AMOUNT):
         indicator3(pos)
