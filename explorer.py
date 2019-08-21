@@ -91,7 +91,7 @@ class Slideshow:
     PLAY = True                     # Autoplay (Play/Pause) bool
     IS_ACROSS_HIKES = False         # Is rotary encoder pressed down
     ROTARY_COUNT = 0                # Used exclusively for testing rotary encoder steps
-    
+
     def __init__(self, win):
         # Setup the window
         self.window = win
@@ -157,15 +157,17 @@ class Slideshow:
         # self.image_label_bot.place(x=20, y=810, anchor='nw')
 
         # Hike labels
+        self.label_mode = Label(self.canvas, text='Modes: ')
         self.label_hike = Label(self.canvas, text='Hike: ')
         self.label_index = Label(self.canvas, text='Index: ')
         self.label_alt = Label(self.canvas, text='Altitude: ')
         self.label_date = Label(self.canvas, text='Date: ')
 
-        self.label_hike.place(relx=1.0, y=0, anchor='ne')
-        self.label_index.place(relx=1.0, y=22, anchor='ne')
-        self.label_alt.place(relx=1.0, y=44, anchor='ne')
-        self.label_date.place(relx=1.0, y=66, anchor='ne')
+        self.label_mode.place(relx=1.0, y= 0, anchor='ne')
+        self.label_hike.place(relx=1.0, y=22, anchor='ne')
+        self.label_index.place(relx=1.0, y=44, anchor='ne')
+        self.label_alt.place(relx=1.0, y=66, anchor='ne')
+        self.label_date.place(relx=1.0, y=88, anchor='ne')
 
         # Start background threads which will continue for life of the class
         root.after(0, func=self.check_accelerometer)
@@ -211,6 +213,16 @@ class Slideshow:
         root.after(83, self.fade_image)
 
     def update_text(self):
+        self.determine_switch_mode()
+        if self.MODE == 0:
+            mode = 'Mode: Time'
+        elif self.MODE == 1:
+            mode = 'Mode: Altitude'
+        elif self.MODE == 2:
+            mode = 'Mode: Color'
+        else:
+            mode = 'Mode: ERROR'
+
         hike = 'Hike {n}'.format(n=self.picture.hike_id)
 
         hike_sz = self.sql_controller.get_size_of_hike(self.picture)
@@ -222,12 +234,13 @@ class Slideshow:
         date_time = value.strftime('%-I:%M:%S%p on %d %b, %Y')
         date = '{d}'.format(d=date_time)
 
+        self.label_mode.configure(text=mode)
         self.label_hike.configure(text=hike)
         self.label_index.configure(text=index)
         self.label_alt.configure(text=altitude)
         self.label_date.configure(text=date)
 
-        root.after(1000, self.update_text)
+        root.after(500, self.update_text)
 
     # TODO - track down where the random number being printed to the terminal is coming from
     def auto_play_slideshow(self):
