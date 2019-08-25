@@ -15,7 +15,10 @@ import picamera              # For interfacting with the PiCamera
 import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import smbus                 # For interfacing over I2C with the altimeter
 import time                  # For unix timestamps
+import busio                 # For interfacing with DS3231 Real Time Clock
+import adafruit_ds3231       # For interfacing with DS3231 Real Time Clock
 from threading import Thread # For threading
+
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
@@ -99,6 +102,20 @@ def initialize_picamera(resolution: tuple) -> picamera:
     return pi_cam
 
 
+# Dependency: pip3 install adafruit-circuitpython-lis3dh
+# RUN THIS CODE ONCE BEFORE USING DS3231
+# To set the time, you need to set datetime to a time.struct_time object:
+# rtc.datetime = time.struct_time((2017,1,9,15,6,0,0,9,-1))
+# ==============================================
+# Get the time from the DS3231 Real Time Clock
+def get_RTC_time(I2C):
+    rtc = adafruit_ds3231.DS3231(I2C)
+    t = rtc.datetime
+    # TODO: to set time of raspberry pi run:
+    # sudo date -s "Mon Aug  12 20:14:11 UTC 2014"
+    # More info: man date
+
+
 # Start threading interrupt for Play/pause button
 def initialize_background_play_pause():
     PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
@@ -168,6 +185,7 @@ def main():
     # Initialize and setup hardware
     #initialize_GPIOs()                              # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
+    get_RTC_time(i2c_bus)                           # Update system time from RTC
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
@@ -202,7 +220,7 @@ def main():
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
-    # Initialize logger
+    # Initialize logger 
     initialize_logger(hike_num)
 
     # Start the time lapse
