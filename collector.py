@@ -98,13 +98,13 @@ def blink_after_crash():
     for i in range(5):
     blink(LED_RED, 3, 0.1)
 
- def beep(tone, duration, pause, repeat):
-     pzo = gpio.PWM(PIEZO, 100)
-     for i in range(repeat):
-         pzo.ChangeFrequency(tone)
-         time.sleep(duration)
-         pzo.stop()
-         time.sleep(pause)
+def beep(tone, duration, pause, repeat):
+    pzo = gpio.PWM(PIEZO, 100)
+    for i in range(repeat):
+        pzo.ChangeFrequency(tone)
+        time.sleep(duration)
+        pzo.stop()
+        time.sleep(pause)
 
 
 # Initialize and return picamera object
