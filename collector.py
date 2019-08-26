@@ -212,15 +212,15 @@ def main():
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
     if created:     # new hike created; blink four times
         blink(LED_BTM, 4, 0.2)
-        os.chmod(DIRECTORY, 666) # set permissions to be read and written to when run manually
-        os.chmod(DB , 666)
+        os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
+        os.chmod(DB , 766)
     else:           # continuing last hike; blink two times
         blink(LED_BTM, 2, 0.2)
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
-    # Initialize logger 
+    # Initialize logger
     initialize_logger(hike_num)
 
     # Start the time lapse
