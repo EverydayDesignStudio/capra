@@ -60,7 +60,7 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 | ButtonBoard | ↔ | Cam Multiplexer | BOARD | BCM |
 | ----------- | - | --------------- | ----- | --- |
 | GND         | ↔ | GND (⏚ symbol) | n/a   | n/a |
-| LED_R       | ↔ | LED             | 33    | 12  |
+| LED_R       | ↔ | LED             | 33    | 13  |
 | LED_G       | ↔ | LED2            | 37    | 26  |
 | 3V3         | ↔ | 3V3             | n/a   | n/a |
 | OFF         | ↔ | OFF             | 22    | 25  |
