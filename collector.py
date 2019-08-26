@@ -96,7 +96,7 @@ def hello_blinks():
 
 def blink_after_crash():
     for i in range(5):
-    blink(LED_RED, 3, 0.1)
+        blink(LED_RED, 3, 0.1)
 
 def beep(tone, duration, pause, repeat):
     pzo = gpio.PWM(PIEZO, 100)
