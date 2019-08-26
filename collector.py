@@ -34,9 +34,8 @@ DIRECTORY = '/home/pi/capra-storage/'
 BUTTON_PLAYPAUSE = 17   # BOARD - 11
 SEL_1 = 22              # BOARD - 15
 SEL_2 = 23              # BOARD - 16
-LED_GREEN = 24          # BOARD - 18
-LED_BTM = 26            # BOARD - 37
-LED_AMBER = 27          # BOARD - 13
+LED_BLUE = 13           # BOARD - 33
+LED_RED = 26            # BOARD - 37
 
 # Set file wide shared variables
 RESOLUTION = (1280, 720)
@@ -49,25 +48,25 @@ gpio.setwarnings(False)
 gpio.setmode(gpio.BCM)
 gpio.setup(SEL_1, gpio.OUT)         # select 1
 gpio.setup(SEL_2, gpio.OUT)         # select 2
-gpio.setup(LED_GREEN, gpio.OUT)     # status led1
-gpio.setup(LED_AMBER, gpio.OUT)     # status led2
-gpio.setup(LED_BTM, gpio.OUT)       # status led3
+gpio.setup(LED_BLUE, gpio.OUT)     # status led1
+gpio.setup(LED_RED, gpio.OUT)     # status led2
+gpio.setup(LED_RED, gpio.OUT)       # status led3
 
 
 # Turn off LEDs
 def turn_off_leds():
-    gpio.output(LED_GREEN, True)
+    gpio.output(LED_BLUE, True)
     time.sleep(0.1)
-    gpio.output(LED_AMBER, True)
+    gpio.output(LED_RED, True)
     time.sleep(0.1)
-    gpio.output(LED_BTM, False)
+    gpio.output(LED_RED, False)
 
 
 # Blink LEDs
 def blink(pin, repeat, interval):
     on = False
     off = True
-    if pin == LED_BTM:
+    if pin == LED_RED:
         on = True
         off = False
     for i in range(repeat):
@@ -79,10 +78,13 @@ def blink(pin, repeat, interval):
 
 # Blink status LEDs on camera - TODO Remove instances of nonexistent LEDS
 def hello_blinks():
-    blink(LED_GREEN, 2, 0.1)
-    blink(LED_AMBER, 2, 0.1)
-    blink(LED_BTM, 2, 0.1)
+    blink(LED_BLUE, 2, 0.1)
+    blink(LED_RED, 2, 0.1)
 
+
+def blink_after_crash():
+    for i in range(5):
+    blink(LED_RED, 3, 0.1)
 
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
@@ -206,16 +208,26 @@ def main():
     print('Rotation OK')
 
 
+    # As long as initially paused, do not create new hike yet
+    while(shared.pause):
+        if(not prev_pause):
+            logging.info('Paused')
+            prev_pause = True
+        print(">>PAUSED!<<")
+        blink(LED_RED, 1, 0.3)
+        time.sleep(1)
+
+
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
 
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
     if created:     # new hike created; blink four times
-        blink(LED_BTM, 4, 0.2)
+        blink(LED_RED, 4, 0.2)
         os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
         os.chmod(DB , 766)
     else:           # continuing last hike; blink two times
-        blink(LED_BTM, 2, 0.2)
+        blink(LED_RED, 2, 0.2)
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
@@ -232,7 +244,7 @@ def main():
                 logging.info('Paused')
                 prev_pause = True
             print(">>PAUSED!<<")
-            blink(LED_BTM, 1, 0.3)
+            blink(LED_RED, 1, 0.3)
             time.sleep(1)
         # If applicable, log 'unpaused'
         if(prev_pause):
@@ -259,8 +271,7 @@ def main():
 
         # Blink on every fourth picture
         if (photo_index % 4 == 0):
-            blink(LED_GREEN, 1, 0.1)
-            blink(LED_AMBER, 1, 0.1)
+            blink(LED_BLUE, 1, 0.1)
             logging.info('cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
