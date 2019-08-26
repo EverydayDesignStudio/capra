@@ -38,15 +38,15 @@ LED_BLUE = 13           # BOARD - 33
 LED_RED = 26            # BOARD - 37
 
 
- # Tone frequencies for piezo
- c = 261
- d = 294
- e = 329
- f = 349
- g = 392
- a = 440
- b = 493
- C = 423
+# Tone frequencies for piezo
+c = 261
+d = 294
+e = 329
+f = 349
+g = 392
+a = 440
+b = 493
+C = 423
 
 
 # Set file wide shared variables
