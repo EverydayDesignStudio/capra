@@ -230,6 +230,7 @@ def main():
 
 
     # As long as initially paused, do not create new hike yet
+    print("Waiting for initial unpause...")
     while(shared.pause):
         if(not prev_pause):
             logging.info('Paused')
@@ -237,7 +238,7 @@ def main():
         print(">>PAUSED!<<")
         blink(LED_RED, 1, 0.3)
         time.sleep(1)
-
+    print("Initial unpause!")
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
