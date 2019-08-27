@@ -34,11 +34,9 @@ DIRECTORY = '/home/pi/capra-storage/'
 BUTTON_PLAYPAUSE = 17   # BOARD - 11
 SEL_1 = 22              # BOARD - 15
 SEL_2 = 23              # BOARD - 16
-LED_BLUE = 13           # BOARD - 33
-LED_RED = 26            # BOARD - 37
+LED_BLUE = 26           # BOARD - 33
+LED_RED = 13            # BOARD - 37
 PIEZO = 12              # BOARD - 32
-
-
 
 
 # Tone frequencies for piezo
@@ -132,12 +130,13 @@ def initialize_picamera(resolution: tuple) -> picamera:
 # Dependency: pip3 install adafruit-circuitpython-lis3dh
 # RUN THIS CODE ONCE BEFORE USING DS3231
 # To set the time, you need to set datetime to a time.struct_time object:
-# rtc.datetime = time.struct_time((2017,1,9,15,6,0,0,9,-1))
+# rtc.datetime = time.struct_time((2019,8,27,11,26,50,0,9,-1))
 # ==============================================
 # Get the time from the DS3231 Real Time Clock
 def get_RTC_time(I2C):
     rtc = adafruit_ds3231.DS3231(I2C)
-    t = rtc.datetime
+    t = time.mktime(rtc.datetime)
+    return(t)
     # TODO: to set time of raspberry pi run:
     # sudo date -s "Mon Aug  12 20:14:11 UTC 2014"
     # More info: man date
@@ -212,7 +211,7 @@ def main():
     # Initialize and setup hardware
     #initialize_GPIOs()                             # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
-    i2c = busio.I2C(board.SCL, board.SDA)           # Setup I2C for DS3231 - TODO merge with smbus
+    i2c = busio.I2C(3, 2)                           # Setup I2C for DS3231 - TODO merge with smbus
     get_RTC_time(i2c)                               # Update system time from RTC
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
@@ -278,9 +277,12 @@ def main():
             logging.info('Unpaused')
             prev_pause= False
 
+        # Read the time
+        current_time = rtc.
+
         # New picture: increment photo index & add row to database
         photo_index += 1
-        sql_controller.create_new_picture(hike_num, photo_index)
+        sql_controller.create_new_picture(hike_num, photo_index, )
 
         query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
 
