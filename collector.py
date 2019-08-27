@@ -277,12 +277,12 @@ def main():
             logging.info('Unpaused')
             prev_pause= False
 
-        # Read the time
-        current_time = rtc.
+        # Read the time as UNIX timestamp
+        current_time = get_RTC_time(I2C)
 
         # New picture: increment photo index & add row to database
         photo_index += 1
-        sql_controller.create_new_picture(hike_num, photo_index, )
+        sql_controller.create_new_picture(hike_num, photo_index, current_time)
 
         query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
 
