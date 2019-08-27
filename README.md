@@ -30,6 +30,12 @@ Lastly, there is a DS3231 Real Time Clock (or _RTC_, for short) on the board tha
 
 ![Capra Cam Multiplexer](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-PH.png)
 
+The Cam Multiplexer requires limited soldering before being ready to use. This includes:
+- soldering the 2*20 5.5mm tall female header
+- applying a drop of solder to the GND connection of the coincell battery
+- soldering the smd coincell battery connection
+
+
 The flat cables (called _'FFC'_ - Flat Flexible Cable) contain all signals that travel between the cameras and the RPi. [This article here](https://www.petervis.com/Raspberry_PI/Raspberry_Pi_CSI/raspberry-pi-csi-interface-connector-pinout.html) explains what each single line in the FFC cable transmits. Shortly speaking, these signals can be categorised in two protocols:
 
 | Protocol   | Function   | Connects | Through |
