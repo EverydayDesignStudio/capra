@@ -16,7 +16,7 @@ import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import smbus                 # For interfacing over I2C with the altimeter
 import time                  # For unix timestamps
 import busio                 # For interfacing with DS3231 Real Time Clock
-import adafruit_ds3231       # For interfacing with DS3231 Real Time Clock
+import adafruit_ds3231       # pip install adafruit-circuitpython-ds3231
 from threading import Thread # For threading
 
 
@@ -36,6 +36,9 @@ SEL_1 = 22              # BOARD - 15
 SEL_2 = 23              # BOARD - 16
 LED_BLUE = 13           # BOARD - 33
 LED_RED = 26            # BOARD - 37
+PIEZO = 12              # BOARD - 32
+
+
 
 
 # Tone frequencies for piezo
@@ -56,12 +59,12 @@ RESOLUTION = (1280, 720)
 NEW_HIKE_TIME = 21600  # 6 hours
 # NEW_HIKE_TIME = 10800  # 3 hours
 
-gpio.setwarnings(False)
-gpio.setmode(gpio.BCM)
+gpio.setwarnings(False)             # Turn off GPIO warnings
+gpio.setmode(gpio.BCM)              # Broadcom pin numbers
 gpio.setup(SEL_1, gpio.OUT)         # select 1
 gpio.setup(SEL_2, gpio.OUT)         # select 2
-gpio.setup(LED_BLUE, gpio.OUT)     # status led1
-gpio.setup(LED_RED, gpio.OUT)     # status led2
+gpio.setup(LED_BLUE, gpio.OUT)      # status led1
+gpio.setup(LED_RED, gpio.OUT)       # status led2
 gpio.setup(LED_RED, gpio.OUT)       # status led3
 
 
@@ -97,6 +100,7 @@ def hello_blinks():
 def blink_after_crash():
     for i in range(5):
         blink(LED_RED, 3, 0.1)
+
 
 def beep(tone, duration, pause, repeat):
     pzo = gpio.PWM(PIEZO, 100)
@@ -206,12 +210,13 @@ def read_altimeter(bus: smbus) -> float:
 
 def main():
     # Initialize and setup hardware
-    #initialize_GPIOs()                              # Define the GPIO pin modes
+    #initialize_GPIOs()                             # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
-    get_RTC_time(i2c_bus)                           # Update system time from RTC
+    i2c = busio.I2C(board.SCL, board.SDA)           # Setup I2C for DS3231 - TODO merge with smbus
+    get_RTC_time(i2c)                               # Update system time from RTC
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    #pi_cam = initialize_picamera(RESOLUTION)       # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
