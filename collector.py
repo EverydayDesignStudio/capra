@@ -7,6 +7,13 @@
 #  Script to run on the Explorer camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
+#
+# TODO: Include in makefile:
+# ==========================
+# pip install adafruit-circuitpython-ds3231
+# pip install Adafruit-Blinka
+# another one for the altimeter
+
 # Import system modules
 import datetime              # For translating POSIX timestamp to human readable date/time
 import logging               # For creating a log
@@ -16,7 +23,7 @@ import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import smbus                 # For interfacing over I2C with the altimeter
 import time                  # For unix timestamps
 import busio                 # For interfacing with DS3231 Real Time Clock
-import adafruit_ds3231       # pip install adafruit-circuitpython-ds3231
+import adafruit_ds3231       #
 from threading import Thread # For threading
 
 
@@ -154,7 +161,6 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    # os.chmod(logname, 666) # Make logfile accessible to writing by both root and user
     logging.info('START')
 
 
@@ -278,7 +284,7 @@ def main():
             prev_pause= False
 
         # Read the time as UNIX timestamp
-        current_time = get_RTC_time(I2C)
+        current_time = get_RTC_time(i2c)
 
         # New picture: increment photo index & add row to database
         photo_index += 1
@@ -296,15 +302,15 @@ def main():
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
 
-        timestamp = time.time()
-
+        # timestamp = time.time() # OLD: this takes the time from the RPi, not the DS3221
+        timestamp = get_RTC_time(i2c)
         # Blink on every fourth picture
         if (photo_index % 4 == 0):
             blink(LED_BLUE, 1, 0.1)
             logging.info('cameras still alive')
 
         # Wait until 2.5 seconds have passed since last picture
-        while(time.time() < timestamp + 2.5):
+        while(get_RTC_time(i2c) < timestamp + 2.5):
             pass
 
 
