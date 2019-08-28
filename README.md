@@ -76,6 +76,10 @@ The Buttonboard has a row of connections labelled `'To_Raspberry'`. This is wher
 These connections can be found here on the Cam Multiplexer board, (Note that the 'OFF' connection is at an unexpected spot):
 ![Cam Multiplexer, connections to Button board](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/Capra-Manual-BB.png)
 
+##### Design Flaw
+The v1 button board has some faulty connections in its manufactured state. In order to use the board, one needs to cut the following traces and apply these jumper wires:
+![Buttonboard fix](https://raw.githubusercontent.com/EverydayDesignStudio/guides/master/images/capra/ButtonBoardFix.png)
+
 #### Batteries
 Capra uses two 21700 LiPo batteries. More specifically, the batteries used are the Samsung 40T batteries. This specific battery type was chosen because two such batteries placed in parallel fit the shape of Capra perfectly and because the 40T model packs an impressive 4000 mAh capacity per unit. In the Collector, I've placed two such batteries in parallel to create a battery pack of 8000mAh @ 3.7V. The name _21700_ refers to the diameter (21mm) and the height (70mm) of the battery - this is a common naming convention with cylindrical LiPo batteries.
 > Fun Fact: 21700 batteries were initially [developed for electric vehicles](https://electrek.co/2017/01/09/samsung-2170-battery-cell-tesla-panasonic/). However, their main use nowadays is to power e-cigarettes. Hence, you will find them readily for sale at vape shops.
