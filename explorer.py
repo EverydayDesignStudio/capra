@@ -32,22 +32,29 @@ blank_path = '{p}/blank.png'.format(p=PATH)
 # GPIO BCM PINS
 ROTARY_ENCODER_CLOCKWISE = 23
 ROTARY_ENCODER_COUNTER = 24
-ROTARY_ENCODER_BUTTON = 25
+ROTARY_ENCODER_BUTTON = 26  # Was 25, but was causing interferance with ADC chip
 
 BUTTON_PLAY_PAUSE = 5
 BUTTON_NEXT = 6
 BUTTON_PREVIOUS = 12
 
+# These are connected to MCP3008 on the board
+BUTTON_MODE = 19
+
+SLIDER_SWITCH_MODE_0 = 16
+SLIDER_SWITCH_MODE_1 = 20
+SLIDER_SWITCH_MODE_2 = 21
+
 # ADC - MCP 3008 Channels
-ACCELEROMETER_X = 7
-ACCELEROMETER_Y = 6
-ACCELEROMETER_Z = 5
+ACCELEROMETER_X = MCP.P7
+ACCELEROMETER_Y = MCP.P6
+ACCELEROMETER_Z = MCP.P5
 
-BUTTON_MODE = 2
+# BUTTON_MODE = MCP.P2
 
-SLIDER_SWITCH_MODE_1 = 2
-SLIDER_SWITCH_MODE_2 = 1
-SLIDER_SWITCH_MODE_3 = 0
+# SLIDER_SWITCH_MODE_0 = MCP.P2
+# SLIDER_SWITCH_MODE_1 = MCP.P1
+# SLIDER_SWITCH_MODE_2 = MCP.P0
 
 # SETUP BCM PINS
 GPIO.setmode(GPIO.BCM)
@@ -64,35 +71,26 @@ GPIO.setup(rotary_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(BUTTON_PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(BUTTON_NEXT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(BUTTON_PREVIOUS, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_MODE, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Because it's wired differently
 
-# SETUP ADC CHANNELS
-# Mode switch
-# mode1 = 13
-# mode2 = 19
-# mode3 = 26
-# GPIO.setup(mode1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-# GPIO.setup(mode2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-# GPIO.setup(mode3, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(SLIDER_SWITCH_MODE_0, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(SLIDER_SWITCH_MODE_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(SLIDER_SWITCH_MODE_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Accelerometer
+# SETUP ADC CHANNELS - MCP3008
 spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
 cs = digitalio.DigitalInOut(board.D8)
 mcp = MCP.MCP3008(spi, cs)
 
-chan0 = AnalogIn(mcp, MCP.P7)
-chan1 = AnalogIn(mcp, MCP.P6)
-chan2 = AnalogIn(mcp, MCP.P5)
-ax = chan0.value
-ay = chan1.value
-az = chan2.value
-
 
 # Slideshow class which is the main class that runs and is listening for events
 class Slideshow:
-    # Setup for the batch of images
-    TRANSITION_DELAY = 2000         # Time between pictures in milliseconds
+    # GLOBAL CLASS STATE VARIABLES (COUNTERS, BOOLS, ETC)
+    TRANSITION_DELAY = 4000         # Time between pictures in milliseconds
     IS_TRANSITION_FORWARD = True    # Update  auto-advance direction
+    PLAY = True                     # Play/Pause bool
     ROTARY_COUNT = 0                # Used exclusively for testing
+    MODE = 0                        # 0 = Time | 1 = Altitude | 2 = Color
 
     def __init__(self, win):
         # Setup the window
@@ -111,14 +109,20 @@ class Slideshow:
 
         # Using GPIO.BOTH and GPIO input state, however I have noticed glitches. This will need to be ironed out
         # May need to use an after loop
-        self.window.bind(GPIO.add_event_detect(rotary_button, GPIO.BOTH, callback=self.rotary_button_pressed))
         self.rotary_button_state = GPIO.input(rotary_button)
         self.rotary_button_state = not self.rotary_button_state  # default is True, so set it to False
+        self.window.bind(GPIO.add_event_detect(rotary_button, GPIO.BOTH, callback=self.rotary_button_pressed))
 
         self.window.bind(GPIO.add_event_detect(BUTTON_PLAY_PAUSE, GPIO.FALLING, callback=self.button_pressed_play_pause))
         self.window.bind(GPIO.add_event_detect(BUTTON_NEXT, GPIO.FALLING, callback=self.button_pressed_next))
         self.window.bind(GPIO.add_event_detect(BUTTON_PREVIOUS, GPIO.FALLING, callback=self.button_pressed_previous))
 
+        # self.window.bind(GPIO.add_event_detect(SLIDER_SWITCH_MODE_0, GPIO.FALLING, callback=self.switch_mode_0))
+        # self.window.bind(GPIO.add_event_detect(SLIDER_SWITCH_MODE_1, GPIO.BOTH, callback=self.switch_mode_1))
+        # self.window.bind(GPIO.add_event_detect(SLIDER_SWITCH_MODE_2, GPIO.FALLING, callback=self.switch_mode_2))
+
+        self.determine_switch_mode()
+        self.window.bind(GPIO.add_event_detect(BUTTON_MODE, GPIO.FALLING, callback=self.button_mode))
 
         # Initialization for database implementation
         self.sql_controller = SQLController(database=DB)
@@ -164,15 +168,12 @@ class Slideshow:
         self.label_alt.place(relx=1.0, y=44, anchor='ne')
         self.label_date.place(relx=1.0, y=66, anchor='ne')
 
-        # Start continual update of text for life of class
-        root.after(0, func=self.update_text)
-
-        # Start continual fading function, will loop for life of the class
-        root.after(0, func=self.fade_image)
-        # root.after(self.TRANSITION_DELAY, func=self.auto_increment_slideshow)
-
-        # Start continual check of accelerometer
+        # Start background threads which will continue for life of the class
         root.after(0, func=self.check_accelerometer)
+        root.after(10, func=self.update_text)
+        root.after(15, func=self.fade_image)
+        root.after(self.TRANSITION_DELAY, func=self.auto_play_slideshow)
+        # root.after(0, func=self.check_mode)
 
     def _build_next_raw_images(self, next_picture: Picture):
         # print('build images')
@@ -229,20 +230,22 @@ class Slideshow:
 
         root.after(1000, self.update_text)
 
-    def auto_increment_slideshow(self):
+    # TODO - track down where the print is coming from
+    def auto_play_slideshow(self):
         # print('Auto incremented slideshow')
-        if self.IS_TRANSITION_FORWARD:
-            self.picture = self.sql_controller.next_altitude_picture_across_hikes(self.picture)
-            # self.picture.print_obj()
-            self._build_next_raw_images(self.picture)
-            self.alpha = .2
-        else:
-            self.picture = self.sql_controller.previous_altitude_picture_across_hikes(self.picture)
-            # self.picture.print_obj()
-            self._build_next_raw_images(self.picture)
-            self.alpha = .2
+        if (self.PLAY):
+            if self.IS_TRANSITION_FORWARD:
+                self.picture = self.sql_controller.next_altitude_picture_across_hikes(self.picture)
+                # self.picture.print_obj()
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2
+            else:
+                self.picture = self.sql_controller.previous_altitude_picture_across_hikes(self.picture)
+                # self.picture.print_obj()
+                self._build_next_raw_images(self.picture)
+                self.alpha = .2
 
-        root.after(self.TRANSITION_DELAY, self.auto_increment_slideshow)
+        root.after(self.TRANSITION_DELAY, self.auto_play_slideshow)
 
     # BCM HARDWARE CONTROLS
     def detected_rotary_change(self, event):
@@ -251,41 +254,44 @@ class Slideshow:
 
         # The encoder has moved
         if clkState != self.clkLastState:
+            self.determine_switch_mode()
             # Increment
             if cntState != clkState:
                 self.IS_TRANSITION_FORWARD = True  # For auto slideshow
-
+                # Next picture
                 if (self.rotary_button_state):
                     print('INCREMENT ACROSS ALL HIKES')
                     self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
                 else:
                     self.ROTARY_COUNT += 1
-                    print("Rotary +: ", self.ROTARY_COUNT)
+                    # print("Rotary +: ", self.ROTARY_COUNT)
                     self.picture = self.sql_controller.next_time_picture_in_hike(self.picture)
                     # self.picture.print_obj()
                     self._build_next_raw_images(self.picture)
                     self.alpha = .2     # Resets amount of fade between pictures
-                    # self.update_text()
-                    # self.update_tick()
             # Decrement
             else:
                 self.IS_TRANSITION_FORWARD = False  # For auto slideshow
-
+                # Previous picture
                 if (self.rotary_button_state):
                     print('DECREMENT ACROSS ALL HIKES')
                     self.picture = self.sql_controller.next_time_picture_across_hikes(self.picture)
                 else:
                     self.ROTARY_COUNT -= 1
-                    print("Rotary -: ", self.ROTARY_COUNT)
+                    # print("Rotary -: ", self.ROTARY_COUNT)
                     self.picture = self.sql_controller.previous_time_picture_in_hike(self.picture)
                     # self.picture.print_obj()
                     self._build_next_raw_images(self.picture)
                     self.alpha = .2     # Resets amount of fade between pictures
-                    # self.update_text()
-                    # self.update_tick()
         self.clkLastState = clkState
         # TODO - try around with this in or out depending on the rotary encoder
         # sleep(0.1)
+
+    def rotary_button_down(self, event):
+        print('DOWN rotary button')
+
+    def rotary_button_up(self, event):
+        print('UP rotary button')
 
     def rotary_button_pressed(self, event):
         print('rotary pressed')
@@ -295,11 +301,14 @@ class Slideshow:
 
         self.rotary_button_state = not self.rotary_button_state
         print('Rotary button state: {i}'.format(i=self.rotary_button_state))
-
-        sleep(0.1)
+        # sleep(0.1)
 
     def button_pressed_play_pause(self, event):
-        print('Play Pause pressed')
+        self.PLAY = not self.PLAY
+        if self.PLAY:
+            print('Pressed Play')
+        else:
+            print('Pressed Pause')
 
     def button_pressed_next(self, event):
         print('Next pressed')
@@ -307,33 +316,77 @@ class Slideshow:
     def button_pressed_previous(self, event):
         print('Previous pressed')
 
+    def button_mode(self, event):
+        # self.MODE += 1
+        # self.MODE = self.MODE % 3  # to loop count back to 0 from 3
+        print('Mode button not incrementing | Current mode = {n}'.format(n=self.MODE))
+
+    def determine_switch_mode(self):
+        switch_mode_0_state = GPIO.input(SLIDER_SWITCH_MODE_0)
+        switch_mode_1_state = GPIO.input(SLIDER_SWITCH_MODE_1)
+        switch_mode_2_state = GPIO.input(SLIDER_SWITCH_MODE_2)
+
+        # print(switch_mode_0_state)
+        # print(switch_mode_1_state)
+        # print(switch_mode_2_state)
+
+        if switch_mode_0_state == 0:
+            self.MODE = 0
+        elif switch_mode_1_state == 0:
+            self.MODE = 1
+        elif switch_mode_2_state == 0:
+            self.MODE = 2
+        else:
+            print("ERROR")
+        # print('MODE: {m}'.format(m=self.MODE))
+
     # ADC HARDWARE CONTROLS
     def check_accelerometer(self):
-        chan0 = AnalogIn(mcp, MCP.P7)
-        chan1 = AnalogIn(mcp, MCP.P6)
-        chan2 = AnalogIn(mcp, MCP.P5)
-        ax = chan0.value
-        ay = chan1.value
-        az = chan2.value
+        ax = AnalogIn(mcp, ACCELEROMETER_X).value
+        ay = AnalogIn(mcp, ACCELEROMETER_Y).value
+        az = AnalogIn(mcp, ACCELEROMETER_Z).value
 
         pitch = 180 * math.atan(ax/math.sqrt(ay*ay + az*az))/math.pi
         roll = 180 * math.atan(ay/math.sqrt(ax*ax + az*az))/math.pi
-        
-        #if roll > -45 and roll < 45:
-        #    orientation = 'landscape'
-        #elif roll >= 45 or roll <= -45:
-        #    orientation = 'vertical'
-        
-        if pitch > 35 and roll < 34:
-                orientation = 'correct vertical'
-        elif pitch < 31 and roll > 34:
-                orientation = 'upside down vertical'
-        else:
-                orientation = 'horizontal'
 
-        print(orientation)
+        if pitch > 35 and roll < 34:
+            orientation = 'correct vertical'
+        elif pitch < 31 and roll > 34:
+            orientation = 'upside down vertical'
+        else:
+            orientation = 'horizontal'
+        # print(orientation)
+
+        # TODO - calculate pitch and roll correctly
+        # if roll > -45 and roll < 45:
+        #    orientation = 'landscape'
+        # elif roll >= 45 or roll <= -45:
+        #    orientation = 'vertical'
 
         root.after(500, self.check_accelerometer)
+
+    # last_value = 65472
+    # def check_mode(self):
+        # sw1 = AnalogIn(mcp, SLIDER_SWITCH_MODE_0).value
+        # sw2 = AnalogIn(mcp, SLIDER_SWITCH_MODE_1).value
+        # sw3 = AnalogIn(mcp, SLIDER_SWITCH_MODE_2).value
+
+        # value = AnalogIn(mcp, BUTTON_MODE).value
+        # print(value)
+
+        # if value < 35500 and self.last_value > 61500:
+        #     print('press')
+        #     self.last_value = value
+        # elif value > 61500 and self.last_value < 35500:
+        #     print('released')
+        #     self.last_value = value
+
+        #  = chan0.value
+        # self.MODE += 1
+        # self.MODE = self.MODE % 3       # to loop count back to 0 from 3
+        # print('mode = {n}'.format(n=self.MODE))
+
+        # root.after(500, self.check_mode)
 
 
 # Create the root window

@@ -45,6 +45,10 @@ LED_BLUE = 26           # BOARD - 33
 LED_RED = 13            # BOARD - 37
 PIEZO = 12              # BOARD - 32
 
+# Pin numbers for manufactured ButtonBoard
+# LED_GREEN = 12         # BOARD - 33
+# LED_RED = 26      # BOARD 37
+
 
 # Tone frequencies for piezo
 c = 261
@@ -71,6 +75,7 @@ gpio.setup(SEL_2, gpio.OUT)         # select 2
 gpio.setup(LED_BLUE, gpio.OUT)      # status led1
 gpio.setup(LED_RED, gpio.OUT)       # status led2
 gpio.setup(LED_RED, gpio.OUT)       # status led3
+gpio.setup(PIEZO, gpio.OUT)
 
 
 # Turn off LEDs
@@ -161,6 +166,7 @@ def initialize_logger(hike_num: int):
     # logname = 'log-hike' + str(hike_num) + '.log'
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    # os.chmod(logname, 666) # Make logfile accessible to writing by both root and user
     logging.info('START')
 
 
@@ -215,13 +221,14 @@ def read_altimeter(bus: smbus) -> float:
 
 def main():
     # Initialize and setup hardware
-    #initialize_GPIOs()                             # Define the GPIO pin modes
+    #initialize_GPIOs()                              # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     i2c = busio.I2C(3, 2)                           # Setup I2C for DS3231 - TODO merge with smbus
     get_RTC_time(i2c)                               # Update system time from RTC
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
-    #pi_cam = initialize_picamera(RESOLUTION)       # Setup the camera
+    beep(C, 0.25, 0.1, 3)
+    #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
@@ -274,6 +281,7 @@ def main():
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
+                beep(a, 0.1, 0.1, 2)
                 prev_pause = True
             print(">>PAUSED!<<")
             blink(LED_RED, 1, 0.3)
@@ -320,4 +328,5 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('===== Error ===== ')
         logging.exception(error)
+        beep(c, 1, 0.5, 3)
         blink_after_crash()
