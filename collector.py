@@ -108,7 +108,7 @@ def blink_after_crash():
 
 
 def beep(tone, duration, pause, repeat):
-    pzo = gpio.PWM(PIEZO, 100)
+
     for i in range(repeat):
         pzo.ChangeFrequency(tone)
         time.sleep(duration)
@@ -224,6 +224,8 @@ def main():
     #pi_cam = initialize_picamera(RESOLUTION)       # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
+    pzo = gpio.PWM(PIEZO, 100)
+    print("initialized piezo pin OK")
 
     print('Initializing camera object')
     gpio.output(SEL_1, False)
