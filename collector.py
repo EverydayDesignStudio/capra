@@ -227,11 +227,12 @@ def main():
     get_RTC_time(i2c)                               # Update system time from RTC
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
+    pzo = gpio.PWM(PIEZO, 100)
     beep(C, 0.25, 0.1, 3)
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
-    pzo = gpio.PWM(PIEZO, 100)
+
     print("initialized piezo pin OK")
 
     print('Initializing camera object')
