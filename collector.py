@@ -112,12 +112,12 @@ def blink_after_crash():
         blink(LED_RED, 3, 0.1)
 
 
-def beep(tone, duration, pause, repeat):
+def beep(pin, tone, duration, pause, repeat):
 
     for i in range(repeat):
-        pzo.ChangeFrequency(tone)
+        pin.ChangeFrequency(tone)
         time.sleep(duration)
-        pzo.stop()
+        pin.stop()
         time.sleep(pause)
 
 
@@ -228,7 +228,7 @@ def main():
     turn_off_leds()                                 # TODO - why do we need to
     hello_blinks()                                  # Say hello through LEDs
     pzo = gpio.PWM(PIEZO, 100)
-    beep(C, 0.25, 0.1, 3)
+    beep(pzo, C, 0.25, 0.1, 3)
     #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
