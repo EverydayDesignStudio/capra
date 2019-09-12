@@ -336,9 +336,9 @@ class SQLController:
             print('Continuing last hike:')
             return False
 
-    def create_new_picture(self, hike_id: int, photo_index: int):
+    def create_new_picture(self, hike_id: int, photo_index: int, photo_time: float):
         cursor = self.connection.cursor()
-        ts = time.time()
+        ts = photo_time
         cursor.execute(self.statements.insert_new_picture(ts, hike_id, photo_index))
         self.connection.commit()
 
