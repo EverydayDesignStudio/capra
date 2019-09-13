@@ -25,8 +25,10 @@ import datetime
 import math
 
 # Database location
-DB = '/home/pi/Pictures/capra-projector.db'
-PATH = '/home/pi/Pictures'
+# DB = '/home/pi/Pictures/capra-projector.db'
+# PATH = '/home/pi/Pictures'
+DB = '/media/pi/capra-hd/capra_projector.db'
+PATH = '/media/pi/capra-hd'
 blank_path = '{p}/blank.png'.format(p=PATH)
 
 # GPIO BCM PINS
@@ -126,7 +128,7 @@ class Slideshow:
 
         # Initialization for database implementation
         self.sql_controller = SQLController(database=DB)
-        self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(14)
+        self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
         self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
 
         # Initialization for images and associated properties
@@ -183,7 +185,8 @@ class Slideshow:
         # self.next_raw_bot = Image.open(blank_path, 'r')
 
     def _build_filename(self, end_of_path: str) -> str:
-        return '{p}{e}'.format(p=PATH, e=end_of_path)
+        # return '{p}{e}'.format(p=PATH, e=end_of_path)
+        return '{e}'.format(p=PATH, e=end_of_path)
 
     # Loops for the life of the program, fading between the current image and the NEXT image
     def fade_image(self):
