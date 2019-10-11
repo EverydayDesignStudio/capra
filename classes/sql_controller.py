@@ -17,13 +17,17 @@ class SQLController:
     # _underscores signify that they should be treated as private functions to  this class
     def _build_picture_from_row(self, row: list) -> Picture:
         picture = Picture(picture_id=row[0], time=row[1], altitude=row[2],
-                          color=row[3], hike_id=row[4], index_in_hike=row[5],
-                          camera1=row[6], camera2=row[7], camera3=row[8])
+                          brightness=row[3], b_rank=row[4], hue=row[5], h_rank=row[6],
+                          hue_lumosity=row[7], hl_rank=row[8], hike_id=row[9], index_in_hike=row[10],
+                          camera1=row[11], camera2=row[12], camera3=row[13], camera_land=row[14])
+
         return picture
 
     def _build_hike_from_row(self, row: list) -> Hike:
-        hike = Hike(hike_id=row[0], average_altitude=row[1], average_color=row[2], start_time=row[3],
-                    end_time=row[4], pictures_num=row[5])
+        hike = Hike(hike_id=row[0], avg_altitude=row[1],
+                    avg_brightness=row[2], avg_hue=row[3], avg_hue_lumosity=row[4],
+                    start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
+
         return hike
 
     def _get_picture_from_sql_statement(self, statement: str) -> Picture:
@@ -31,6 +35,9 @@ class SQLController:
         cursor.execute(statement)
         all_rows = cursor.fetchall()
         picture = self._build_picture_from_row(all_rows[0])
+
+        picture.print_obj()
+
         return picture
 
     def _get_num_from_statement(self, statement: str):
