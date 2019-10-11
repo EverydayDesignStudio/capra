@@ -41,7 +41,7 @@ The flat cables (called _'FFC'_ - Flat Flexible Cable) contain all signals that 
 | Protocol   | Function   | Connects | Through |
 | ---------- | ---------- | -------- | ------- |
 | [I2C](https://en.wikipedia.org/wiki/I%C2%B2C)        | RPI issue commands to the camera (e.g. set resolution, take picture) | VideoCore (GPU) of RPi ↔ Camera (Bidirectional) |  Analog Multiplexer 74HC4051 (IC3) |
-| [MIPI](https://mipi.org/specifications/d-phy)       | Contains all the data that comprise the image taken by the camera. | Camera → VideoCore (GPU) of RPi (Unidirectional) | FSA642UMX (IC1 & IC2) |
+| [CSI-2](https://en.wikipedia.org/wiki/Camera_Serial_Interface)       | Contains all the data that comprise the image taken by the camera. | Camera → VideoCore (GPU) of RPi (Unidirectional) | FSA642UMX (IC1 & IC2) |
 
 The table above echoes the systematic drawing in that it shows the signals between the RPi and the cameras being split up and switched via two different chips; this is due to the vastly different electronic requirements of those signals.
 
@@ -129,7 +129,7 @@ The + terminal should be pointed upwards. The '-' terminal should be pointed dow
 
 
 ### Software
-#### New hike creation 
+#### New hike creation
 New hikes are created from `collector.py` with the following line:
 ```python
 created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
