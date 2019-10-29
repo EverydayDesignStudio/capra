@@ -113,7 +113,6 @@ def blink_after_crash():
 
 
 def beep(pin, tone, duration, pause, repeat):
-
     for i in range(repeat):
         pin.ChangeFrequency(tone)
         time.sleep(duration)
@@ -284,7 +283,7 @@ def main():
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
-                beep(a, 0.1, 0.1, 2)
+                beep(a, 0.1, 0.1, 2, 2)
                 prev_pause = True
             print(">>PAUSED!<<")
             blink(LED_RED, 1, 0.3)
@@ -331,5 +330,5 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('===== Error ===== ')
         logging.exception(error)
-        beep(c, 1, 0.5, 3)
+        beep(c, 1, 0.5, 3, 5)
         blink_after_crash()
