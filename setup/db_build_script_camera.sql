@@ -1,6 +1,6 @@
 ----------------------------------------------------------------
 -- CAMERA (COLLECTOR) BUILD SCRIPT
-----------------------------------------------------------------
+
 CREATE DATABASE capra_camera.db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE capra_camera.db;
 
@@ -10,7 +10,6 @@ DROP TABLE IF EXISTS "pictures";
 CREATE TABLE "pictures" (
 	"time"	REAL UNIQUE,
 	"altitude"	REAL,
-	"color"	TEXT,
 	"hike"	INTEGER,
 	"index_in_hike"	INTEGER,
 	"camera1"	TEXT UNIQUE,
@@ -23,10 +22,14 @@ CREATE TABLE "pictures" (
 
 DROP TABLE IF EXISTS "hikes";
 
+-- hike_id is a PRIMARY KEY AUTOINCREMENT
+-- this is what maintains the hike count
 CREATE TABLE "hikes" (
 	"hike_id"	INTEGER PRIMARY KEY AUTOINCREMENT,
-	"average_altitude"	REAL,
-	"average_color"	TEXT,
+	"avg_altitude"	REAL,
+	"avg_brightness" REAL,
+	"avg_hue" REAL,
+	"avg_hue_lumosity" REAL,
 	"start_time"	REAL UNIQUE,
 	"end_time"	REAL UNIQUE,
 	"pictures"	INTEGER,

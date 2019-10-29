@@ -165,7 +165,7 @@ class SQLStatements:
         statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
         return statement
 
-    # Explorer
+    # Camera
     # --------------------------------------------------------------------------
     def select_hike_count(self) -> str:
         statement = 'SELECT count(*) FROM hikes'
