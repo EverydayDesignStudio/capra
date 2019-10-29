@@ -2,6 +2,9 @@
 *.pyc
 *.log
 
+#SQL
+*.db
+
 # Finder
 .DS_Store
 

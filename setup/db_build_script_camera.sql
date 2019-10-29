@@ -1,9 +1,6 @@
 ----------------------------------------------------------------
 -- CAMERA (COLLECTOR) BUILD SCRIPT
 
-CREATE DATABASE capra_camera.db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE capra_camera.db;
-
 DROP TABLE IF EXISTS "pictures";
 
 -- no picture_id, this is added upon transfer back to projector
@@ -22,14 +19,10 @@ CREATE TABLE "pictures" (
 
 DROP TABLE IF EXISTS "hikes";
 
--- hike_id is a PRIMARY KEY AUTOINCREMENT
--- this is what maintains the hike count
+-- hike_id is a PRIMARY KEY AUTOINCREMENT which maintains the hike count
+-- even when the table is deleted the hike count persists
 CREATE TABLE "hikes" (
 	"hike_id"			INTEGER PRIMARY KEY AUTOINCREMENT,
-	"avg_altitude"		REAL,
-	"avg_brightness" 	REAL,
-	"avg_hue" 			REAL,
-	"avg_hue_lumosity" 	REAL,
 	"start_time"		REAL UNIQUE,
 	"end_time"			REAL UNIQUE,
 	"pictures"			INTEGER,
@@ -37,5 +30,3 @@ CREATE TABLE "hikes" (
 	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
 );
-
-.save capra_camera.db;

@@ -1,8 +1,6 @@
 ----------------------------------------------------------------
 -- PROJECTOR (EXPLORER) BUILD SCRIPT
-
-CREATE DATABASE capra_projector.db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE capra_projector.db;
+-- color fields are added in pictures and hikes table
 
 DROP TABLE IF EXISTS "pictures";
 
@@ -31,7 +29,7 @@ CREATE TABLE "pictures" (
 DROP TABLE IF EXISTS "hikes";
 
 -- hike_id is not PRIMARY KEY AUTOINCREMENT since it will never be incremented 
--- on the projector & in the off case it is, it could get out of sync with camera
+-- on the projector and in the off case it is, it could get out of sync with camera
 CREATE TABLE "hikes" (
 	"hike_id"			INTEGER UNIQUE,
 	"avg_altitude"		REAL,
@@ -46,6 +44,9 @@ CREATE TABLE "hikes" (
 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS "state";
+
+-- Holds the current state of the controls at all times on the projector
 CREATE TABLE "state" (
 	"mode"				INTEGER UNIQUE,
 	"hike"				INTEGER,
@@ -54,5 +55,3 @@ CREATE TABLE "state" (
 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
 
 );
-
-.save capra_projector.db
