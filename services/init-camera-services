@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "Enabling capra-camera-turn-off service..."
+sudo cp capra-camera-turn-off.service /lib/systemd/system/
+echo "Moved capra-camera-turn-off.service to /lib/systemd/system/"
+sudo chmod 644 /lib/systemd/system/capra-camera-turn-off.service
+echo "Changed permissions"
+echo "Reloading daemon..."
+sudo systemctl daemon-reload
+echo "Enabling service..."
+sudo systemctl enable /lib/systemd/system/capra-camera-turn-off.service
+echo "Service has been enabled!"
