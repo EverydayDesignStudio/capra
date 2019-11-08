@@ -643,6 +643,7 @@ class PiezoPlayer:
     def __init__(self, pin):
         self.buzzer_pin = pin
         print('BuzzerPlayer object created for GPIO pin: {p}'.format(p=self.buzzer_pin))
+        GPIO.setup(pin, GPIO.OUT)
 
     def playStarWars(self):
         print("Star Wars Theme")
