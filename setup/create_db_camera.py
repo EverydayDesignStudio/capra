@@ -11,6 +11,7 @@ import sqlite3
 path = os.path.dirname(os.path.abspath(__file__))
 storage_path = '{p}/../../capra-storage'.format(p=path)
 new_db_path = '{sp}/capra_camera.db'.format(sp=storage_path)
+log_path = '{sp}/logs'.format(sp=storage_path)
 
 # Check if database at directory already exists
 if not os.path.exists(new_db_path):
@@ -20,6 +21,12 @@ if not os.path.exists(new_db_path):
         print('✅ SUCCESS: directory created @ {sp}'.format(sp=storage_path))
     else:
         print('⚠️ WARNING: directory already exists; no directory created')
+
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+        print('✅ SUCCESS: log directory created @ {lp}'.format(lp=log_path))
+    else:
+        print('⚠️ WARNING: log directory already exists; no directory created')
 
     # Create datbase and move it into the correct directory
     # Path for db creation buildscript
