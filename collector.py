@@ -7,11 +7,6 @@
 #  Script to run on the camera unit. Takes pictures with
 #  three picameras through the Capra cam multiplexer board
 # ------------------------------------------------------------------------------
-#
-# TODO: Include in makefile:
-# ==========================
-# pip install Adafruit-Blinka
-# another one for the altimeter
 
 # Import system modules
 import datetime              # For translating POSIX timestamp to human readable date/time
@@ -32,6 +27,7 @@ from classes.button import Button  # For threading interrupts for button presses
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
 from classes.piezo_player import PiezoPlayer  # For playing sounds
+from classes.led_player import RedBlueLED  # For controlling LED on Buttonboard
 
 
 DB = '/home/pi/capra-storage/capra_camera.db'
@@ -45,13 +41,9 @@ LED_BLUE = 26           # BOARD - 33
 LED_RED = 13            # BOARD - 37
 PIEZO = 12              # BOARD - 32
 
-# Pin numbers for manufactured ButtonBoard
-# LED_GREEN = 12        # BOARD - 33
-# LED_RED = 26          # BOARD - 37
-
-# Set file wide shared variables
-RESOLUTION = (1280, 720)
-# RESOLUTION = (720, 405)
+# Hike specifics
+RESOLUTION_CENTER = (1280, 720)
+RESOLUTION_TOP_BOTTOM = (720, 427)
 # NEW_HIKE_TIME = 43200   # 12 hours
 # NEW_HIKE_TIME = 21600   # 6 hours
 NEW_HIKE_TIME = 16200   # 4.5 hours
@@ -61,48 +53,14 @@ gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
 gpio.setup(SEL_1, gpio.OUT)         # select 1
 gpio.setup(SEL_2, gpio.OUT)         # select 2
-gpio.setup(LED_BLUE, gpio.OUT)      # status led1
-gpio.setup(LED_RED, gpio.OUT)       # status led2
-gpio.setup(LED_RED, gpio.OUT)       # status led3
-player = PiezoPlayer(PIEZO)         # piezo buzzer
+# gpio.setup(LED_BLUE, gpio.OUT)      # status led1
+# gpio.setup(LED_RED, gpio.OUT)       # status led2
+piezo = PiezoPlayer(PIEZO)          # piezo buzzer
+red_blue_led = RedBlueLED(LED_RED, LED_BLUE)
 
 
 # Helper functions
 # ------------------------------------------------------------------------------
-# Turn off LEDs
-def turn_off_leds():
-    gpio.output(LED_BLUE, True)
-    time.sleep(0.1)
-    gpio.output(LED_RED, True)
-    time.sleep(0.1)
-    gpio.output(LED_RED, False)
-
-
-# Blink LEDs
-def blink(pin, repeat, interval):
-    on = False
-    off = True
-    if pin == LED_RED:
-        on = True
-        off = False
-    for i in range(repeat):
-        gpio.output(pin, on)
-        time.sleep(interval)
-        gpio.output(pin, off)
-        time.sleep(interval)
-
-
-# Blink status LEDs on camera - TODO Remove instances of nonexistent LEDS
-def hello_blinks():
-    blink(LED_BLUE, 2, 0.1)
-    blink(LED_RED, 2, 0.1)
-
-
-def blink_after_crash():
-    for i in range(5):
-        blink(LED_RED, 3, 0.1)
-
-
 # Get the time from the DS3231 Real Time Clock
 def get_RTC_time(I2C):
     rtc = adafruit_ds3231.DS3231(I2C)
@@ -197,31 +155,29 @@ def read_altimeter(bus: smbus) -> float:
 # ------------------------------------------------------------------------------
 def main():
     # Initialize and setup hardware
-    # initialize_GPIOs()                              # Define the GPIO pin modes
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
-    i2c = busio.I2C(3, 2)                           # Setup I2C for DS3231 - TODO merge with smbus
+    i2c = busio.I2C(3, 2)                           # Setup I2C for DS3231
     get_RTC_time(i2c)                               # Update system time from RTC
-    turn_off_leds()                                 # TODO - why do we need to
-    hello_blinks()                                  # Say hello through LEDs
-    player.play_start_recording_jingle()
-    # pzo = gpio.PWM(PIEZO, 100)
-    # beep(pzo, C, 0.25, 0.1, 3)
-    #pi_cam = initialize_picamera(RESOLUTION)        # Setup the camera
+    red_blue_led.turn_off()
+    red_blue_led.turn_red()
+    piezo.play_power_on_jingle()
+
+    pi_cam = initialize_picamera(RESOLUTION_CENTER)        # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
-    print('Initializing camera object')
-    gpio.output(SEL_1, False)
-    gpio.output(SEL_2, False)
-    time.sleep(0.2)
-    print('Select pins OK')
-    pi_cam = picamera.PiCamera()
-    time.sleep(0.2)
-    print('Cam init OK')
-    pi_cam.resolution = RESOLUTION
-    print('Resolution OK')
-    pi_cam.rotation = 180
-    print('Rotation OK')
+    # print('Initializing camera object')
+    # gpio.output(SEL_1, False)
+    # gpio.output(SEL_2, False)
+    # time.sleep(0.2)
+    # print('Select pins OK')
+    # pi_cam = picamera.PiCamera()
+    # time.sleep(0.2)
+    # print('Cam init OK')
+    # pi_cam.resolution = RESOLUTION_CENTER
+    # print('Resolution OK')
+    # pi_cam.rotation = 180
+    # print('Rotation OK')
 
     # As long as initially paused, do not create new hike yet
     print("Waiting for initial unpause...")
@@ -230,21 +186,19 @@ def main():
             logging.info('Paused')
             prev_pause = True
         print(">>>>>PAUSED!<<<<<")
-        blink(LED_RED, 1, 0.3)
+        # blink(LED_RED, 1, 0.3)
         time.sleep(1)
     print("Initial unpause!")
-    player.play_still_recording_jingle()
+    red_blue_led.turn_off()
+    # piezo.play_start_recording_jingle()
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
-
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
-    if created:     # new hike created; blink four times
-        blink(LED_RED, 4, 0.2)
+    if created:     # new hike created; blink 6 times in purple
+        red_blue_led.blink_purple_new_hike()
         # os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
         # os.chmod(DB, 766)
-    else:           # continuing last hike; blink two times
-        blink(LED_RED, 2, 0.2)
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
@@ -259,16 +213,16 @@ def main():
         while(shared.pause):
             if(not prev_pause):
                 logging.info('Paused')
-                # beep(a, 0.1, 0.1, 2, 2)
                 prev_pause = True
             print(">PAUSED!<")
-            blink(LED_RED, 1, 0.3)
+            red_blue_led.turn_red()
             time.sleep(1)
-        # If applicable, log 'unpaused'
+        # Unpause program
         if(prev_pause):
             logging.info('Unpaused')
             prev_pause = False
-            player.play_still_recording_jingle()
+            red_blue_led.turn_off()
+            piezo.play_start_recording_jingle()
 
         # Read the time as UNIX timestamp
         current_time = get_RTC_time(i2c)
@@ -288,13 +242,17 @@ def main():
         altitude = read_altimeter(i2c_bus)
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
-
+        
         # timestamp = time.time() # OLD: this takes the time from the RPi, not the DS3221
         timestamp = get_RTC_time(i2c)
-        # Blink on every fourth picture
+
+        # Blink to notify that the timelapse is still going
+        red_blue_led.blink_blue_new_picture()
+
+        # Beep on every 25th picture
         if (photo_index % 4 == 0):
-            blink(LED_BLUE, 1, 0.1)
-            logging.info('cameras still alive')
+            piezo.play_still_recording_jingle()
+            logging.info('Cameras still alive (25)')
 
         # Wait until 2.5 seconds have passed since last picture
         while(get_RTC_time(i2c) < timestamp + 2.5):
@@ -307,5 +265,5 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('===== Error ===== ')
         logging.exception(error)
-        # beep(c, 1, 0.5, 3, 5)
-        blink_after_crash()
+        red_blue_led.blink_red_quick()
+        piezo.play_mario()
