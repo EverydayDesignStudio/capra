@@ -47,3 +47,13 @@ class RedBlueLED:
 
     def blink_red_quick(self):
         self.blink(self.LED_RED, 10, 0.1)
+
+    def blink_purple_new_hike(self):
+        for i in range(6):
+            self.turn_purple()
+            time.sleep(.15)
+            self.turn_off()
+            time.sleep(.15)
+
+    def blink_blue_new_picture(self):
+        self.blink(self.LED_BLUE, 2, 0.15)
