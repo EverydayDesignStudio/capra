@@ -23,7 +23,6 @@ is_startup = True
 while(True):
     # Only play the startup jingle on startup
     if is_startup:
-        player.play_power_on_jingle()
         is_startup = False
     print("Waiting for turnoff...")
     gpio.wait_for_edge(BUTTON_OFF, gpio.RISING)
