@@ -55,5 +55,12 @@ class RedBlueLED:
             self.turn_off()
             time.sleep(.15)
 
+    def blink_red_continue_hike(self):
+        for i in range(6):
+            self.turn_red()
+            time.sleep(.15)
+            self.turn_off()
+            time.sleep(.15)
+
     def blink_blue_new_picture(self):
         self.blink(self.LED_BLUE, 2, 0.15)

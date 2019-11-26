@@ -666,7 +666,7 @@ class PiezoPlayer:
         print("Start Recording jingle playing")
         self.play(self.capra_start_melody, self.capra_start_tempo, 0.50, 1.00)
 
-    def play_still_recording_jingle(self):
+    def play_paused_jingle(self):
         print("Still Recording jingle playing")
         self.play(self.capra_still_going_melody, self.capra_still_going_tempo, 0.50, 1.00)
 

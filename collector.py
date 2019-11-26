@@ -162,22 +162,14 @@ def main():
     red_blue_led.turn_red()
     piezo.play_power_on_jingle()
 
-    pi_cam = initialize_picamera(RESOLUTION_CENTER)        # Setup the camera
+    print('about to initialize')
+    print('about to initialize')
+    pi_cam_large = initialize_picamera(RESOLUTION_CENTER)       # Setup the camera
+    print('initialized the large pi camera')
+    # pi_cam_small = initialize_picamera(RESOLUTION_TOP_BOTTOM)   # Setup small camera
+    print('initialized the small pi camera')
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
-
-    # print('Initializing camera object')
-    # gpio.output(SEL_1, False)
-    # gpio.output(SEL_2, False)
-    # time.sleep(0.2)
-    # print('Select pins OK')
-    # pi_cam = picamera.PiCamera()
-    # time.sleep(0.2)
-    # print('Cam init OK')
-    # pi_cam.resolution = RESOLUTION_CENTER
-    # print('Resolution OK')
-    # pi_cam.rotation = 180
-    # print('Rotation OK')
 
     # As long as initially paused, do not create new hike yet
     print("Waiting for initial unpause...")
@@ -186,11 +178,9 @@ def main():
             logging.info('Paused')
             prev_pause = True
         print(">>>>>PAUSED!<<<<<")
-        # blink(LED_RED, 1, 0.3)
         time.sleep(1)
     print("Initial unpause!")
     red_blue_led.turn_off()
-    # piezo.play_start_recording_jingle()
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
@@ -199,6 +189,9 @@ def main():
         red_blue_led.blink_purple_new_hike()
         # os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
         # os.chmod(DB, 766)
+    else:
+        print('Continuing the last hike homie')
+        red_blue_led.blink_red_continue_hike()
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
@@ -214,8 +207,9 @@ def main():
             if(not prev_pause):
                 logging.info('Paused')
                 prev_pause = True
+                red_blue_led.turn_red()
+                piezo.play_paused_jingle()
             print(">PAUSED!<")
-            red_blue_led.turn_red()
             time.sleep(1)
         # Unpause program
         if(prev_pause):
@@ -234,25 +228,25 @@ def main():
         query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
 
         # Take pictures
-        camcapture(pi_cam, 1, hike_num, photo_index, sql_controller)
-        camcapture(pi_cam, 2, hike_num, photo_index, sql_controller)
-        camcapture(pi_cam, 3, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam_large, 1, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam_large, 2, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam_large, 3, hike_num, photo_index, sql_controller)
 
         # Update the database with metadata for picture & hike
         altitude = read_altimeter(i2c_bus)
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
-        
+
         # timestamp = time.time() # OLD: this takes the time from the RPi, not the DS3221
         timestamp = get_RTC_time(i2c)
 
         # Blink to notify that the timelapse is still going
         red_blue_led.blink_blue_new_picture()
 
-        # Beep on every 25th picture
-        if (photo_index % 4 == 0):
-            piezo.play_still_recording_jingle()
-            logging.info('Cameras still alive (25)')
+        # Log on every 20th picture
+        if (photo_index % 20 == 0):
+            # piezo.play_still_recording_jingle()
+            logging.info('Cameras still alive (20)')
 
         # Wait until 2.5 seconds have passed since last picture
         while(get_RTC_time(i2c) < timestamp + 2.5):
