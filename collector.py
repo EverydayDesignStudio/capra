@@ -42,8 +42,8 @@ LED_RED = 13            # BOARD - 37
 PIEZO = 12              # BOARD - 32
 
 # Hike specifics
-RESOLUTION_CENTER = (1280, 720)
-RESOLUTION_TOP_BOTTOM = (720, 427)
+RESOLUTION = (1920, 1080)
+# RESOLUTION = (1280, 720)
 # NEW_HIKE_TIME = 43200   # 12 hours
 # NEW_HIKE_TIME = 21600   # 6 hours
 NEW_HIKE_TIME = 16200   # 4.5 hours
@@ -53,10 +53,8 @@ gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
 gpio.setup(SEL_1, gpio.OUT)         # select 1
 gpio.setup(SEL_2, gpio.OUT)         # select 2
-# gpio.setup(LED_BLUE, gpio.OUT)      # status led1
-# gpio.setup(LED_RED, gpio.OUT)       # status led2
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
-red_blue_led = RedBlueLED(LED_RED, LED_BLUE)
+red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
 
 
 # Helper functions
@@ -163,11 +161,7 @@ def main():
     piezo.play_power_on_jingle()
 
     print('about to initialize')
-    print('about to initialize')
-    pi_cam_large = initialize_picamera(RESOLUTION_CENTER)       # Setup the camera
-    print('initialized the large pi camera')
-    # pi_cam_small = initialize_picamera(RESOLUTION_TOP_BOTTOM)   # Setup small camera
-    print('initialized the small pi camera')
+    pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
@@ -189,8 +183,7 @@ def main():
         red_blue_led.blink_purple_new_hike()
         # os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
         # os.chmod(DB, 766)
-    else:
-        print('Continuing the last hike homie')
+    else:           # continue last hike; blink 6 times in red
         red_blue_led.blink_red_continue_hike()
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
@@ -228,9 +221,9 @@ def main():
         query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
 
         # Take pictures
-        camcapture(pi_cam_large, 1, hike_num, photo_index, sql_controller)
-        camcapture(pi_cam_large, 2, hike_num, photo_index, sql_controller)
-        camcapture(pi_cam_large, 3, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam, 1, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam, 2, hike_num, photo_index, sql_controller)
+        camcapture(pi_cam, 3, hike_num, photo_index, sql_controller)
 
         # Update the database with metadata for picture & hike
         altitude = read_altimeter(i2c_bus)
