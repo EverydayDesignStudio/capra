@@ -4,6 +4,8 @@ For which device would you like to install dependencies?
 Run one of the following options:
 [sudo make collector] 		installs dependencies, sets time, and creates db
 [make collector_db]		creates db
+[make collector_services]	loads services to be run on startup
+
 [sudo make explorer]		installs dependencies and creates db
 [make explorer_db]		creates db
 
@@ -27,6 +29,10 @@ collector:
 	./setup/install_apps_collector.sh
 	./setup/create_db_camera.py
 	./setup/set_ds3231_rtc.py
+	./services/init-camera-services
 
 collector_db:
 	./setup/create_db_camera.py
+
+collector_services:
+	./services/init-camera-services
