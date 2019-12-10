@@ -260,6 +260,12 @@ class SQLController:
         else:
             return row[0]
 
+    def get_valid_photos_in_given_hike(self, hike_id: int) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_valid_photos_in_given_hike(hike_id))
+        row = cursor.fetchall()
+        return row;
+
     def get_last_photo_index_of_hike(self, hike_id: int) -> int:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_last_photo_index_of_hike(hike_id))
