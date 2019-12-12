@@ -1,15 +1,19 @@
 import globals as g
-import os, os.path, datetime, sqlite3, subprocess
+import os
+import os.path
+import datetime
+import sqlite3
+import subprocess
 from pathlib import Path
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 
-rsync_status = None;
-cDBController = None;
-pDBController = None;
-retry = 0;
-RETRY_MAX = 5;
+rsync_status = None
+cDBController = None
+pDBController = None
+retry = 0
+RETRY_MAX = 5
 
 # Database location
 # DB = '/home/pi/Pictures/capra-projector.db'
@@ -19,10 +23,12 @@ CAMERA_DB = PATH + 'capra-hd/capra_camera_test.db'
 PROJECTOR_DB = PATH + 'capra-hd/capra_projector_test.db'
 blank_path = '{p}/blank.png'.format(p=PATH)
 
+
 def transfer_from_camera(src, dest):
     # TODO: write this subprocess call
-    rsync_status = deploy_subprocess;
-    return;
+    rsync_status = deploy_subprocess
+    return
+
 
 # 1. make db connections
 def getDBControllers():
@@ -33,77 +39,82 @@ def getDBControllers():
     # master projector db
     pDBController = SQLController(database=PROJECTOR_DB)
 
+
 # 2. copy remote DB
 def update_transfer_animation_db():
-    #if date.today() != date.fromtimestamp(Path(g.PATH_TRANSFER_ANIMATION_DB).stat().st_mtime):
-    transfer_from_camera(g.PATH_CAMERA_DB, g.PATH_TRANSFER_ANIMATION_DB);
+    # if date.today() != date.fromtimestamp(Path(g.PATH_TRANSFER_ANIMATION_DB).stat().st_mtime):
+    transfer_from_camera(g.PATH_CAMERA_DB, g.PATH_TRANSFER_ANIMATION_DB)
+
 
 def count_files_in_directory(path):
     if (not os.path.exists(path)):
-        return 0;
+        return 0
     else:
-        return len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))]);
+        return len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
+
 
 def build_hike_path(base, hikeID=None, makeNew=False):
-    res = "";
+    res = ""
     if (hikeID > 0):
-        res = PATH + base + '/hike' + str(hikeID);
+        res = PATH + base + '/hike' + str(hikeID)
     else:
         # put -1 for hikeID to build a path for the upper directory
         # i.e.) "/capra-storage" for rsync destination
-        res = PATH + base;
+        res = PATH + base
     if makeNew and not os.path.exists(res):
         os.makedirs(res)
-    return res;
+    return res
     # return base + 'hike' + hikeID;
 
+
 def build_picture_path(base, hikeID, index, camNum):
-    return PATH + base + '/hike' + str(hikeID) + '/' + str(index) + '_cam' + str(camNum) + '.jpg';
+    return PATH + base + '/hike' + str(hikeID) + '/' + str(index) + '_cam' + str(camNum) + '.jpg'
     # return base + 'hike' + str(hikeID) + '/' + str(index) + '_cam' + str(camNum) + '.jpg';
+
 
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
 
-    latest_master_hikeID = pDBController.get_last_hike_id();
-    latest_remote_hikeID = cDBController.get_last_hike_id();
-    numNewHikes = latest_remote_hikeID - latest_master_hikeID;
-    hikeCounter = 0;
-    checkSum = 0;
+    latest_master_hikeID = pDBController.get_last_hike_id()
+    latest_remote_hikeID = cDBController.get_last_hike_id()
+    numNewHikes = latest_remote_hikeID - latest_master_hikeID
+    hikeCounter = 0
+    checkSum = 0
 
     # 3. determine how many hikes should be transferred
     while hikeCounter <= numNewHikes:
-        currHike = latest_master_hikeID + hikeCounter;
+        currHike = latest_master_hikeID + hikeCounter
         if (currHike == 0):
             # skip the validity check for newly created databases
-            hikeCounter += 1;
-            continue;
+            hikeCounter += 1
+            continue
 
         # C-1.  validity check
         #   ** For photos with invalid data, we won't bother restoring/fixing incorrect metatdata.
         #      The row (all 3 photos) will be dropped as a whole
-        validRows = cDBController.get_valid_photos_in_given_hike(currHike);
+        validRows = cDBController.get_valid_photos_in_given_hike(currHike)
         numRows = len(validRows)
         checkSum = 3 * numRows
-        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike));
-        print(numRows);
-        print("hike2: " + str(numfiles));
+        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike))
+        print(numRows)
+        print("hike2: " + str(numfiles))
 
         # skip if a hike is fully transferred already
         if (checkSum == numfiles):
-            hikeCounter += 1;
-            continue;
+            hikeCounter += 1
+            continue
 
-        avgAlt = 0;
-        avgBrtns = 0;
-        avgHue = 0;
-        avgHueLum = 0;
-        startTime = 9999999999;
-        endTime = -1;
+        avgAlt = 0
+        avgBrtns = 0
+        avgHue = 0
+        avgHueLum = 0
+        startTime = 9999999999
+        endTime = -1
 
         # C-2.  once all data is confirmed and valid, deploy rsync for 3 photos
         for row in validRows:
             # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
-            src = row[5][:-5] + "*" +  row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
+            src = row[5][:-5] + "*" + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
             dest = build_hike_path("capra-storage", currHike, True)
 
             # update timestamps
@@ -115,7 +126,7 @@ def start_transfer():
             avgAlt += int(row[1])
 
             # deploy rsync and add database row to the master db
-            rsync_status = subprocess.call(['rsync', '--update', '-av', src, dest]);
+            rsync_status = subprocess.call(['rsync', '--update', '-av', src, dest])
 
             # when rsync is over,
             if (rsync_status == 0):
@@ -131,54 +142,53 @@ def start_transfer():
                 #     2. update path to camera 1, 2, 3
                 #     3. resize photos
                 #     4. camera landscape
-                doPostProcessing = 0;
+                doPostProcessing = 0
                 # (pictureID, time, alt, brtns, brtns_rank, hue, hue_rank, huelum
                 #   huelum_rank, hikeID, index_in_hike, camera1, camera2, camera3, camera_landscape, date_created, date_updated)
                 # TODO: upsert a row to picture table in the master db
                 newPicRow = [];
                 # upsertToDB();
-                    #"INSERT INTO pictures VALUES ()"
-                #pDBController.
+                #   "INSERT INTO pictures VALUES ()"
+                # pDBController.
 
         # compare checksum
-        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike));
-        print("hike " + str(currHike) + " : " + str(numfiles));
+        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike))
+        print("hike " + str(currHike) + " : " + str(numfiles))
 
         if (checkSum == numfiles):
             # (hike_id, avgAlt, avgBrtns, start_time, end_time, numpics, path, date_created, date_updated)
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
             # TODO: make a row for hike table with postprocessed values
-            avgAlt /= numRows;
-            avgBrtns /= numRows;
-            avgHue /= numRows;
-            avgHueLum /= numRows;
+            avgAlt /= numRows
+            avgBrtns /= numRows
+            avgHue /= numRows
+            avgHueLum /= numRows
 
             # newHikeRow = [currHike, avgAlt, avgBrtns, ]
-            # "INSERT INTO hikes VALUES ()";
+            # "INSERT INTO hikes VALUES ()"
 
-            # cur.execute("UPDATE bucketCounters SET counter=? WHERE idx=?", (0,_));
+            # cur.execute("UPDATE bucketCounters SET counter=? WHERE idx=?", (0,_))
             # if (cur.rowcount == 0):
-            #     cur.execute("INSERT INTO bucketCounters VALUES (?,?)", (_,0));
+            #     cur.execute("INSERT INTO bucketCounters VALUES (?,?)", (_,0))
 
             # G.    clean up partial files and proceed to next hike
             # TODO: clean up partial files
-            hikeCounter += 1;
+            hikeCounter += 1
 
         elif (retry < RETRY_MAX):
-            retry += 1;
-            continue;
+            retry += 1
+            continue
 
         # what do we do here..?
         else:
-            exit();
+            exit()
 
-        exit();
-
+        exit()
 
 
 # ==================================================================
-getDBControllers();
+getDBControllers()
 # check if camera DB in projector is outdated
 # update_transfer_animation_db();
-start_transfer();
+start_transfer()
