@@ -107,11 +107,11 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
     else:
         if cam_num == 1:
-            gpio.output(SEL_1, True)
+            gpio.output(SEL_1, False)
             gpio.output(SEL_2, False)
             print("cam 1 selected")
         if cam_num == 2:
-            gpio.output(SEL_1, False)
+            gpio.output(SEL_1, True)
             gpio.output(SEL_2, False)
             print("cam 2 selected")
         if cam_num == 3:
