@@ -2,7 +2,9 @@ define INIT_MESSAGE
 For which device would you like to install dependencies?
 
 Run one of the following options:
-[sudo make collector] 		installs dependencies, sets time, and creates db
+[sudo make collector] 		installs dependencies, sets time, creates db, and setups services
+[sudo make collector_install]	installs dependencies from pip3 and apt-get
+[make collector_settime]	sets time for clock on multiplexer 
 [make collector_db]		creates db
 [make collector_services]	loads services to be run on startup
 
@@ -30,6 +32,13 @@ collector:
 	./setup/create_db_camera.py
 	./setup/set_ds3231_rtc.py
 	./services/init-camera-services
+
+collector_install:
+	pip3 install -r setup/requirements_collector.txt
+	./setup/install_apps_collector.sh
+
+collector_settime:
+	./setup/set_ds3231_rtc.py
 
 collector_db:
 	./setup/create_db_camera.py
