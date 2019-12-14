@@ -23,12 +23,27 @@ CREATE TABLE "pictures" (
 	"camera_landscape" 	TEXT,
 	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
+	"hue1"		REAL,
+	"lum1"		REAL,
+	"val1"		REAL,
+	"hue2"		REAL,
+	"lum2"		REAL,
+	"val2"		REAL,
+	"hue3"		REAL,
+	"lum3"		REAL,
+	"val3"		REAL,
+	"hue4"		REAL,
+	"lum4"		REAL,
+	"val4"		REAL,
+	"hue5"		REAL,
+	"lum5"		REAL,
+	"val5"		REAL,
 	FOREIGN KEY("hike") REFERENCES "hikes"("hike_id")
 );
 
 DROP TABLE IF EXISTS "hikes";
 
--- hike_id is not PRIMARY KEY AUTOINCREMENT since it will never be incremented 
+-- hike_id is not PRIMARY KEY AUTOINCREMENT since it will never be incremented
 -- on the projector and in the off case it is, it could get out of sync with camera
 CREATE TABLE "hikes" (
 	"hike_id"			INTEGER UNIQUE,
