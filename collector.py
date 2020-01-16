@@ -92,12 +92,28 @@ def initialize_background_play_pause():
 
 
 # Initialize the logger
-def initialize_logger(hike_num: int):
-    # logname = 'log-hike' + str(hike_num) + '.log'
+def initialize_startup_logger():
+    logname = '/home/pi/capra-storage/logs/startup.log'
+    logging.basicConfig(filename=logname,
+                        level=logging.DEBUG,
+                        format='%(name)s @ %(asctime)s (%(levelname)s): %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
+    logging.debug('CAPRA TURNED ON')
+
+
+def switch_to_hike_logger(hike_num: int):
+    # Setup hike logger
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
-    logging.basicConfig(filename=logname, level=logging.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-    # os.chmod(logname, 666) # Make logfile accessible to writing by both root and user
-    logging.info('START')
+    fileh = logging.FileHandler(logname, 'a')
+    formatter = logging.Formatter(fmt='%(name)s @ %(asctime)s (%(levelname)s): %(message)s', 
+                                  datefmt='%m/%d/%Y %I:%M:%S %p')
+    fileh.setFormatter(formatter)
+
+    # Switch loggers
+    log = logging.getLogger()       # root logger
+    for hdlr in log.handlers[:]:    # remove all old handlers
+        log.removeHandler(hdlr)
+    log.addHandler(fileh)           # set the new handler
 
 
 # Select camera + take a photo + save photo in file system and db
@@ -152,6 +168,10 @@ def read_altimeter(bus: smbus) -> float:
 # Main Loop
 # ------------------------------------------------------------------------------
 def main():
+    # Initialize logger that is used while startup up device
+    # Once a hike is started the logger switches to a hike specific log
+    initialize_startup_logger()
+
     # Initialize and setup hardware
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     i2c = busio.I2C(3, 2)                           # Setup I2C for DS3231
@@ -189,8 +209,9 @@ def main():
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
 
-    # Initialize logger
-    initialize_logger(hike_num)
+    # Switch to the hike specific logfile
+    switch_to_hike_logger(hike_num)
+    logging.info('----------NEW RECORDING SESSION STARTED----------')
 
     # Start the time lapse
     # --------------------------------------------------------------------------
@@ -239,7 +260,7 @@ def main():
         # Log on every 20th picture
         if (photo_index % 20 == 0):
             # piezo.play_still_recording_jingle()
-            logging.info('Cameras still alive (20)')
+            logging.info('Cameras still alive (20 pictures taken)')
 
         # Wait until 2.5 seconds have passed since last picture
         while(get_RTC_time(i2c) < timestamp + 2.5):
