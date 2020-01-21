@@ -1,4 +1,5 @@
 import globals as g
+import glob
 import os
 import os.path
 import datetime
@@ -8,6 +9,7 @@ from pathlib import Path
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+g.init()
 
 rsync_status = None
 cDBController = None
@@ -46,11 +48,12 @@ def update_transfer_animation_db():
     transfer_from_camera(g.PATH_CAMERA_DB, g.PATH_TRANSFER_ANIMATION_DB)
 
 
-def count_files_in_directory(path):
+def count_files_in_directory(path, pattern):
     if (not os.path.exists(path)):
         return 0
     else:
-        return len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
+        return len(glob.glob(path + '/' + pattern))
+#        return len([name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))])
 
 
 def build_hike_path(base, hikeID=None, makeNew=False):
@@ -94,13 +97,18 @@ def start_transfer():
         #      The row (all 3 photos) will be dropped as a whole
         validRows = cDBController.get_valid_photos_in_given_hike(currHike)
         numRows = len(validRows)
-        checkSum = 3 * numRows
-        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike))
-        print(numRows)
+        checkSum_transfer = 3 * numRows
+        checkSum_transfer_and_rotated = 4 * numRows
+        # TODO: change path to match projector file system
+        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME)
+        numResizedFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
+        print("Currhike: " + str(currHike))
+        print("numRows: " + str(numRows))
         print("hike2: " + str(numfiles))
 
+        # TRANSFER
         # skip if a hike is fully transferred already
-        if (checkSum == numfiles):
+        if (checkSum_transfer == numfiles):
             hikeCounter += 1
             continue
 
@@ -126,19 +134,19 @@ def start_transfer():
             avgAlt += int(row[1])
 
             # deploy rsync and add database row to the master db
-            rsync_status = subprocess.call(['rsync', '--update', '-av', src, dest])
+            rsync_status = subprocess.Popen(['rsync', '--update', '-av', src, dest], stdout=subprocess.PIPE)
+            # TODO: possibly log rsync status or is it too verbose?
+            # for line in rsync_status.stdout:
+            #    log("rsync: '%s'" % line)
 
+            rsync_status.wait()
             # when rsync is over,
-            if (rsync_status == 0):
+            if (rsync_status.returncode == 0):
                 print("row {} transfer completed".format(row[4]))
                 # TODO: do postprocessing
                 #     1. calculate the followings
-                #       - brightness
-                #       - brightness rank
-                #       - hue
-                #       - hue rank
-                #       - hue lumosity
-                #       - hue lumosity rank
+                #       - 5 dominant RGB colors
+                #       - compute HLV for each RGB
                 #     2. update path to camera 1, 2, 3
                 #     3. resize photos
                 #     4. camera landscape
@@ -146,16 +154,22 @@ def start_transfer():
                 # (pictureID, time, alt, brtns, brtns_rank, hue, hue_rank, huelum
                 #   huelum_rank, hikeID, index_in_hike, camera1, camera2, camera3, camera_landscape, date_created, date_updated)
                 # TODO: upsert a row to picture table in the master db
-                newPicRow = [];
+                newPicRow = []
                 # upsertToDB();
                 #   "INSERT INTO pictures VALUES ()"
                 # pDBController.
+            else:
+                print("### Rsync failed at row {}".format(row[4]))
+
+        # CHECK RESIZE AND ROTATE
+        # if the numrows and numResizedFiles doesn't match, perform the check and rotate missing files
 
         # compare checksum
-        numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike))
-        print("hike " + str(currHike) + " : " + str(numfiles))
+        # TODO: count files in a specific naming format; cam1, cma2, cam3 and resized
+        numTotalFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
+        print("hike " + str(currHike) + " : " + str(numTotalFiles))
 
-        if (checkSum == numfiles):
+        if (checkSum_transfer_and_rotated == numTotalFiles):
             # (hike_id, avgAlt, avgBrtns, start_time, end_time, numpics, path, date_created, date_updated)
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
@@ -177,6 +191,8 @@ def start_transfer():
             hikeCounter += 1
 
         elif (retry < RETRY_MAX):
+            print("Total number of files doesn't match!")
+            exit()
             retry += 1
             continue
 
