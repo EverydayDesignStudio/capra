@@ -19,6 +19,7 @@ import time                  # For unix timestamps
 import busio                 # For interfacing with DS3231 Real Time Clock
 import adafruit_ds3231       #
 from threading import Thread # For threading
+from subprocess import call  # For calling shutdown
 
 
 # Import custom modules
@@ -40,6 +41,7 @@ SEL_2 = 23              # BOARD - 16
 LED_BLUE = 26           # BOARD - 33
 LED_RED = 13            # BOARD - 37
 PIEZO = 12              # BOARD - 32
+LDO = 6                 # BOARD - 31
 
 # Hike specifics
 RESOLUTION = (1920, 1080)
@@ -53,6 +55,7 @@ gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
 gpio.setup(SEL_1, gpio.OUT)         # select 1
 gpio.setup(SEL_2, gpio.OUT)         # select 2
+gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
 red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
 
@@ -219,6 +222,13 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
+        # Check if battery is LOW and turn off the RPi
+        if (gpio.input(LDO) == gpio.LOW):
+            red_blue_led.turn_blue()
+            piezo.play_stop_recording_jingle()
+            time.sleep(1)
+            call(['shutdown', '-h', 'now'], shell=False)
+
         # Pause the program if applicable
         while(shared.pause):
             if(not prev_pause):
