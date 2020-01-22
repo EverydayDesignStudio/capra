@@ -44,12 +44,12 @@ PIEZO = 12              # BOARD - 32
 LDO = 6                 # BOARD - 31
 
 # Hike specifics
-RESOLUTION = (1920, 1080)
-# RESOLUTION = (1280, 720)
+RESOLUTION = (1280, 720)
 # NEW_HIKE_TIME = 43200   # 12 hours
 # NEW_HIKE_TIME = 21600   # 6 hours
-NEW_HIKE_TIME = 16200   # 4.5 hours
+# NEW_HIKE_TIME = 16200   # 4.5 hours
 # NEW_HIKE_TIME = 10800   # 3 hours
+NEW_HIKE_TIME = 9000      # 2.5 hours
 
 gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
