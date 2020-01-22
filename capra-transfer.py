@@ -1,10 +1,11 @@
 import globals as g
-import glob
+import glob                                         # File path pattern matching
 import os
 import os.path
 import datetime
-import sqlite3
-import subprocess
+import sqlite3                                      # Database Library
+import subprocess                                   # Deploy RSyncs
+from PIL import ImageTk, Image                      # Pillow image functions
 from pathlib import Path
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
@@ -75,6 +76,18 @@ def build_picture_path(base, hikeID, index, camNum):
     # return base + 'hike' + str(hikeID) + '/' + str(index) + '_cam' + str(camNum) + '.jpg';
 
 
+def resize_photo(path, filename, w, h):
+    im = Image.open(path + "/" + filename)
+    im = im.resize((w, h), Image.ANTIALIAS)
+    im.save(path + "/" + filename)
+
+
+def rotate_photo(path, srcFileName, destFileName, angle):
+    image = Image.open(path + "/" + srcFileName)
+    image_rotated = image.copy().rotate(angle, expand=True)
+    image_rotated.save(path + "/" + destFileName)
+
+
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
 
@@ -102,13 +115,12 @@ def start_transfer():
         # TODO: change path to match projector file system
         numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME)
         numResizedFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-        print("Currhike: " + str(currHike))
         print("numRows: " + str(numRows))
-        print("hike2: " + str(numfiles))
+        print("files in hike {}: {}".format(str(currHike), str(numfiles)))
 
         # TRANSFER
         # skip if a hike is fully transferred already
-        if (checkSum_transfer == numfiles):
+        if (checkSum_transfer_and_rotated == numfiles + numResizedFiles):
             hikeCounter += 1
             continue
 
@@ -140,17 +152,28 @@ def start_transfer():
             #    log("rsync: '%s'" % line)
 
             rsync_status.wait()
-            # when rsync is over,
+            print("Row {} - return code: {}".format(str(row[4]), rsync_status.returncode))
+            # when rsync is successfully finished,
             if (rsync_status.returncode == 0):
                 print("row {} transfer completed".format(row[4]))
+
+                # Make a copy for the second image and rorate CCW 90
+                rotate_photo(dest, str(row[4]) + "_cam2.jpg", str(row[4]) + "_cam2r.jpg", 90)
+                print("## Image2 rotated and saved")
+
+                # Resize three images
+                resize_photo(dest, str(row[4]) + "_cam1.jpg", 427, 720)
+                resize_photo(dest, str(row[4]) + "_cam2.jpg", 427, 720)
+                resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
+                print("## Images resized and saved")
+
                 # TODO: do postprocessing
                 #     1. calculate the followings
                 #       - 5 dominant RGB colors
                 #       - compute HLV for each RGB
                 #     2. update path to camera 1, 2, 3
-                #     3. resize photos
-                #     4. camera landscape
-                doPostProcessing = 0
+                doColorPostProcessing = 0
+
                 # (pictureID, time, alt, brtns, brtns_rank, hue, hue_rank, huelum
                 #   huelum_rank, hikeID, index_in_hike, camera1, camera2, camera3, camera_landscape, date_created, date_updated)
                 # TODO: upsert a row to picture table in the master db
@@ -159,7 +182,7 @@ def start_transfer():
                 #   "INSERT INTO pictures VALUES ()"
                 # pDBController.
             else:
-                print("### Rsync failed at row {}".format(row[4]))
+                print("### Rsync failed at row {}".format(row[4] - 1))
 
         # CHECK RESIZE AND ROTATE
         # if the numrows and numResizedFiles doesn't match, perform the check and rotate missing files
