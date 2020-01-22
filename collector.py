@@ -74,18 +74,18 @@ def get_RTC_time(I2C):
 
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
-    print('Initializing camera object')
+    logging.info('Initializing camera objects')
     gpio.output(SEL_1, False)
     gpio.output(SEL_2, False)
     time.sleep(0.2)
-    print('Select pins OK')
+    logging.info('Select pins OK')
     pi_cam = picamera.PiCamera()
     time.sleep(0.2)
-    print('Cam init OK')
+    logging.info('Cam init OK')
     pi_cam.resolution = resolution
-    print('Resolution OK')
+    logging.info('Resolution OK')
     pi_cam.rotation = 180
-    print('Rotation OK')
+    logging.info('Rotation OK')
 
     return pi_cam
 
@@ -125,6 +125,7 @@ def switch_to_hike_logger(hike_num: int):
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
     print('select cam{n}'.format(n=cam_num))
+    logging.info('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
         raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
     else:
@@ -132,24 +133,29 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, False)
             print("cam 1 selected")
+            logging.info('cam 1 selected')
         if cam_num == 2:
             gpio.output(SEL_1, False)
             gpio.output(SEL_2, False)
             print("cam 2 selected")
+            logging.info('cam 2 selected')
         if cam_num == 3:
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
             print("cam 3 selected")
+            logging.info('cam 3 selected')
         time.sleep(0.2)  # it takes some time for the pin selection
 
         # Build image file path
         image_path = '{d}hike{h}/{p}_cam{c}.jpg'.format(d=DIRECTORY, h=hike_num, p=photo_index, c=cam_num)
         print(image_path)
+        logging.info(image_path)
 
         # Take the picture
         pi_cam.capture(image_path)
         sql_controller.set_image_path(cam_num, image_path, hike_num, photo_index)
         print('cam {c} -- picture taken!'.format(c=cam_num))
+        logging.info('cam {c} -- picture taken!'.format(c=cam_num))
 
 
 # Tell altimeter to collect data; this process (takes a while)
@@ -186,20 +192,22 @@ def main():
     red_blue_led.turn_red()
     piezo.play_power_on_jingle()
 
-    print('about to initialize')
     pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
     initialize_background_play_pause()              # Setup play/pause button
     prev_pause = True
 
     # As long as initially paused, do not create new hike yet
     print("Waiting for initial unpause...")
+    logging.info("Waiting for initial unpause...")
     while(shared.pause):
         if(not prev_pause):
-            logging.info('Paused')
+            logging.info('Pause button pressed --> PAUSED!')
             prev_pause = True
-        print(">>>>>PAUSED!<<<<<")
+        logging.info('>>>>>PAUSED!<<<<<')
+        print('>>>>>PAUSED!<<<<<')
         time.sleep(1)
     print("Initial unpause!")
+    logging.info('Pause button pressed --> UNPAUSE!')
     red_blue_led.turn_off()
 
     # Create SQL controller and update hike information
@@ -237,6 +245,7 @@ def main():
                 red_blue_led.turn_red()
                 piezo.play_paused_jingle()
             print(">PAUSED!<")
+            logging.info(">PAUSED!<")
             time.sleep(1)
         # Unpause program
         if(prev_pause):
@@ -272,9 +281,9 @@ def main():
         red_blue_led.blink_blue_new_picture()
 
         # Log on every 20th picture
-        if (photo_index % 20 == 0):
+        if (photo_index % 50 == 0):
             # piezo.play_still_recording_jingle()
-            logging.info('Cameras still alive (20 pictures taken)')
+            logging.info('Cameras still alive (50 pictures taken)')
 
         # Wait until 2.5 seconds have passed since last picture
         # while(get_RTC_time(i2c) < timestamp + 2.5):
