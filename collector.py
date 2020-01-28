@@ -19,7 +19,7 @@ import time                  # For unix timestamps
 import busio                 # For interfacing with DS3231 Real Time Clock
 import adafruit_ds3231       #
 from threading import Thread # For threading
-from subprocess import call  # For calling shutdown
+import subprocess            # For calling shutdown
 
 
 # Import custom modules
@@ -231,11 +231,13 @@ def main():
     # --------------------------------------------------------------------------
     while(True):
         # Check if battery is LOW and turn off the RPi
+        print('The battery status is: {n}'.format(n=gpio.input(LDO)))
+        logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
         if (gpio.input(LDO) == gpio.LOW):
             red_blue_led.turn_blue()
             piezo.play_stop_recording_jingle()
-            time.sleep(1)
-            call(['shutdown', '-h', 'now'], shell=False)
+            time.sleep(10)
+            subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
         # Pause the program if applicable
         while(shared.pause):
@@ -271,6 +273,7 @@ def main():
 
         # Update the database with metadata for picture & hike
         altitude = read_altimeter(i2c_bus)
+        print('Altitude is: {a}'.format(a=altitude))
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
 
