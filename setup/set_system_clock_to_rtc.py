@@ -6,10 +6,6 @@
 
 import os                       # For calling shell commands
 import time                     # For unix timestamps
-from datetime import datetime   # For printing readable time
-from typing import Tuple        # For cleaner code
-import busio                    # For interfacing with DS3231 Real Time Clock
-import adafruit_ds3231          # pip install adafruit-circuitpython-ds3231
 
 
 def main():
