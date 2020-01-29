@@ -62,6 +62,30 @@ red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
 
 # Helper functions
 # ------------------------------------------------------------------------------
+def print_and_log(message):
+    print(message)
+    logging.info(message)
+
+
+# Set the system time from the DS3231 Real Time Clock
+def set_system_time_from_RTC():
+    print_and_log('Getting time from hardware clock')
+
+    # Get the hardware clock time
+    stream = os.popen('sudo hwclock -r')
+    hwclock = stream.read()
+    print_and_log("Hardware clock is:")
+    print_and_log(hwclock)
+
+    # Set date from hardware clock time
+    os.popen('sudo date --set="{hwc}"'.format(hwc=hwclock))
+
+    stream = os.popen('date')
+    date = stream.read()
+    print_and_log("Date is now:")
+    print_and_log(date)
+
+
 # Get the time from the DS3231 Real Time Clock
 def get_RTC_time(I2C):
     rtc = adafruit_ds3231.DS3231(I2C)
@@ -180,6 +204,9 @@ def read_altimeter(bus: smbus) -> float:
 # Main Loop
 # ------------------------------------------------------------------------------
 def main():
+    # Set the system time to the DS3231 real time clock
+    set_system_time_from_RTC()
+
     # Initialize logger that is used while startup up device
     # Once a hike is started the logger switches to a hike specific log
     initialize_startup_logger()
