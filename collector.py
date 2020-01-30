@@ -62,7 +62,7 @@ red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
 
 # Helper functions
 # ------------------------------------------------------------------------------
-def print_and_log(message):
+def print_and_log(message: str):
     print(message)
     logging.info(message)
 
@@ -128,14 +128,14 @@ def initialize_startup_logger():
                         level=logging.DEBUG,
                         format='%(name)s @ %(asctime)s (%(levelname)s): %(message)s',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
-    logging.debug('CAPRA TURNED ON')
+    logging.debug('\n\n\n--------------------- CAPRA TURNED ON ---------------------')
 
 
 def switch_to_hike_logger(hike_num: int):
     # Setup hike logger
     logname = '/home/pi/capra-storage/logs/hike{n}.log'.format(n=hike_num)
     fileh = logging.FileHandler(logname, 'a')
-    formatter = logging.Formatter(fmt='%(name)s @ %(asctime)s (%(levelname)s): %(message)s', 
+    formatter = logging.Formatter(fmt='%(name)s @ %(asctime)s (%(levelname)s): %(message)s',
                                   datefmt='%m/%d/%Y %I:%M:%S %p')
     fileh.setFormatter(formatter)
 
@@ -144,6 +144,17 @@ def switch_to_hike_logger(hike_num: int):
     for hdlr in log.handlers[:]:    # remove all old handlers
         log.removeHandler(hdlr)
     log.addHandler(fileh)           # set the new handler
+
+
+# Check if camera battery is low and turn off camera if it is
+def check_low_battery_turn_off():
+    print('The battery status is: {n}'.format(n=gpio.input(LDO)))
+    logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
+    if (gpio.input(LDO) == gpio.LOW):
+        red_blue_led.turn_blue()
+        piezo.play_stop_recording_jingle()
+        time.sleep(10)
+        subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
 # Select camera + take a photo + save photo in file system and db
@@ -204,12 +215,12 @@ def read_altimeter(bus: smbus) -> float:
 # Main Loop
 # ------------------------------------------------------------------------------
 def main():
-    # Set the system time to the DS3231 real time clock
-    set_system_time_from_RTC()
-
     # Initialize logger that is used while startup up device
     # Once a hike is started the logger switches to a hike specific log
     initialize_startup_logger()
+
+    # Set the system time to the DS3231 real time clock
+    set_system_time_from_RTC()
 
     # Initialize and setup hardware
     i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
@@ -227,6 +238,8 @@ def main():
     print("Waiting for initial unpause...")
     logging.info("Waiting for initial unpause...")
     while(shared.pause):
+        # Check if battery is LOW and turn off the RPi if LOW
+        check_low_battery_turn_off()
         if(not prev_pause):
             logging.info('Pause button pressed --> PAUSED!')
             prev_pause = True
@@ -252,19 +265,13 @@ def main():
 
     # Switch to the hike specific logfile
     switch_to_hike_logger(hike_num)
-    logging.info('----------NEW RECORDING SESSION STARTED----------')
+    logging.info('--------------------- NEW RECORDING SESSION STARTED ---------------------')
 
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
-        # Check if battery is LOW and turn off the RPi
-        print('The battery status is: {n}'.format(n=gpio.input(LDO)))
-        logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
-        if (gpio.input(LDO) == gpio.LOW):
-            red_blue_led.turn_blue()
-            piezo.play_stop_recording_jingle()
-            time.sleep(10)
-            subprocess.call(['shutdown', '-h', 'now'], shell=False)
+        # Check if battery is LOW and turn off the RPi if LOW
+        check_low_battery_turn_off()
 
         # Pause the program if applicable
         while(shared.pause):
@@ -310,10 +317,10 @@ def main():
         # Blink to notify that the timelapse is still going
         red_blue_led.blink_blue_new_picture()
 
-        # Log on every 20th picture
-        if (photo_index % 50 == 0):
+        # Log on every 5th picture
+        if (photo_index % 5 == 0):
             # piezo.play_still_recording_jingle()
-            logging.info('Cameras still alive (50 pictures taken)')
+            logging.info('Cameras still alive (5 pictures taken)')
 
         # Wait until 2.5 seconds have passed since last picture
         # while(get_RTC_time(i2c) < timestamp + 2.5):
