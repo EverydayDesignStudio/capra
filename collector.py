@@ -58,6 +58,7 @@ gpio.setup(SEL_2, gpio.OUT)         # select 2
 gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
 red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
+altitude_error_list = []            # empty list for ROWIDs for altitudes taken from previous record
 
 
 # Helper functions
@@ -193,22 +194,49 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         logging.info('cam {c} -- picture taken!'.format(c=cam_num))
 
 
-# Tell altimeter to collect data; this process (takes a while)
-# TODO - define "a while"
-def query_altimeter(bus: smbus):
+# Collect raw data from altimeter and compute altitude
+# Error check the value, then return. Return value in meters
+def query_altimeter(bus: smbus, sql_ctrl: SQLController) -> float:
+    # Logic taken from:
+    # https://www.instructables.com/id/Raspberry-Pi-MPL3115A2-Precision-Altimeter-Sensor--1/
+
     # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
     # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
     bus.write_byte_data(0x60, 0x26, 0xB9)
 
-
-# Read currently collected altimeter data
-def read_altimeter(bus: smbus) -> float:
     # MPL3115A2 address, 0x60(96)
     # Read data back from 0x00(00), 6 bytes
     # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
     data = bus.read_i2c_block_data(0x60, 0x00, 6)
     tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
     altitude = round(tHeight / 16.0, 2)
+
+    # Safety check for altitude
+    # If altitude is above or below these extremes, there is an error value
+    # These are chosen instead of Mt. Everest & Dead Sea due to the issue that
+    # the altimeter is acting more as a relative input, the specific amount doesn't
+    # matter as much as showing higher or lower than another location
+    if altitude > 600000 or altitude < -60000:
+        print_and_log('Altitude ERROR: {a}'.format(a=altitude))
+
+        # Change the value of altitude prior to saving it
+        altitude = sql_ctrl.get_last_altitude()
+
+        # Save the rowid, so we can go back and change to a future altitude,
+        # ensuring the altitude was from this hike (i.e. altimeter fails on 1st picture)
+        last_error_rowid = sql_ctrl.get_last_rowid()
+        altitude_error_list.append(last_error_rowid)
+    else:
+        # We have received a valid altitude
+        print_and_log('Altitude is: {a}'.format(a=altitude))
+
+        # First we need to check to see if there are altitude values to go back and fix
+        while (len(altitude_error_list) > 0):
+            # get last ROWID in the list and change the altitude
+            rowid = altitude_error_list.pop()
+            sql_ctrl.set_altitude_for_rowid(rowid, altitude)
+
+    # We now have an error checked altitude to return
     return altitude
 
 
@@ -296,9 +324,11 @@ def main():
 
         # New picture: increment photo index & add row to database
         photo_index += 1
-        sql_controller.create_new_picture(hike_num, photo_index, current_time)
 
-        query_altimeter(i2c_bus)  # Query Altimeter first (takes a while)
+        # Get altitude before a new entry is added to the database
+        altitude = query_altimeter(i2c_bus, sql_controller)
+
+        sql_controller.create_new_picture(hike_num, photo_index, current_time)
 
         # Take pictures
         camcapture(pi_cam, 1, hike_num, photo_index, sql_controller)
@@ -306,8 +336,6 @@ def main():
         camcapture(pi_cam, 3, hike_num, photo_index, sql_controller)
 
         # Update the database with metadata for picture & hike
-        altitude = read_altimeter(i2c_bus)
-        print('Altitude is: {a}'.format(a=altitude))
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
 

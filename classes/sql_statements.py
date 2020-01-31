@@ -184,6 +184,14 @@ class SQLStatements:
             ORDER BY index_in_hike DESC LIMIT 1'.format(n=hike_id)
         return statement
 
+    def select_last_altitude_recorded(self) -> str:
+        statement = 'SELECT altitude FROM pictures ORDER BY ROWID DESC LIMIT 1'
+        return statement
+
+    def select_last_row_id(self) -> str:
+        statement = 'SELECT ROWID FROM pictures ORDER BY ROWID DESC LIMIT 1'
+        return statement
+
     def insert_new_hike(self, time: float) -> str:
         statement = 'INSERT INTO hikes(start_time, end_time, pictures) VALUES({t}, {t}, 0)'.format(t=time)
         return statement
@@ -218,6 +226,11 @@ class SQLStatements:
         print(statement)
         return statement
 
+    def update_picture_altitude(self, altitude: float, rowid: int) -> str:
+        statement = 'UPDATE  pictures SET altitude={a} WHERE ROWID={r} \
+            '.format(a=altitude, r=rowid)
+        return statement
+
     def update_hike_path(self, path: str, hike_id: int) -> str:
         statement = 'UPDATE hikes SET path="{p}", updated_date_time=datetime() \
             WHERE hike_id={h}'.format(p=path, h=hike_id)
@@ -231,10 +244,9 @@ class SQLStatements:
     # Transfer
     # --------------------------------------------------------------------------
     def select_valid_photos_in_given_hike(self, hike_id: int) -> int:
-        # TODO: update the MAX value to Mt. Everest
-        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= 0 AND \
-            camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id);
-        return statement;
+        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= -1000 AND \
+            camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
+        return statement
 
     def delete_pictures(self) -> str:
         statement = 'DELETE FROM pictures'
