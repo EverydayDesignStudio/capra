@@ -44,7 +44,12 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(statement)
         row = cursor.fetchone()
-        return row[0]
+
+        # Error safety check
+        if row is None:
+            return 0
+        else:
+            return row[0]
 
     # Projector
     # --------------------------------------------------------------------------
