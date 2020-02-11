@@ -53,3 +53,13 @@ def init():
 
     global flag_run_explorer
     flag_run_explorer = False
+
+    # Color detection
+    global COLOR_CLUSTER
+    COLOR_CLUSTER = 5
+
+    global COLOR_DIMX
+    COLOR_DIMX = 160
+
+    global COLOR_DIMY
+    COLOR_DIMY = 95
