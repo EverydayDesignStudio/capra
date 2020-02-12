@@ -15,7 +15,7 @@ def main():
 # /boot/config.txt
 def change_config():
     with open("/boot/config.txt", "a") as file:
-        file.write("# RTC\ndtoverlay=i2c-rtc,ds3231\n")
+        file.write("\n# RTC\ndtoverlay=i2c-rtc,ds3231\n")
     print("✅ Updated /boot/config.txt")
 
 
