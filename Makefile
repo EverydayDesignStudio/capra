@@ -42,6 +42,10 @@ sudo pip3 install -r setup/requirements_collector.txt
 sudo ./setup/install_apps_collector.sh
 endef
 
+define CAMERA_USE_RTC
+sudo ./setup/use_rtc.py
+endef
+
 define CAMERA_RTC_DB_SERVICES
 ./setup/set_rtc.py
 ./setup/create_db_camera.py
@@ -50,7 +54,7 @@ endef
 
 camera_setup1:
 	$(call CAMERA_INSTALL)
-	./setup/use_rtc.py
+	$(call CAMERA_USE_RTC)
 
 camera_setup2:
 	$(call CAMERA_RTC_DB_SERVICES)
@@ -59,7 +63,7 @@ camera_install:
 	$(call CAMERA_INSTALL)
 
 camera_clock1_use_rtc:
-	./setup/use_rtc.py
+	$(call CAMERA_USE_RTC)
 
 camera_clock2_set_rtc:
 	./setup/set_rtc.py
