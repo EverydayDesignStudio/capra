@@ -33,9 +33,9 @@ DROP TABLE IF EXISTS "hikes";
 CREATE TABLE "hikes" (
 	"hike_id"			INTEGER UNIQUE,
 	"avg_altitude"		REAL,
-	"avg_brightness" 	REAL,
-	"avg_hue" 			REAL,
-	"avg_hue_lumosity" 	REAL,
+	"avg_hue" 	REAL,
+	"avg_saturation"	REAL,
+	"avg_value" 	REAL,
 	"start_time"		REAL UNIQUE,
 	"end_time"			REAL UNIQUE,
 	"pictures"			INTEGER,

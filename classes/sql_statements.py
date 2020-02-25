@@ -243,6 +243,14 @@ class SQLStatements:
             '.format(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
         return statement
 
+    def upsert_hike_row(self, hike_id: int, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str) -> str:
+        statement = 'INSERT OR REPLACE INTO hikes \
+            (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
+            VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
+            '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+        print(statement)
+        return statement
+
     def delete_pictures(self) -> str:
         statement = 'DELETE FROM pictures'
         return statement

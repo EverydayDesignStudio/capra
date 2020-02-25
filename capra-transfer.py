@@ -121,12 +121,18 @@ def start_transfer():
     hikeCounter = 0
     checkSum = 0
 
-    numNewHikes = 1
+    print("@@@ # hikes on Camera: {}".format(str(latest_remote_hikeID)))
+    print("@@@ # hikes on Projector: {}".format(str(latest_master_hikeID)))
+    print("@@@ # hikes to transfer: {}".format(str(numNewHikes)))
+
+#    numNewHikes = 2
     # 3. determine how many hikes should be transferred
     while hikeCounter <= numNewHikes:
         currHike = latest_master_hikeID + hikeCounter
+        print("@ currHike: {}".format(str(currHike)))
         if (currHike == 0):
             # skip the validity check for newly created databases
+            print("@ Adjusting initial value for currHike..")
             hikeCounter += 1
             continue
 
@@ -150,11 +156,13 @@ def start_transfer():
             continue
 
         avgAlt = 0
-        avgBrtns = 0
         avgHue = 0
-        avgHueLum = 0
+        avgSat = 0
+        avgVal = 0
         startTime = 9999999999
         endTime = -1
+        src = ""
+        dest = ""
 
         # for colors
         color_rows_checked = 0
@@ -184,18 +192,16 @@ def start_transfer():
             print("Row {} - return code: {}".format(str(row[4]), rsync_status.returncode))
             # when rsync is successfully finished,
             if (rsync_status.returncode == 0):
-                print("row {} transfer completed".format(row[4]))
+                print("    Row {} transfer completed".format(row[4]))
 
                 # Make a copy for the second image and rorate CCW 90
                 # TODO: make sure we rotate photos in the right direction
                 rotate_photo(dest, str(row[4]) + "_cam2.jpg", str(row[4]) + "_cam2r.jpg", 90)
-                print("## Image2 rotated and saved")
 
                 # Resize three images
                 resize_photo(dest, str(row[4]) + "_cam1.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam2.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
-                print("## Images resized and saved")
 
                 # Do post-processing
                 #  1. calculate dominant HSV/RGB colors
@@ -208,6 +214,11 @@ def start_transfer():
                 print(color_res)
 
                 color = color_res.split(", ")
+
+                # TODO: look into CV library for image recognition and build keyword mapping
+                # avgHue += color[0]
+                # avgSat += color[1]
+                # avgVal += color[2]
 
                 cam1Dest = dest + "/" + str(row[4]) + "_cam1.jpg"
                 cam2Dest = dest + "/" + str(row[4]) + "_cam2.jpg"
@@ -227,26 +238,23 @@ def start_transfer():
         print("hike " + str(currHike) + " : " + str(numTotalFiles))
 
         if (checkSum_transfer_and_rotated == numTotalFiles):
-            # (hike_id, avgAlt, avgBrtns, start_time, end_time, numpics, path, date_created, date_updated)
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
             print("### Hike {} finished, {} valid pictures and {} invalid pictures.".format(currHike, color_rows_checked, color_rows_error))
 
             # make a row for hike table with postprocessed values
             avgAlt /= numRows
-            avgBrtns /= numRows
             avgHue /= numRows
-            avgHueLum /= numRows
+            avgSat /= numRows
+            avgVal /= numRows
 
-            # newHikeRow = [currHike, avgAlt, avgBrtns, ]
-            # "INSERT INTO hikes VALUES ()"
+            # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+            print("@@ Writing a row to Hike table..")
+            pDBController.upsert_hike(currHike, avgAlt, avgHue, avgSat, avgVal, startTime, endTime, color_rows_checked, dest)
 
-            # cur.execute("UPDATE bucketCounters SET counter=? WHERE idx=?", (0,_))
-            # if (cur.rowcount == 0):
-            #     cur.execute("INSERT INTO bucketCounters VALUES (?,?)", (_,0))
-
-            # G.    clean up partial files and proceed to next hike
             # TODO: clean up partial files
+
+            print("### Proceeding to the next hike... {} -> {}".format(str(hikeCounter), str(hikeCounter + 1)))
             hikeCounter += 1
 
         elif (retry < RETRY_MAX):
@@ -259,7 +267,7 @@ def start_transfer():
         else:
             exit()
 
-        exit()
+        # exit()
 
 
 # ==================================================================
