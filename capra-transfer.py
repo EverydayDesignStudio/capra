@@ -10,7 +10,10 @@ from pathlib import Path
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+from classes.kmeans import get_dominant_colors_for_picture
 g.init()
+
+VERBOSE = False
 
 rsync_status = None
 cDBController = None
@@ -88,8 +91,29 @@ def rotate_photo(path, srcFileName, destFileName, angle):
     image_rotated.save(path + "/" + destFileName)
 
 
+# test
+def create_camera_db_entries():
+    # testing
+    cursor = cDBController.connection.cursor()
+    ttime = 1561986050.65861
+    taltitude = 1
+    thike = 3
+    for i in range(51):
+        tcamera1 = "../capra-sample-data/capra-hd/hike{}/{}_cam1.jpg".format(thike, i)
+        tcamera2 = "../capra-sample-data/capra-hd/hike{}/{}_cam2.jpg".format(thike, i)
+        tcamera3 = "../capra-sample-data/capra-hd/hike{}/{}_cam3.jpg".format(thike, i)
+        statement = 'INSERT OR REPLACE INTO pictures (time, altitude, hike, index_in_hike, camera1, camera2, camera3) VALUES ({}, {}, {}, {}, "{}", "{}", "{}")'.format(ttime, taltitude, thike, i, tcamera1, tcamera2, tcamera3)
+        cursor.execute(statement)
+        ttime += 1
+        taltitude += 1
+    cDBController.connection.commit()
+    exit()
+
+
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
+
+    # create_camera_db_entries()
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
@@ -97,6 +121,7 @@ def start_transfer():
     hikeCounter = 0
     checkSum = 0
 
+    numNewHikes = 1
     # 3. determine how many hikes should be transferred
     while hikeCounter <= numNewHikes:
         currHike = latest_master_hikeID + hikeCounter
@@ -131,6 +156,10 @@ def start_transfer():
         startTime = 9999999999
         endTime = -1
 
+        # for colors
+        color_rows_checked = 0
+        color_rows_error = 0
+
         # C-2.  once all data is confirmed and valid, deploy rsync for 3 photos
         for row in validRows:
             # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
@@ -158,6 +187,7 @@ def start_transfer():
                 print("row {} transfer completed".format(row[4]))
 
                 # Make a copy for the second image and rorate CCW 90
+                # TODO: make sure we rotate photos in the right direction
                 rotate_photo(dest, str(row[4]) + "_cam2.jpg", str(row[4]) + "_cam2r.jpg", 90)
                 print("## Image2 rotated and saved")
 
@@ -167,20 +197,24 @@ def start_transfer():
                 resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
                 print("## Images resized and saved")
 
-                # TODO: do postprocessing
-                #     1. calculate the followings
-                #       - 5 dominant RGB colors
-                #       - compute HLV for each RGB
-                #     2. update path to camera 1, 2, 3
-                doColorPostProcessing = 0
+                # Do post-processing
+                #  1. calculate dominant HSV/RGB colors
+                #  2. update path to each picture for camera 1, 2, 3
+                color_resCode, color_res = get_dominant_colors_for_picture(currHike, str(row[4]) + "_cam2.jpg")
+                if (color_resCode < 0):
+                    color_rows_error += 1
+                else:
+                    color_rows_checked += 1
+                print(color_res)
 
-                # (pictureID, time, alt, brtns, brtns_rank, hue, hue_rank, huelum
-                #   huelum_rank, hikeID, index_in_hike, camera1, camera2, camera3, camera_landscape, date_created, date_updated)
-                # TODO: upsert a row to picture table in the master db
-                newPicRow = []
-                # upsertToDB();
-                #   "INSERT INTO pictures VALUES ()"
-                # pDBController.
+                color = color_res.split(", ")
+
+                cam1Dest = dest + "/" + str(row[4]) + "_cam1.jpg"
+                cam2Dest = dest + "/" + str(row[4]) + "_cam2.jpg"
+                cam3Dest = dest + "/" + str(row[4]) + "_cam3.jpg"
+
+                # (time, hikeID, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
+                pDBController.upsert_picture(row[0], currHike, row[4], row[1], color[0], color[1], color[2], color[3], color[4], color[5], cam1Dest, cam2Dest, cam3Dest, "tmp")
             else:
                 print("### Rsync failed at row {}".format(row[4] - 1))
 
@@ -196,7 +230,9 @@ def start_transfer():
             # (hike_id, avgAlt, avgBrtns, start_time, end_time, numpics, path, date_created, date_updated)
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
-            # TODO: make a row for hike table with postprocessed values
+            print("### Hike {} finished, {} valid pictures and {} invalid pictures.".format(currHike, color_rows_checked, color_rows_error))
+
+            # make a row for hike table with postprocessed values
             avgAlt /= numRows
             avgBrtns /= numRows
             avgHue /= numRows

@@ -387,3 +387,8 @@ class SQLController:
 
         cursor.execute(self.statements.delete_hikes())
         self.connection.commit()
+
+    def upsert_picture(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.upsert_picture_row(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape))
+        self.connection.commit()
