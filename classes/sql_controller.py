@@ -98,6 +98,10 @@ class SQLController:
         sql = self.statements.select_by_time_first_picture()
         return self._get_picture_from_sql_statement(sql)
 
+    def get_first_time_picture_last_hike(self) -> Picture:
+        sql = self.statements.select_first_picture_of_last_hike()
+        return self._get_picture_from_sql_statement(sql)
+
     def get_last_time_picture(self) -> Picture:
         sql = self.statements.select_by_time_last_picture()
         return self._get_picture_from_sql_statement(sql)
@@ -171,7 +175,6 @@ class SQLController:
         cursor.execute(self.statements.find_size_by_altitude_greater_time(altitude=alt, time=t))
         all_rows = cursor.fetchall()
         count = all_rows[0][0]
-        print(count)
 
         if count == 0:
             cursor.execute(self.statements.select_by_greater_altitude_next_picture(altitude=alt))
@@ -263,8 +266,57 @@ class SQLController:
         else:  # there is a previous picture in hike
             return self._build_picture_from_row(all_rows[0])
 
-    # Hikes
-    # --------------------------------------------------------------------------
+    # ------------------------------Hikes---------------------------------------
+    def _get_number_of_hikes(self) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_count_of_hikes())
+        row = cursor.fetchone()
+        size = int(row[0])
+        return size
+
+    def _get_position_in_hikes(self, current_picture: Picture) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_hike_position(hike_id=current_picture.hike_id))
+        row = cursor.fetchone()
+        size = int(row[0])
+        return size
+
+    # TODO: this could all be one SQLite call with PERCENT_RANK() OVER(  )
+    def get_percentage_of_hikes(self, current_picture: Picture) -> float:
+        total = self._get_number_of_hikes()
+        pos = self._get_position_in_hikes(current_picture)
+        return pos/total
+
+    # Percents
+    def get_percent_time_in_hike(self, current_picture: Picture) -> float:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_percent_time_in_hike(current_picture.hike_id, current_picture.index_in_hike))
+        row = cursor.fetchone()
+        percent = float(row[0])
+        return percent
+
+    def get_percent_altitude_in_hike(self, current_picture: Picture) -> float:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_percent_altitude_in_hike(current_picture.hike_id, current_picture.index_in_hike))
+        row = cursor.fetchone()
+        percent = float(row[0])
+        return percent
+
+    def get_percent_time_across_hikes(self, current_picture: Picture) -> float:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_percent_time_across_hikes(current_picture.picture_id))
+        row = cursor.fetchone()
+        percent = float(row[0])
+        return percent
+
+    def get_percent_altitude_across_hikes(self, current_picture: Picture) -> float:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_percent_altitude_across_hikes(current_picture.picture_id))
+        row = cursor.fetchone()
+        percent = float(row[0])
+        return percent
+
+    # Others
     def get_size_of_hike(self, current_picture: Picture) -> int:
         cursor = self.connection.cursor()
         h = current_picture.hike_id
@@ -279,6 +331,26 @@ class SQLController:
         cursor.execute(self.statements.select_hike_by_id(hike_id=h))
         all_rows = cursor.fetchall()
         return self._build_hike_from_row(all_rows[0])
+
+    def first_picture_in_next_hike(self, current_picture: Picture) -> Picture:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_first_time_picture_next_hike(hike_id=current_picture.hike_id))
+
+        all_rows = cursor.fetchall()
+        if not all_rows:
+            return self.get_first_time_picture()
+        else:  # there is a next hike first time picture
+            return self._build_picture_from_row(all_rows[0])
+
+    def first_picture_in_previous_hike(self, current_picture: Picture) -> Picture:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_first_time_picture_previous_hike(current_picture.hike_id))
+
+        all_rows = cursor.fetchall()
+        if not all_rows:
+            return self.get_first_time_picture_last_hike()
+        else:  # there is a previous hike first time picture
+            return self._build_picture_from_row(all_rows[0])
 
     # Camera
     # --------------------------------------------------------------------------

@@ -157,12 +157,55 @@ class SQLStatements:
     # def select_by_color_previous_picture() -> str:
 
     # Hike
-    def select_size_of_hike(self, hike_id: float) -> str:
+    def select_size_of_hike(self, hike_id: int) -> str:
         statement = 'SELECT pictures FROM hikes WHERE hike_id={id}'.format(id=hike_id)
         return statement
 
-    def select_hike_by_id(self, hike_id: float) -> str:
+    def select_hike_by_id(self, hike_id: int) -> str:
         statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
+        return statement
+
+    # TODO -- spaghetti fix
+    def select_first_picture_of_last_hike(self) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike=29 ORDER BY index_in_hike ASC LIMIT 1'
+        return statement
+
+    # Forward and backward in the hikes
+    def select_first_time_picture_next_hike(self, hike_id: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike>{id} ORDER BY index_in_hike ASC LIMIT 1'.format(id=hike_id)
+        return statement
+
+    def select_first_time_picture_previous_hike(self, hike_id: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike<{id} ORDER BY hike DESC, index_in_hike ASC LIMIT 1'.format(id=hike_id)
+        return statement
+
+    def select_count_of_hikes(self) -> str:
+        statement = 'SELECT COUNT(*) FROM hikes'
+        return statement
+
+    def select_hike_position(self, hike_id: int) -> str:
+        statement = 'SELECT COUNT(*) FROM hikes WHERE hike_id<={h} ORDER BY hike_id ASC'.format(h=hike_id)
+        return statement
+
+    # Percentages in hike
+    def select_percent_time_in_hike(self, hike_id: int, index: int) -> str:
+        statement = 'SELECT printf("%.5f", PERCENT_RANK() OVER(ORDER BY time)) time_percent \
+            FROM pictures WHERE hike={h} ORDER BY index_in_hike={id} DESC LIMIT 1'.format(h=hike_id, id=index)
+        return statement
+
+    def select_percent_altitude_in_hike(self, hike_id: int, index: int) -> str:
+        statement = 'SELECT printf("%.5f", PERCENT_RANK() OVER(ORDER BY altitude)) altitude_percent \
+            FROM pictures WHERE hike={h} ORDER BY index_in_hike={id} DESC LIMIT 1'.format(h=hike_id, id=index)
+        return statement
+
+    def select_percent_time_across_hikes(self, picture_id: float) -> str:
+        statement = 'SELECT printf("%.5f", PERCENT_RANK() OVER(ORDER BY time)) time_percent \
+            FROM pictures ORDER BY picture_id={id} DESC LIMIT 1'.format(id=picture_id)
+        return statement
+
+    def select_percent_altitude_across_hikes(self, picture_id: float) -> str:
+        statement = 'SELECT printf("%.5f", PERCENT_RANK() OVER(ORDER BY altitude)) altitude_percent \
+            FROM pictures ORDER BY picture_id={id} DESC LIMIT 1'.format(id=picture_id)
         return statement
 
     # Camera

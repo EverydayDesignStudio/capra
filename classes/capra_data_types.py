@@ -31,6 +31,11 @@ class Picture:
                      hike_id=self.hike_id, index=self.index_in_hike,
                      c1=self.camera1, c2=self.camera2, c3=self.camera3, cl=self.camera_landscape))
 
+    def print_obj_short(self):
+        print('Hike: {hike_id}  Index: {index}, Time: {t}, Altitude: {alt})\
+            '.format(id=self.picture_id, t=self.time, alt=self.altitude,
+                     hike_id=self.hike_id, index=self.index_in_hike))
+
 # Defines a hike object
 
 
