@@ -248,7 +248,6 @@ class SQLStatements:
             (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
             VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
             '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
-        print(statement)
         return statement
 
     def delete_pictures(self) -> str:

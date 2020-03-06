@@ -3,6 +3,7 @@ import glob                                         # File path pattern matching
 import os
 import os.path
 import datetime
+import time
 import sqlite3                                      # Database Library
 import subprocess                                   # Deploy RSyncs
 from PIL import ImageTk, Image                      # Pillow image functions
@@ -11,6 +12,7 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
+from classes.kmeans import get_dominant_color_1D
 g.init()
 
 VERBOSE = False
@@ -159,6 +161,7 @@ def start_transfer():
         avgHue = 0
         avgSat = 0
         avgVal = 0
+        domColors = []
         startTime = 9999999999
         endTime = -1
         src = ""
@@ -219,6 +222,7 @@ def start_transfer():
                 # avgHue += color[0]
                 # avgSat += color[1]
                 # avgVal += color[2]
+                domColors.append([color[0], color[1], color[2]])
 
                 cam1Dest = dest + "/" + str(row[4]) + "_cam1.jpg"
                 cam2Dest = dest + "/" + str(row[4]) + "_cam2.jpg"
@@ -244,9 +248,12 @@ def start_transfer():
 
             # make a row for hike table with postprocessed values
             avgAlt /= numRows
-            avgHue /= numRows
-            avgSat /= numRows
-            avgVal /= numRows
+            # avgHue /= numRows
+            # avgSat /= numRows
+            # avgVal /= numRows
+            if (numTotalFiles / 4 > g.COLOR_CLUSTER):
+                hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
+                print("@@   Hike {}'s dominant color: \n\t\t{}".format(currHike, hikeDomCol))
 
             # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
             print("@@ Writing a row to Hike table..")
@@ -271,7 +278,13 @@ def start_transfer():
 
 
 # ==================================================================
+start_time = time.time()
+
 getDBControllers()
+
 # check if camera DB in projector is outdated
 # update_transfer_animation_db();
+
 start_transfer()
+
+print("--- %s seconds ---" % (time.time() - start_time))

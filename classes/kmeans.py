@@ -50,6 +50,19 @@ def get_dominant_color(image, k=4, image_processing_size=None):
     return list(dominant_color)
 
 
+def get_dominant_color_1D(ary, k):
+    clt = KMeans(n_clusters=k)
+    labels = clt.fit_predict(ary)
+
+    # count labels to find most popular
+    label_counts = Counter(labels)
+
+    # subset out most popular centroid
+    dominant_color = clt.cluster_centers_[label_counts.most_common(1)[0][0]]
+
+    return list(dominant_color)
+
+
 def get_dominant_colors_for_hike(hikeID):
 
     # TODO: may need to log this
