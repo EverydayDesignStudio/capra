@@ -3,6 +3,7 @@ import glob                                         # File path pattern matching
 import os
 import os.path
 import datetime
+import time
 import sqlite3                                      # Database Library
 import subprocess                                   # Deploy RSyncs
 from PIL import ImageTk, Image                      # Pillow image functions
@@ -10,7 +11,11 @@ from pathlib import Path
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+from classes.kmeans import get_dominant_colors_for_picture
+from classes.kmeans import get_dominant_color_1D
 g.init()
+
+VERBOSE = False
 
 rsync_status = None
 cDBController = None
@@ -88,8 +93,29 @@ def rotate_photo(path, srcFileName, destFileName, angle):
     image_rotated.save(path + "/" + destFileName)
 
 
+# test
+def create_camera_db_entries():
+    # testing
+    cursor = cDBController.connection.cursor()
+    ttime = 1561986050.65861
+    taltitude = 1
+    thike = 3
+    for i in range(51):
+        tcamera1 = "../capra-sample-data/capra-hd/hike{}/{}_cam1.jpg".format(thike, i)
+        tcamera2 = "../capra-sample-data/capra-hd/hike{}/{}_cam2.jpg".format(thike, i)
+        tcamera3 = "../capra-sample-data/capra-hd/hike{}/{}_cam3.jpg".format(thike, i)
+        statement = 'INSERT OR REPLACE INTO pictures (time, altitude, hike, index_in_hike, camera1, camera2, camera3) VALUES ({}, {}, {}, {}, "{}", "{}", "{}")'.format(ttime, taltitude, thike, i, tcamera1, tcamera2, tcamera3)
+        cursor.execute(statement)
+        ttime += 1
+        taltitude += 1
+    cDBController.connection.commit()
+    exit()
+
+
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
+
+    # create_camera_db_entries()
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
@@ -97,11 +123,18 @@ def start_transfer():
     hikeCounter = 0
     checkSum = 0
 
+    print("@@@ # hikes on Camera: {}".format(str(latest_remote_hikeID)))
+    print("@@@ # hikes on Projector: {}".format(str(latest_master_hikeID)))
+    print("@@@ # hikes to transfer: {}".format(str(numNewHikes)))
+
+#    numNewHikes = 2
     # 3. determine how many hikes should be transferred
     while hikeCounter <= numNewHikes:
         currHike = latest_master_hikeID + hikeCounter
+        print("@ currHike: {}".format(str(currHike)))
         if (currHike == 0):
             # skip the validity check for newly created databases
+            print("@ Adjusting initial value for currHike..")
             hikeCounter += 1
             continue
 
@@ -125,11 +158,18 @@ def start_transfer():
             continue
 
         avgAlt = 0
-        avgBrtns = 0
         avgHue = 0
-        avgHueLum = 0
+        avgSat = 0
+        avgVal = 0
+        domColors = []
         startTime = 9999999999
         endTime = -1
+        src = ""
+        dest = ""
+
+        # for colors
+        color_rows_checked = 0
+        color_rows_error = 0
 
         # C-2.  once all data is confirmed and valid, deploy rsync for 3 photos
         for row in validRows:
@@ -155,32 +195,41 @@ def start_transfer():
             print("Row {} - return code: {}".format(str(row[4]), rsync_status.returncode))
             # when rsync is successfully finished,
             if (rsync_status.returncode == 0):
-                print("row {} transfer completed".format(row[4]))
+                print("    Row {} transfer completed".format(row[4]))
 
                 # Make a copy for the second image and rorate CCW 90
+                # TODO: make sure we rotate photos in the right direction
                 rotate_photo(dest, str(row[4]) + "_cam2.jpg", str(row[4]) + "_cam2r.jpg", 90)
-                print("## Image2 rotated and saved")
 
                 # Resize three images
                 resize_photo(dest, str(row[4]) + "_cam1.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam2.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
-                print("## Images resized and saved")
 
-                # TODO: do postprocessing
-                #     1. calculate the followings
-                #       - 5 dominant RGB colors
-                #       - compute HLV for each RGB
-                #     2. update path to camera 1, 2, 3
-                doColorPostProcessing = 0
+                # Do post-processing
+                #  1. calculate dominant HSV/RGB colors
+                #  2. update path to each picture for camera 1, 2, 3
+                color_resCode, color_res = get_dominant_colors_for_picture(currHike, str(row[4]) + "_cam2.jpg")
+                if (color_resCode < 0):
+                    color_rows_error += 1
+                else:
+                    color_rows_checked += 1
+                print(color_res)
 
-                # (pictureID, time, alt, brtns, brtns_rank, hue, hue_rank, huelum
-                #   huelum_rank, hikeID, index_in_hike, camera1, camera2, camera3, camera_landscape, date_created, date_updated)
-                # TODO: upsert a row to picture table in the master db
-                newPicRow = []
-                # upsertToDB();
-                #   "INSERT INTO pictures VALUES ()"
-                # pDBController.
+                color = color_res.split(", ")
+
+                # TODO: look into CV library for image recognition and build keyword mapping
+                # avgHue += color[0]
+                # avgSat += color[1]
+                # avgVal += color[2]
+                domColors.append([color[0], color[1], color[2]])
+
+                cam1Dest = dest + "/" + str(row[4]) + "_cam1.jpg"
+                cam2Dest = dest + "/" + str(row[4]) + "_cam2.jpg"
+                cam3Dest = dest + "/" + str(row[4]) + "_cam3.jpg"
+
+                # (time, hikeID, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
+                pDBController.upsert_picture(row[0], currHike, row[4], row[1], color[0], color[1], color[2], color[3], color[4], color[5], cam1Dest, cam2Dest, cam3Dest, "tmp")
             else:
                 print("### Rsync failed at row {}".format(row[4] - 1))
 
@@ -193,24 +242,26 @@ def start_transfer():
         print("hike " + str(currHike) + " : " + str(numTotalFiles))
 
         if (checkSum_transfer_and_rotated == numTotalFiles):
-            # (hike_id, avgAlt, avgBrtns, start_time, end_time, numpics, path, date_created, date_updated)
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
-            # TODO: make a row for hike table with postprocessed values
+            print("### Hike {} finished, {} valid pictures and {} invalid pictures.".format(currHike, color_rows_checked, color_rows_error))
+
+            # make a row for hike table with postprocessed values
             avgAlt /= numRows
-            avgBrtns /= numRows
-            avgHue /= numRows
-            avgHueLum /= numRows
+            # avgHue /= numRows
+            # avgSat /= numRows
+            # avgVal /= numRows
+            if (numTotalFiles / 4 > g.COLOR_CLUSTER):
+                hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
+                print("@@   Hike {}'s dominant color: \n\t\t{}".format(currHike, hikeDomCol))
 
-            # newHikeRow = [currHike, avgAlt, avgBrtns, ]
-            # "INSERT INTO hikes VALUES ()"
+            # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+            print("@@ Writing a row to Hike table..")
+            pDBController.upsert_hike(currHike, avgAlt, avgHue, avgSat, avgVal, startTime, endTime, color_rows_checked, dest)
 
-            # cur.execute("UPDATE bucketCounters SET counter=? WHERE idx=?", (0,_))
-            # if (cur.rowcount == 0):
-            #     cur.execute("INSERT INTO bucketCounters VALUES (?,?)", (_,0))
-
-            # G.    clean up partial files and proceed to next hike
             # TODO: clean up partial files
+
+            print("### Proceeding to the next hike... {} -> {}".format(str(hikeCounter), str(hikeCounter + 1)))
             hikeCounter += 1
 
         elif (retry < RETRY_MAX):
@@ -223,11 +274,17 @@ def start_transfer():
         else:
             exit()
 
-        exit()
+        # exit()
 
 
 # ==================================================================
+start_time = time.time()
+
 getDBControllers()
+
 # check if camera DB in projector is outdated
 # update_transfer_animation_db();
+
 start_transfer()
+
+print("--- %s seconds ---" % (time.time() - start_time))
