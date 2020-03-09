@@ -44,7 +44,12 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(statement)
         row = cursor.fetchone()
-        return row[0]
+
+        # Error safety check
+        if row is None:
+            return 0
+        else:
+            return row[0]
 
     # Projector
     # --------------------------------------------------------------------------
@@ -314,7 +319,7 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_valid_photos_in_given_hike(hike_id))
         row = cursor.fetchall()
-        return row;
+        return row
 
     def get_last_photo_index_of_hike(self, hike_id: int) -> int:
         cursor = self.connection.cursor()
@@ -326,6 +331,14 @@ class SQLController:
             return 0
         else:
             return row[0]
+
+    def get_last_altitude(self) -> float:
+        alt = self._get_num_from_statement(self.statements.select_last_altitude_recorded())
+        return alt
+
+    def get_last_rowid(self) -> int:
+        rowid = self._get_num_from_statement(self.statements.select_last_row_id())
+        return rowid
 
     # Determine whether to create new hike or continue the last hike
     def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY) -> bool:
@@ -375,6 +388,11 @@ class SQLController:
         cursor = self.connection.cursor()
         ts = time.time()
         cursor.execute(self.statements.update_hike_endtime_picture_count(ts, count, hike_id))
+        self.connection.commit()
+
+    def set_altitude_for_rowid(self, alt: float, id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_picture_altitude(alt, id))
         self.connection.commit()
 
     # Transfer
