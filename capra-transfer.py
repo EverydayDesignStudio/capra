@@ -24,12 +24,32 @@ retry = 0
 RETRY_MAX = 5
 
 # Database location
-# DB = '/home/pi/Pictures/capra-projector.db'
-# PATH = '/home/pi/Pictures'
+
+# Desktop test
 PATH = '../capra-sample-data/'
 CAMERA_DB = PATH + 'capra-hd/capra_camera_test.db'
 PROJECTOR_DB = PATH + 'capra-hd/capra_projector_test.db'
+
+# RPi
+# PATH = '/media/pi'
+# CAMERA_DB = PATH + '/capra-hd/capra_camera_test.db'
+# PROJECTOR_DB = PATH + '/capra-hd/capra_projector.db'
 blank_path = '{p}/blank.png'.format(p=PATH)
+
+
+def timenow():
+    return str(datetime.datetime.now()).split('.')[0]
+
+
+def copy_remote_db():
+    # Desktop test
+    subprocess.Popen(['rsync', '--protect-args', '--update', '-av', '--rsh="ssh"', "root@192.168.0.149:/media/pi/capra-hd/capra_projector.db", "../capra-sample-data/capra-hd/"], stdout=subprocess.PIPE)
+
+    # RPi
+    # subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@192.168.0.149:/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
+
+    time.sleep(1)
+    return
 
 
 def transfer_from_camera(src, dest):
@@ -64,14 +84,18 @@ def count_files_in_directory(path, pattern):
 
 def build_hike_path(base, hikeID=None, makeNew=False):
     res = ""
-    if (hikeID > 0):
-        res = PATH + base + '/hike' + str(hikeID)
-    else:
+    if (hikeID is None):
         # put -1 for hikeID to build a path for the upper directory
         # i.e.) "/capra-storage" for rsync destination
         res = PATH + base
+    elif (hikeID > 0):
+        ins = 'hike'
+        if (base != ""):
+            ins = '/' + ins
+
+        res = PATH + base + ins + str(hikeID)
     if makeNew and not os.path.exists(res):
-        os.makedirs(res)
+        os.makedirs(res, mode=0o755)
     return res
     # return base + 'hike' + hikeID;
 
@@ -170,12 +194,12 @@ def start_transfer():
         # TODO: change path to match projector file system
         numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME)
         numResizedFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-        print("numRows: " + str(numRows))
-        print("files in hike {}: {}".format(str(currHike), str(numfiles)))
+        print("[{}] numRows: {}".format(timenow(), str(numRows)))
+        print("[{}] files in hike {}: {}".format(timenow(), str(currHike), str(numfiles)))
 
         # TRANSFER
         # skip if a hike is fully transferred already
-        if (checkSum_transfer_and_rotated == numfiles + numResizedFiles):
+        if (checkSum_transfer_and_rotated == numfiles + numResizedFiles or numRows == 0):
             hikeCounter += 1
             continue
 
@@ -188,6 +212,7 @@ def start_transfer():
         endTime = -1
         src = ""
         dest = ""
+        hikeTimer = time.time()
 
         # for colors
         color_rows_checked = 0
@@ -197,7 +222,12 @@ def start_transfer():
         for row in validRows:
             # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
             src = row[5][:-5] + "*" + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
+
+            # Desktop test
             dest = build_hike_path("capra-storage", currHike, True)
+
+            # RPi
+            # dest = build_hike_path("/capra-hd", currHike, True)
 
             # update timestamps
             if (row[0] < startTime):
@@ -208,17 +238,16 @@ def start_transfer():
             avgAlt += int(row[1])
 
             # deploy rsync and add database row to the master db
-            rsync_status = subprocess.Popen(['rsync', '--update', '-av', src, dest], stdout=subprocess.PIPE)
+            # rsync_status = subprocess.Popen(['rsync', '--update', '-av', src, dest], stdout=subprocess.PIPE)
+            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@192.168.0.149:'+src, dest], stdout=subprocess.PIPE)
             # TODO: possibly log rsync status or is it too verbose?
             # for line in rsync_status.stdout:
             #    log("rsync: '%s'" % line)
 
             rsync_status.wait()
-            print("Row {} - return code: {}".format(str(row[4]), rsync_status.returncode))
+            # *** TODO: transfer all first, then do resizing to avoid re-transfer
             # when rsync is successfully finished,
             if (rsync_status.returncode == 0):
-                print("    Row {} transfer completed".format(row[4]))
-
                 # Make a copy for the second image and rorate CCW 90
                 # TODO: make sure we rotate photos in the right direction
                 rotate_photo(dest, str(row[4]) + "_cam2.jpg", str(row[4]) + "_cam2r.jpg", 90)
@@ -231,19 +260,13 @@ def start_transfer():
                 # Do post-processing
                 #  1. calculate dominant HSV/RGB colors
                 #  2. update path to each picture for camera 1, 2, 3
-                color_resCode, color_res = get_dominant_colors_for_picture(currHike, str(row[4]) + "_cam2.jpg")
+                color_resCode, color_res = get_dominant_colors_for_picture(build_hike_path("/capra-storage"), currHike, str(row[4]) + "_cam2.jpg")
                 if (color_resCode < 0):
                     color_rows_error += 1
                 else:
                     color_rows_checked += 1
-                print(color_res)
 
                 color = color_res.split(", ")
-
-                # TODO: look into CV library for image recognition and build keyword mapping
-                # avgHue += color[0]
-                # avgSat += color[1]
-                # avgVal += color[2]
                 domColors.append([color[0], color[1], color[2]])
 
                 cam1Dest = dest + "/" + str(row[4]) + "_cam1.jpg"
@@ -253,7 +276,7 @@ def start_transfer():
                 # (time, hikeID, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
                 pDBController.upsert_picture(row[0], currHike, row[4], row[1], color[0], color[1], color[2], color[3], color[4], color[5], cam1Dest, cam2Dest, cam3Dest, "tmp")
             else:
-                print("### Rsync failed at row {}".format(row[4] - 1))
+                print("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
 
         # CHECK RESIZE AND ROTATE
         # if the numrows and numResizedFiles doesn't match, perform the check and rotate missing files
@@ -261,12 +284,15 @@ def start_transfer():
         # compare checksum
         # TODO: count files in a specific naming format; cam1, cma2, cam3 and resized
         numTotalFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-        print("hike " + str(currHike) + " : " + str(numTotalFiles))
+        print("[{}] hike ".format(timenow()) + str(currHike) + " : " + str(numTotalFiles))
+
+        print("[{}] $ checksum: {}".format(timenow(), str(checkSum_transfer_and_rotated)))
+        print("[{}] $ numtotal: {}".format(timenow(), str(numTotalFiles)))
 
         if (checkSum_transfer_and_rotated == numTotalFiles):
             # /home/pi/capra-storage/hikeX -> /media/pi/capra-hd/hikeX
 
-            print("### Hike {} finished, {} valid pictures and {} invalid pictures.".format(currHike, color_rows_checked, color_rows_error))
+            print("[{}] ### Hike {} finished, {} valid pictures and {} invalid pictures.".format(timenow(), currHike, color_rows_checked, color_rows_error))
 
             # make a row for hike table with postprocessed values
             avgAlt /= numRows
@@ -275,20 +301,20 @@ def start_transfer():
             # avgVal /= numRows
             if (numTotalFiles / 4 > g.COLOR_CLUSTER):
                 hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
-                print("@@   Hike {}'s dominant color: \n\t\t{}".format(currHike, hikeDomCol))
 
             # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
-            print("@@ Writing a row to Hike table..")
+            # print("[{}] @@ Writing a row to Hike table..".format(timenow()))
             pDBController.upsert_hike(currHike, avgAlt, avgHue, avgSat, avgVal, startTime, endTime, color_rows_checked, dest)
 
             # TODO: clean up partial files
 
-            print("### Proceeding to the next hike... {} -> {}".format(str(hikeCounter), str(hikeCounter + 1)))
+            print("[{}] ### ---- hike {} took {} seconds to transfer ---- ".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
+            print("[{}] ### Proceeding to the next hike... {} -> {}".format(timenow(), str(hikeCounter), str(hikeCounter + 1)))
             hikeCounter += 1
 
         elif (retry < RETRY_MAX):
-            print("Total number of files doesn't match!")
-            exit()
+            print("[{}] Total number of files doesn't match!".format(timenow()))
+            # TODO: remove this and implement recovery mechanism on exception
             retry += 1
             continue
 
@@ -302,6 +328,7 @@ def start_transfer():
 # ==================================================================
 start_time = time.time()
 
+copy_remote_db()
 getDBControllers()
 
 # check if camera DB in projector is outdated
@@ -309,4 +336,4 @@ getDBControllers()
 
 start_transfer()
 
-print("--- %s seconds ---" % (time.time() - start_time))
+print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))

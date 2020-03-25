@@ -31,8 +31,8 @@ def init():
 
     global FILENAME
     global FILENAME_ROTATED
-    FILENAME = "*_cam[1-3].jpg"
-    FILENAME_ROTATED = "*_cam2r.jpg"
+    FILENAME = "[!\.]*_cam[1-3].jpg"
+    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
 
     global PATH_ON_PROJECTOR
     # TODO: update existing projector path by adding an extra slash '/'

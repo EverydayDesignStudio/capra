@@ -130,10 +130,10 @@ def get_dominant_colors_for_hike(hikeID):
     # print("### Time elapsed: {} seconds".format(endTime - startTime))
 
 
-def get_dominant_colors_for_picture(hikeID, imageName):
+def get_dominant_colors_for_picture(base, hikeID, imageName):
     # Capra analyzes the color of the middle photo only
     # hikepath = g.PATH_ON_PROJECTOR + "hike" + str(hikeID) + '/' + imageName
-    picturePath = "../capra-sample-data/capra-storage/" + "hike" + str(hikeID) + '/' + imageName
+    picturePath = base + "hike" + str(hikeID) + '/' + imageName
     res = ""
     try:
         # read in image of interest
