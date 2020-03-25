@@ -112,29 +112,51 @@ def create_camera_db_entries():
     exit()
 
 
+# test
+def update_picture_path_camera_db():
+    cursor = cDBController.connection.cursor()
+    statement = "SELECT * from pictures;"
+    cursor.execute(statement)
+    rows = cursor.fetchall()
+    for row in rows:
+        t1 = row[5][30:]
+        t2 = row[6][30:]
+        t3 = row[7][30:]
+        picPath1 = "/media/pi/capra-hd/test/" + t1
+        picPath2 = "/media/pi/capra-hd/test/" + t2
+        picPath3 = "/media/pi/capra-hd/test/" + t3
+        statement2 = "REPLACE INTO pictures (time, altitude, hike, index_in_hike, camera1, camera2, camera3) VALUES ({}, {}, {}, {}, '{}', '{}', '{}')".format(str(row[0]), str(row[1]), str(row[3]), str(row[4]), picPath1, picPath2, picPath3)
+        cursor.execute(statement2)
+        cDBController.connection.commit()
+    return
+
+
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
 
-    # create_camera_db_entries()
+#    copy_remote_db()
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
+
+    # TODO: improve check logic; missing hikes or partially-transferred hikes
     numNewHikes = latest_remote_hikeID - latest_master_hikeID
+
     hikeCounter = 0
     checkSum = 0
 
-    print("@@@ # hikes on Camera: {}".format(str(latest_remote_hikeID)))
-    print("@@@ # hikes on Projector: {}".format(str(latest_master_hikeID)))
-    print("@@@ # hikes to transfer: {}".format(str(numNewHikes)))
+    print("[{}] @@@ # hikes on Camera: {}".format(timenow(), str(latest_remote_hikeID)))
+    print("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
+    print("[{}] @@@ # hikes to transfer: {}".format(timenow(), str(numNewHikes)))
 
 #    numNewHikes = 2
     # 3. determine how many hikes should be transferred
     while hikeCounter <= numNewHikes:
         currHike = latest_master_hikeID + hikeCounter
-        print("@ currHike: {}".format(str(currHike)))
+        print("[{}] @ currHike: {}".format(timenow(), str(currHike)))
         if (currHike == 0):
             # skip the validity check for newly created databases
-            print("@ Adjusting initial value for currHike..")
+            print("[{}] @ Adjusting initial value for currHike..".format(timenow()))
             hikeCounter += 1
             continue
 
