@@ -270,3 +270,7 @@ class SQLStatements:
     def delete_hikes(self) -> str:
         statement = 'DELETE FROM hikes'
         return statement
+
+    def get_hike_path(self, hike_id: int) -> str:
+        statement = "SELECT path FROM hikes WHERE hike_id == {}".format(hike_id)
+        return statement
