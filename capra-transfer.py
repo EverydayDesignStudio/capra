@@ -180,7 +180,6 @@ def start_transfer():
 
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
-        # currHike = latest_master_hikeID + hikeCounter
 
         currExpectedHikeSize = cDBController.get_size_of_hike(currHike)
         if (currExpectedHikeSize is None):
@@ -194,8 +193,8 @@ def start_transfer():
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
         # TODO: check return value for empty or non-existing hikes
         if (currExpectedHikeSize != 0 and checkSum_transferred == currExpectedHikeSize * 3 and expectedCheckSumTotal == checkSum_total):
-            print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(hikeCounter)))
-            hikeCounter += 1
+            print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
+            currHike += 1
             continue
 
         remote_hike_path = cDBController.get_hike_path(currHike)
@@ -325,7 +324,7 @@ def start_transfer():
                 \n\t{} valid pictures and {} invalid pictures.".format(timenow(), currHike, checkSum_total, expectedCheckSumTotal, color_rows_checked, color_rows_error))
 
         # make a row for hike table with postprocessed values
-        avgAlt /= numRows
+        avgAlt /= numValidRows
         if (checkSum_total / 4 > g.COLOR_CLUSTER):
             hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
 
@@ -336,7 +335,7 @@ def start_transfer():
         # TODO: clean up partial files
 
         print("[{}] ### ---- hike {} took {} seconds for post-processing ---- ".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
-        print("[{}] ### Proceeding to the next hike... {} -> {}".format(timenow(), str(hikeCounter), str(hikeCounter + 1)))
+        print("[{}] ### Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
 
         currHike += 1
 
