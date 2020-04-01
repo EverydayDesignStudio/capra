@@ -173,20 +173,23 @@ def start_transfer():
         currExpectedHikeSize = cDBController.get_size_of_hike(currHike)
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
-        expectedCheckSum = currExpectedHikeSize * 4
+        expectedCheckSumTotal = currExpectedHikeSize * 4
 
         # # Desktop test
         # checkSum = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
 
         # RPi
-        checkSum = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
+        checkSum_transferred = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME)
+        checkSum_rotated = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
+        checkSum_total = checkSum_transferred + checkSum_rotated
 
-        print("[{}] Hike {}: Expected {} photos, found {} photos".format(timenow(), str(currHike), str(expectedCheckSum), str(checkSum)))
+        print("[{}] Hike {}: {} out of {} photos transferred".format(timenow(), str(currHike), str(expectedCheckSum), str(checkSum_transferred), str(currExpectedHikeSize)))
+        print("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(currExpectedHikeSize), str(checkSum_total)))
 
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
         # TODO: check return value for empty or non-existing hikes
-        if (expectedCheckSum != 0 and expectedCheckSum == checkSum):
-            print("[{}]     # photos match in Hike {}. Proceeding to the next hike...".format(timenow(), str(hikeCounter)))
+        if (expectedCheckSum != 0 and checkSum_transferred == currExpectedHikeSize and expectedCheckSumTotal == checkSum_total):
+            print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(hikeCounter)))
             hikeCounter += 1
             continue
 
