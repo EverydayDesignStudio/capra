@@ -119,7 +119,6 @@ def rotate_photo(path, srcFileName, destFileName, angle):
     image = Image.open(path + "/" + srcFileName)
     image_rotated = image.copy().rotate(angle, expand=True)
     image_rotated.save(path + "/" + destFileName)
-    os.delete(path + "/" + srcFileName)
 
 
 def compute_checksum(currHike):
@@ -287,6 +286,9 @@ def start_transfer():
                 resize_photo(dest, str(row[4]) + "_cam1.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam2.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
+
+                # remove middle file
+                os.remove(dest + '/' + str(row[4]) + "_cam2.jpg")
 
                 # Do post-processing
                 #  1. calculate dominant HSV/RGB colors
