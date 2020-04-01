@@ -221,6 +221,7 @@ def start_transfer():
 
             # when rsync is successfully finished,
             if (rsync_status.returncode == 0):
+                # TODO: Transfer Animation stuff
                 i += 1
             else:
                 print("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
