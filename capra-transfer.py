@@ -170,10 +170,10 @@ def start_transfer():
     while currHike <= latest_remote_hikeID:
         # currHike = latest_master_hikeID + hikeCounter
 
-        currHikeSize = pDBController.get_size_of_hike(currHike)
-        if (currHikeSize is None):
-            currHikeSize = 0
-        expectedCheckSum = currHikeSize * 4
+        currExpectedHikeSize = cDBController.get_size_of_hike(currHike)
+        if (currExpectedHikeSize is None):
+            currExpectedHikeSize = 0
+        expectedCheckSum = currExpectedHikeSize * 4
 
         # # Desktop test
         # checkSum = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
@@ -243,11 +243,13 @@ def start_transfer():
         print("[{}] Total valid rows in Hike {}: {}".format(timenow(), str(currHike), str(numValidRows)))
         print("[{}] Total transferred files in hike {}: {}".format(timenow(), str(currHike), str(numTransferredFiles)))
 
-        if (numValidRows != currHikeSize):
+        if (numValidRows != currExpectedHikeSize):
             print("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
 
         # All pictures successfully transferred!
         if (expectedCheckSum == numTransferredFiles):
+
+            # TODO: remove pictures from camera at this point
 
             avgAlt = 0
             avgHue = 0
