@@ -43,10 +43,10 @@ def timenow():
 
 def copy_remote_db():
     # # Desktop test
-    # subprocess.Popen(['rsync', '--protect-args', '--update', '-av', '--rsh="ssh"', "root@192.168.0.149:/media/pi/capra-hd/capra_projector.db", "../capra-sample-data/capra-hd/"], stdout=subprocess.PIPE)
+    # subprocess.Popen(['rsync', '--protect-args', '--update', '-av', '--rsh="ssh"', "root@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_projector.db", "../capra-sample-data/capra-hd/"], stdout=subprocess.PIPE)
 
     # RPi
-    subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@192.168.0.149:/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
+    subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
 
     time.sleep(1)
     return
@@ -216,7 +216,7 @@ def start_transfer():
             # RPi
             dest = build_hike_path("/capra-hd", currHike, True)
 
-            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@192.168.0.149:' + src, dest], stdout=subprocess.PIPE)
+            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
             rsync_status.wait()
 
             # when rsync is successfully finished,
