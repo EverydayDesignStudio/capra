@@ -23,6 +23,10 @@ pDBController = None
 retry = 0
 RETRY_MAX = 5
 
+checkSum_transferred = 0
+checkSum_rotated = 0
+checkSum_total = 0
+
 # Database location
 
 # # Desktop test
@@ -117,6 +121,13 @@ def rotate_photo(path, srcFileName, destFileName, angle):
     image_rotated.save(path + "/" + destFileName)
 
 
+def compute_checksum(currHike):
+    global checkSum_total, checkSum_rotated, checkSum_transferred
+    checkSum_transferred = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME)
+    checkSum_rotated = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
+    checkSum_total = checkSum_transferred + checkSum_rotated
+
+
 # test
 def create_camera_db_entries():
     # testing
@@ -157,6 +168,7 @@ def update_picture_path_camera_db():
 
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry
+    global checkSum_transferred, checkSum_rotated, checkSum_total
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
@@ -175,16 +187,9 @@ def start_transfer():
             currExpectedHikeSize = 0
         expectedCheckSumTotal = currExpectedHikeSize * 4
 
-        # # Desktop test
-        # checkSum = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-
-        # RPi
-        checkSum_transferred = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME)
-        checkSum_rotated = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
-        checkSum_total = checkSum_transferred + checkSum_rotated
-
+        compute_checksum(currHike)
         print("[{}] Hike {}: Total {} rows -- {} out of {} photos transferred".format(timenow(), str(currHike), str(currExpectedHikeSize), str(checkSum_transferred), str(currExpectedHikeSize * 3)))
-        print("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(currExpectedHikeSize), str(checkSum_total)))
+        print("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
 
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
         # TODO: check return value for empty or non-existing hikes
@@ -199,58 +204,50 @@ def start_transfer():
         # C-1.  validity check
         #   ** For photos with invalid data, we won't bother restoring/fixing incorrect metatdata.
         #      The row (all 3 photos) will be dropped as a whole
-
-        # TODO: make sure validity for rows are check on Camera's end
         validRows = cDBController.get_valid_photos_in_given_hike(currHike)
         numValidRows = len(validRows)
         checkSum_transfer_and_rotated = 4 * numValidRows
 
-        # TRANSFER
-        i = 0
-        transferTimer = time.time()
-        # for row in validRows:
-        while(i < len(validRows)):
-            row = validRows[i]
+        if (checkSum_transferred < currExpectedHikeSize * 3):
+            # TRANSFER
+            i = 0
+            transferTimer = time.time()
+            # for row in validRows:
+            while(i < len(validRows)):
+                row = validRows[i]
 
-            # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
-            src = row[5][:-5] + "*" + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
+                # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
+                src = row[5][:-5] + "*" + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
 
-            # # Desktop test
-            # dest = build_hike_path("capra-storage", currHike, True)
+                # # Desktop test
+                # dest = build_hike_path("capra-storage", currHike, True)
 
-            # RPi
-            dest = build_hike_path("/capra-hd", currHike, True)
+                # RPi
+                dest = build_hike_path("/capra-hd", currHike, True)
 
-            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
-            rsync_status.wait()
+                rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
+                rsync_status.wait()
 
-            # when rsync is successfully finished,
-            if (rsync_status.returncode == 0):
-                # TODO: Transfer Animation stuff
-                i += 1
-            else:
-                print("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
+                # when rsync is successfully finished,
+                if (rsync_status.returncode == 0):
+                    # TODO: Transfer Animation stuff
+                    i += 1
+                else:
+                    print("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
 
-        print("[{}]   Transfer finished for hike {} -- took {} seconds".format(timenow(), str(currHike), str(time.time() - transferTimer)))
+            print("[{}]   Transfer finished for hike {} -- took {} seconds".format(timenow(), str(currHike), str(time.time() - transferTimer)))
 
         # Compare Checksum
-
-        # # Desktop test
-        # numfiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME)
-        # numResizedFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-
-        # RPi
-        numTransferredFiles = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME)
-        numResizedFiles = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
-
+        compute_checksum(currHike)
         print("[{}] Total valid rows in Hike {}: {}".format(timenow(), str(currHike), str(numValidRows)))
-        print("[{}] Total transferred files in hike {}: {}".format(timenow(), str(currHike), str(numTransferredFiles)))
+        print("[{}] Total transferred files in hike {}: {}".format(timenow(), str(currHike), str(checkSum_transferred)))
 
         if (numValidRows != currExpectedHikeSize):
             print("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
 
         # All pictures successfully transferred!
-        if (expectedCheckSum == numTransferredFiles):
+        if (currExpectedHikeSize * 3 == checkSum_transferred):
+            print("[{}] All pictures for hike {} successfully transferred. \n\t Now starting post-processing work..".format(timenow(), str(currHike)))
 
             # TODO: remove pictures from camera at this point
 
@@ -321,23 +318,14 @@ def start_transfer():
             exit()
 
         # CHECK FOR RESIZE AND ROTATE
-
-        # # Desktop test
-        # numTotalFiles = count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("capra-storage", currHike), g.FILENAME_ROTATED)
-
-        # RPi
-        numTotalFiles = count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME) + count_files_in_directory(build_hike_path("/capra-hd", currHike), g.FILENAME_ROTATED)
-
-        print("[{}] hike ".format(timenow()) + str(currHike) + " : " + str(numTotalFiles))
-
-        print("[{}] $ checksum: {}".format(timenow(), str(expectedCheckSum)))
-        print("[{}] $ numtotal: {}".format(timenow(), str(numTotalFiles)))
-
-        print("[{}] ### Extracting dominant colors for Hike {} finished, {} valid pictures and {} invalid pictures.".format(timenow(), currHike, color_rows_checked, color_rows_error))
+        compute_checksum(currHike)
+        print("[{}] Post-processing for Hike {} finished. \
+                \n\tTotal {} files. (Expected {} files) \
+                \n\t{} valid pictures and {} invalid pictures.".format(timenow(), currHike, checkSum_total, expectedCheckSumTotal, color_rows_checked, color_rows_error))
 
         # make a row for hike table with postprocessed values
         avgAlt /= numRows
-        if (numTotalFiles / 4 > g.COLOR_CLUSTER):
+        if (checkSum_total / 4 > g.COLOR_CLUSTER):
             hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
 
         # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
