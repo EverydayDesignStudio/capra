@@ -133,7 +133,7 @@ def get_dominant_colors_for_hike(hikeID):
 def get_dominant_colors_for_picture(base, hikeID, imageName):
     # Capra analyzes the color of the middle photo only
     # hikepath = g.PATH_ON_PROJECTOR + "hike" + str(hikeID) + '/' + imageName
-    picturePath = base + "hike" + str(hikeID) + '/' + imageName
+    picturePath = base + "/hike" + str(hikeID) + '/' + imageName
     res = ""
     try:
         # read in image of interest
