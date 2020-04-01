@@ -290,7 +290,11 @@ def start_transfer():
                 # Do post-processing
                 #  1. calculate dominant HSV/RGB colors
                 #  2. update path to each picture for camera 1, 2, 3
-                color_resCode, color_res = get_dominant_colors_for_picture(build_hike_path("/capra-hd"), currHike, str(row[4]) + "_cam2.jpg")
+                try:
+                    color_resCode, color_res = get_dominant_colors_for_picture(build_hike_path("/capra-hd"), currHike, str(row[4]) + "_cam2.jpg")
+                except:
+                    print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[4])))
+
                 if (color_resCode < 0):
                     color_rows_error += 1
                 else:
