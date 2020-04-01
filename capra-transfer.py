@@ -119,6 +119,7 @@ def rotate_photo(path, srcFileName, destFileName, angle):
     image = Image.open(path + "/" + srcFileName)
     image_rotated = image.copy().rotate(angle, expand=True)
     image_rotated.save(path + "/" + destFileName)
+    os.delete(path + "/" + srcFileName)
 
 
 def compute_checksum(currHike):
