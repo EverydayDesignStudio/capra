@@ -170,7 +170,7 @@ def start_transfer():
     while currHike <= latest_remote_hikeID:
         # currHike = latest_master_hikeID + hikeCounter
 
-        currHikeSize = pDBController.get_size_of_hike()
+        currHikeSize = pDBController.get_size_of_hike(currHike)
         expectedCheckSum = currHikeSize * 4
 
         # # Desktop test

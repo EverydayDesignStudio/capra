@@ -416,6 +416,13 @@ class SQLController:
         cursor.execute(self.statements.upsert_picture_row(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape))
         self.connection.commit()
 
+    def get_size_of_hike(self, hike_id: int) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_size_of_hike(hike_id=h))
+        row = cursor.fetchone()
+        size = int(row[0])
+        return size
+
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_path(hike_id))

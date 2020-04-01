@@ -263,6 +263,10 @@ class SQLStatements:
             '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
         return statement
 
+    def get_size_of_hike(self, hike_id: int):
+        statement = 'SELECT pictures FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement
+
     def delete_pictures(self) -> str:
         statement = 'DELETE FROM pictures'
         return statement
