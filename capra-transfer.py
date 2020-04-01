@@ -163,7 +163,7 @@ def start_transfer():
     print("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
     print("[{}] @@@ # hikes on Camera: {}".format(timenow(), str(latest_remote_hikeID)))
 
-    currHike = 0
+    currHike = 1
     checkSum = 0
 
     # 3. determine how many hikes should be transferred
@@ -171,6 +171,8 @@ def start_transfer():
         # currHike = latest_master_hikeID + hikeCounter
 
         currHikeSize = pDBController.get_size_of_hike(currHike)
+        if (currHikeSize is None):
+            currHikeSize = 0
         expectedCheckSum = currHikeSize * 4
 
         # # Desktop test
@@ -183,7 +185,7 @@ def start_transfer():
 
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
         # TODO: check return value for empty or non-existing hikes
-        if (expectedCheckSum is not None and expectedCheckSum == checkSum):
+        if (expectedCheckSum != 0 and expectedCheckSum == checkSum):
             print("[{}]     # photos match in Hike {}. Proceeding to the next hike...".format(timenow(), str(hikeCounter)))
             hikeCounter += 1
             continue

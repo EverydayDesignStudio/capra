@@ -418,10 +418,9 @@ class SQLController:
 
     def get_size_of_hike(self, hike_id: int) -> int:
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_size_of_hike(hike_id=h))
+        cursor.execute(self.statements.get_size_of_hike(hike_id=hike_id))
         row = cursor.fetchone()
-        size = int(row[0])
-        return size
+        return row
 
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()
