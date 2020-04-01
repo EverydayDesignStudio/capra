@@ -21,24 +21,29 @@ def init():
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
-    DBNAME_CAMERA = "capra_camera.db"
+    # DBNAME_CAMERA = "capra_camera.db"
+    # TODO: change this
+    DBNAME_CAMERA = "capra_camera_test.db"
 
     # GPIOs
     global HALL_EFFECT
     HALL_EFFECT = 26
-
-    # Paths
-    global PATH_ON_CAMERA
-    PATH_ON_CAMERA = '/home/pi/capra-storage/'
 
     global FILENAME
     global FILENAME_ROTATED
     FILENAME = "[!\.]*_cam[1-3].jpg"
     FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
 
-    global PATH_ON_PROJECTOR
+    # Paths
+    global DATAPATH_CAMERA
+    DATAPATH_CAMERA = '/home/pi/capra-storage/'
+
+    global DATAPATH_PROJECTOR
     # TODO: update existing projector path by adding an extra slash '/'
-    PATH_ON_PROJECTOR = '/media/pi/capra-hd/'
+    DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+
+    global CAPRAPATH_PROJECTOR
+    CAPRAPATH_PROJECTOR = '/home/pi/capra/'
 
     global PATH_CAMERA_DB
     PATH_CAMERA_DB = PATH_ON_CAMERA + DBNAME_CAMERA
