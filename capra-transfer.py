@@ -6,6 +6,7 @@ import datetime
 import time
 import sqlite3                                      # Database Library
 import subprocess                                   # Deploy RSyncs
+import traceback
 from PIL import ImageTk, Image                      # Pillow image functions
 from pathlib import Path
 from classes.capra_data_types import Picture, Hike
@@ -13,6 +14,7 @@ from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
+from logging.handlers import FileHandler
 g.init()
 
 VERBOSE = False
@@ -33,6 +35,23 @@ DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
 
+# ### Create Logger ###
+if os.name == 'nt':
+    log_file = "C:\tmp\transfer.log"
+else:
+    directory = CAPRAPATH + '/' + "log"
+    log_file = CAPRAPATH + 'transferLog-' + time.strftime("%Y%m%d) + '.log'
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True, mode=0o755)
+
+# create logger with 'spam_application'
+logger = logging.getLogger('CapraTransferLogger')
+logger.setLevel(logging.INFO)
+
+# create file handler which logs even debug messages
+fh = logging.FileHandler(log_file, 'a+')
+fh.setLevel(logging.INFO)
+logger.addHandler(fh)
 
 
 def timenow():
@@ -110,6 +129,8 @@ def start_transfer():
     latest_remote_hikeID = cDBController.get_last_hike_id()
     print("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
     print("[{}] @@@ # hikes on Camera: {}".format(timenow(), str(latest_remote_hikeID)))
+    logger.info("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
+    logger.info("[{}] @@@ # hikes on Camera: {}".format(timenow(), str(latest_remote_hikeID)))
 
     currHike = 1
     checkSum = 0
@@ -125,11 +146,14 @@ def start_transfer():
         compute_checksum(currHike)
         print("[{}] Hike {}: Total {} rows -- {} out of {} photos transferred".format(timenow(), str(currHike), str(currExpectedHikeSize), str(checkSum_transferred), str(currExpectedHikeSize * 3)))
         print("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
+        logger.info("[{}] Hike {}: Total {} rows -- {} out of {} photos transferred".format(timenow(), str(currHike), str(currExpectedHikeSize), str(checkSum_transferred), str(currExpectedHikeSize * 3)))
+        logger.info("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
 
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
         # TODO: check return value for empty or non-existing hikes
         if (currExpectedHikeSize != 0 and checkSum_transferred == currExpectedHikeSize * 3 and expectedCheckSumTotal == checkSum_total):
             print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
+            logger.info("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
             currHike += 1
             continue
 
@@ -142,6 +166,7 @@ def start_transfer():
 
         if (checkSum_transferred < currExpectedHikeSize * 3):
             print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
+            logger.info("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             # TRANSFER
             i = 0
             transferTimer = time.time()
@@ -162,20 +187,26 @@ def start_transfer():
                     i += 1
                 else:
                     print("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
+                    logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(row[4] - 1)))
 
             print("[{}]   Transfer finished for hike {} -- took {} seconds".format(timenow(), str(currHike), str(time.time() - transferTimer)))
+            logger.info("[{}]   Transfer finished for hike {} -- took {} seconds".format(timenow(), str(currHike), str(time.time() - transferTimer)))
 
         # Compare Checksum
         compute_checksum(currHike)
         print("[{}] Total valid rows in Hike {}: {}".format(timenow(), str(currHike), str(numValidRows)))
         print("[{}] Total transferred files in hike {}: {}".format(timenow(), str(currHike), str(checkSum_transferred)))
+        logger.info("[{}] Total valid rows in Hike {}: {}".format(timenow(), str(currHike), str(numValidRows)))
+        logger.info("[{}] Total transferred files in hike {}: {}".format(timenow(), str(currHike), str(checkSum_transferred)))
 
         if (numValidRows != currExpectedHikeSize):
             print("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
+            logger.info("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
 
         # All pictures successfully transferred!
         if (currExpectedHikeSize * 3 == checkSum_transferred):
             print("[{}] All pictures for hike {} successfully transferred. \n\t Now starting post-processing work..".format(timenow(), str(currHike)))
+            logger.info("[{}] All pictures for hike {} successfully transferred. \n\t Now starting post-processing work..".format(timenow(), str(currHike)))
 
             # TODO: remove pictures from camera at this point
 
@@ -223,6 +254,9 @@ def start_transfer():
                     color_resCode, color_res = get_dominant_colors_for_picture(picPath_cam2)
                 except:
                     print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[4])))
+                    print(traceback.format_exc())
+                    logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[4])))
+                    logger.info(traceback.format_exc())
 
                 if (color_resCode < 0):
                     color_rows_error += 1
@@ -239,16 +273,21 @@ def start_transfer():
             # TODO: remove this and implement recovery mechanism on exception
             retry += 1
             print("[{}] Total number of files doesn't match! \n\t Retry {} out of {}".format(timenow(), str(retry), str(RETRY_MAX)))
+            logger.info("[{}] Total number of files doesn't match! \n\t Retry {} out of {}".format(timenow(), str(retry), str(RETRY_MAX)))
             continue
 
         else:
             # what do we do here..?
             print("[{}] MAX RETRY REACHED!! Giving up...".format(timenow()))
+            logger.info("[{}] MAX RETRY REACHED!! Giving up...".format(timenow()))
             exit()
 
         # CHECK FOR RESIZE AND ROTATE
         compute_checksum(currHike)
         print("[{}] Post-processing for Hike {} finished. \
+                \n\tTotal {} files. (Expected {} files) \
+                \n\t{} valid pictures and {} invalid pictures.".format(timenow(), currHike, checkSum_total, expectedCheckSumTotal, color_rows_checked, color_rows_error))
+        logger.info("[{}] Post-processing for Hike {} finished. \
                 \n\tTotal {} files. (Expected {} files) \
                 \n\t{} valid pictures and {} invalid pictures.".format(timenow(), currHike, checkSum_total, expectedCheckSumTotal, color_rows_checked, color_rows_error))
 
@@ -259,6 +298,8 @@ def start_transfer():
 
         # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
         print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
+        logger.info("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
+
         pDBController.upsert_hike(currHike, avgAlt, avgHue, avgSat, avgVal, startTime, endTime, color_rows_checked, dest)
 
         # TODO: clean up partial files
@@ -266,6 +307,9 @@ def start_transfer():
         print("[{}] ---- hike {} took {} seconds for post-processing ---- ".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
         print("[{}] Hike {} complete. Took total {} seconds.".format(timenow(), currHike, str(time.time() - start_time)))
         print("[{}] Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
+        logger.info("[{}] ---- hike {} took {} seconds for post-processing ---- ".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
+        logger.info("[{}] Hike {} complete. Took total {} seconds.".format(timenow(), currHike, str(time.time() - start_time)))
+        logger.info("[{}] Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
 
         currHike += 1
 
@@ -279,3 +323,4 @@ getDBControllers()
 start_transfer()
 
 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
+logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
