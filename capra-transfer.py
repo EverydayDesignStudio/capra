@@ -209,6 +209,7 @@ def start_transfer():
         checkSum_transfer_and_rotated = 4 * numValidRows
 
         if (checkSum_transferred < currExpectedHikeSize * 3):
+            print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             # TRANSFER
             i = 0
             transferTimer = time.time()
@@ -286,9 +287,6 @@ def start_transfer():
                 resize_photo(dest, str(row[4]) + "_cam1.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam2.jpg", 427, 720)
                 resize_photo(dest, str(row[4]) + "_cam3.jpg", 427, 720)
-
-                # remove middle file
-                os.remove(dest + '/' + str(row[4]) + "_cam2.jpg")
 
                 # Do post-processing
                 #  1. calculate dominant HSV/RGB colors
