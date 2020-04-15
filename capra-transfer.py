@@ -14,7 +14,7 @@ from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
-from logging.handlers import FileHandler
+import logging
 g.init()
 
 VERBOSE = False
@@ -40,7 +40,7 @@ if os.name == 'nt':
     log_file = "C:\tmp\transfer.log"
 else:
     directory = CAPRAPATH + '/' + "log"
-    log_file = CAPRAPATH + 'transferLog-' + time.strftime("%Y%m%d) + '.log'
+    log_file = CAPRAPATH + 'transferLog-' + time.strftime("%Y%m%d") + '.log'
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True, mode=0o755)
 
