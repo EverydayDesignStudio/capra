@@ -89,7 +89,7 @@ def count_files_in_directory(path, pattern):
 
 
 def build_hike_path(hikeID, makeNew=False):
-    res = DATAPATH + str(hikeID) + '/'
+    res = DATAPATH + '/hike' + str(hikeID) + '/'
     if makeNew and not os.path.exists(res):
         os.makedirs(res, mode=0o755)
     return res
