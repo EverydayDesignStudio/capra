@@ -143,6 +143,13 @@ def start_transfer():
             currExpectedHikeSize = 0
         expectedCheckSumTotal = currExpectedHikeSize * 4
 
+        # skip empty hikes
+        if (currExpectedHikeSize == 0):
+            print("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
+            logger.info("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
+            currHike += 1
+            continue
+
         compute_checksum(currHike)
         print("[{}] Hike {}: Total {} rows -- {} out of {} photos transferred".format(timenow(), str(currHike), str(currExpectedHikeSize), str(checkSum_transferred), str(currExpectedHikeSize * 3)))
         print("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
@@ -150,7 +157,6 @@ def start_transfer():
         logger.info("[{}] Hike {}: Total {} photos expected, found {} photos".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
 
         # if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
-        # TODO: check return value for empty or non-existing hikes
         if (currExpectedHikeSize != 0 and checkSum_transferred == currExpectedHikeSize * 3 and expectedCheckSumTotal == checkSum_total):
             print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
             logger.info("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
