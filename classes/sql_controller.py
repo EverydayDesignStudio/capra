@@ -425,6 +425,21 @@ class SQLController:
         else:
             return row[0]
 
+    def get_hike_average_color(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
+        res = cursor.fetchall()
+        if (res is None):
+            return None
+        else:
+            return res
+
+    def get_picture_at_timestamp(self, time: float):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_picture_with_timestamp(time=time))
+        res = cursor.fetchone()
+        return res
+
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_path(hike_id))

@@ -263,8 +263,16 @@ class SQLStatements:
             '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
         return statement
 
+    def get_hike_average_color(self, hike_id: int):
+        statement = 'SELECT avg_hue, avg_saturation, avg_value FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement
+
     def get_size_of_hike(self, hike_id: int):
         statement = 'SELECT pictures FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement
+
+    def get_picture_with_timestamp(self, time: float):
+        statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 
     def delete_pictures(self) -> str:
