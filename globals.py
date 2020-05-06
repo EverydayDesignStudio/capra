@@ -25,9 +25,12 @@ def init():
     # TODO: change this
     DBNAME_CAMERA = "capra_camera_test.db"
 
-    # GPIOs
+    # Hall Effect Sensor
+    global HALL_EFFECT_PIN
+    HALL_EFFECT_PIN = 26
+
     global HALL_EFFECT
-    HALL_EFFECT = 26
+    HALL_EFFECT = None
 
     global FILENAME
     global FILENAME_ROTATED

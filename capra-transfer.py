@@ -3,10 +3,12 @@ import glob                                         # File path pattern matching
 import os
 import os.path
 import datetime
+import threading
 import time
 import sqlite3                                      # Database Library
 import subprocess                                   # Deploy RSyncs
 import traceback
+import RPi.GPIO as GPIO
 from PIL import ImageTk, Image                      # Pillow image functions
 from pathlib import Path
 from classes.capra_data_types import Picture, Hike
@@ -15,9 +17,16 @@ from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
 import logging
+
+GPIO.setmode(GPIO.BCM)           # Set's GPIO pins to BCM GPIO numbering
+INPUT_PIN = 26                   # Sets our input pin
+GPIO.setup(INPUT_PIN, GPIO.IN)   # Set our input pin to be an input
+
 g.init()
 
 VERBOSE = False
+
+hall_effect = False
 
 rsync_status = None
 cDBController = None
@@ -52,6 +61,21 @@ logger.setLevel(logging.INFO)
 fh = logging.FileHandler(log_file, 'a+')
 fh.setLevel(logging.INFO)
 logger.addHandler(fh)
+
+
+class readHallEffectThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        # deploy this as a background process
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        while True:
+            if (GPIO.input(INPUT_PIN)):
+                g.HALL_EFFECT = True
+            else:
+                g.HALL_EFFECT = False
 
 
 def timenow():
@@ -127,8 +151,10 @@ def check_hike_postprocessing(currHike):
 
 
 def start_transfer():
-    global cDBController, pDBController, rsync_status, retry
+    global cDBController, pDBController, rsync_status, retry, hall_effect
     global checkSum_transferred, checkSum_rotated, checkSum_total
+
+    # TODO: add hall-effect breaks
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()

@@ -30,4 +30,4 @@ while True:
     else:
         print('false')
 
-        sleep(1)                  # Sleep for a full second before restarting our loop
+    sleep(1)                  # Sleep for a full second before restarting our loop
