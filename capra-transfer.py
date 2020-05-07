@@ -21,7 +21,7 @@ g.init()
 
 GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPIO numbering
 GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
-HALL_EFFECT_ON = threading.event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
+HALL_EFFECT_ON = threading.Event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
 
 VERBOSE = False
 
@@ -73,6 +73,7 @@ class readHallEffectThread(threading.Thread):
         while True:
             if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
+                HALL_EFFECT_ON.clear()
             else:
                 g.HALL_EFFECT = True
                 HALL_EFFECT_ON.set()
