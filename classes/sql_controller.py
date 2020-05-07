@@ -434,11 +434,17 @@ class SQLController:
         else:
             return res
 
+    def get_picture_dominant_color(self, time: float):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time))
+        res = cursor.fetchall()
+        return res
+
     def get_picture_at_timestamp(self, time: float):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_picture_with_timestamp(time=time))
         res = cursor.fetchone()
-        return res
+        return res[0]
 
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()

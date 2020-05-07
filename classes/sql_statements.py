@@ -275,6 +275,10 @@ class SQLStatements:
         statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 
+    def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
+        statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
+        return statement
+
     def delete_pictures(self) -> str:
         statement = 'DELETE FROM pictures'
         return statement
