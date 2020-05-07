@@ -17,11 +17,11 @@ from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
 import logging
+g.init()
 
 GPIO.setmode(GPIO.BCM)           # Set's GPIO pins to BCM GPIO numbering
-GPIO.setup(INPUT_PIN, GPIO.IN)   # Set our input pin to be an input
+GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)   # Set our input pin to be an input
 
-g.init()
 
 VERBOSE = False
 
@@ -200,6 +200,7 @@ def start_transfer():
         validRows = cDBController.get_valid_photos_in_given_hike(currHike)
         numValidRows = len(validRows)
         checkSum_transfer_and_rotated = 4 * numValidRows
+        dest = build_hike_path(currHike, True)
 
         # 3. transfer is not complete - still need to copy more pictures
         if (checkSum_transferred < currExpectedHikeSize * 3):
@@ -214,7 +215,6 @@ def start_transfer():
 
                 # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
                 src = row[5][:-5] + "*" + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam*.jpg"
-                dest = build_hike_path(currHike, True)
 
                 # TODO: add "--remove-source-files" option - do not rely on the number of files; just transfer everything for this hike
                 rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
@@ -253,9 +253,6 @@ def start_transfer():
             logger.info("[{}] Starting post-processing for hike {}..".format(timenow(), str(currHike)))
 
             avgAlt = 0
-            avgHue = 0
-            avgSat = 0
-            avgVal = 0
             domColors = []
             startTime = 9999999999
             endTime = -1
@@ -279,6 +276,8 @@ def start_transfer():
                 # skip this row if a row with the specific timestamp already exists
                 # ** we still want to consider the timestamp and the average altitude even when skipping rows
                 if (pDBController.get_picture_at_timestamp(row[0]) > 0):
+                    col = pDBController.get_domget_picture_dominant_color(row[0])
+                    domColors.append([col[0], col[1], col[2]])
                     color_rows_checked += 1
                     continue
 
@@ -339,7 +338,7 @@ def start_transfer():
             print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
             logger.info("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
 
-            pDBController.upsert_hike(currHike, avgAlt, avgHue, avgSat, avgVal, startTime, endTime, color_rows_checked, dest)
+            pDBController.upsert_hike(currHike, avgAlt, hikeDomCol[0], hikeDomCol[1], hikeDomCol[2], startTime, endTime, color_rows_checked, dest)
 
         # if (retry < RETRY_MAX):
         #     # TODO: remove this and implement recovery mechanism on exception

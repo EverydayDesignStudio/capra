@@ -432,13 +432,13 @@ class SQLController:
         if (res is None):
             return None
         else:
-            return res
+            return res[0]
 
     def get_picture_dominant_color(self, time: float):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time))
         res = cursor.fetchall()
-        return res
+        return res[0]
 
     def get_picture_at_timestamp(self, time: float):
         cursor = self.connection.cursor()
