@@ -19,9 +19,9 @@ from classes.kmeans import get_dominant_color_1D
 import logging
 g.init()
 
-GPIO.setmode(GPIO.BCM)           # Set's GPIO pins to BCM GPIO numbering
-GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)   # Set our input pin to be an input
-
+GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPIO numbering
+GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
+HALL_EFFECT_ON = threading.event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
 
 VERBOSE = False
 
@@ -75,6 +75,7 @@ class readHallEffectThread(threading.Thread):
                 g.HALL_EFFECT = False
             else:
                 g.HALL_EFFECT = True
+                HALL_EFFECT_ON.set()
 
 
 def timenow():
@@ -168,6 +169,10 @@ def start_transfer():
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
 
+        if (not g.HALL_EFFECT):
+            print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            return
+
         currExpectedHikeSize = cDBController.get_size_of_hike(currHike)
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
@@ -204,6 +209,11 @@ def start_transfer():
 
         # 3. transfer is not complete - still need to copy more pictures
         if (checkSum_transferred < currExpectedHikeSize * 3):
+
+            if (not g.HALL_EFFECT):
+                print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                return
+
             print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             logger.info("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             # TRANSFER
@@ -249,6 +259,11 @@ def start_transfer():
         # 4. POST PROCESSING: All pictures successfully transferred!
         # TODO: what if there is an exception while running the post-processing?
         if (currExpectedHikeSize * 3 == checkSum_transferred and not check_hike_postprocessing(currHike)):
+
+            if (not g.HALL_EFFECT):
+                print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                return
+
             print("[{}] Starting post-processing for hike {}..".format(timenow(), str(currHike)))
             logger.info("[{}] Starting post-processing for hike {}..".format(timenow(), str(currHike)))
 
@@ -264,6 +279,10 @@ def start_transfer():
 
             # C-2.  once all data is confirmed and valid, deploy rsync for 3 photos
             for row in validRows:
+
+                if (not g.HALL_EFFECT):
+                    print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                    return
 
                 # update timestamps
                 if (row[0] < startTime):
@@ -373,7 +392,9 @@ getDBControllers()
 
 readHallEffectThread()
 
-start_transfer()
+while True:
+    HALL_EFFECT_ON.wait()
+    start_transfer()
 
 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
 logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
