@@ -244,8 +244,39 @@ class SQLStatements:
     # Transfer
     # --------------------------------------------------------------------------
     def select_valid_photos_in_given_hike(self, hike_id: int) -> int:
-        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= -1000 AND \
+        # TODO: update the MAX value to Mt. Everest
+        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= 0 AND \
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
+        return statement
+
+    def upsert_picture_row(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str) -> int:
+        statement = 'INSERT OR REPLACE INTO pictures \
+            (time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape) \
+            VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}", "{}", "{}", "{}")\
+            '.format(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
+        return statement
+
+    def upsert_hike_row(self, hike_id: int, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str) -> str:
+        statement = 'INSERT OR REPLACE INTO hikes \
+            (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
+            VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
+            '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+        return statement
+
+    def get_hike_average_color(self, hike_id: int):
+        statement = 'SELECT avg_hue, avg_saturation, avg_value FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement
+
+    def get_size_of_hike(self, hike_id: int):
+        statement = 'SELECT pictures FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement
+
+    def get_picture_with_timestamp(self, time: float):
+        statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
+        return statement
+
+    def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
+        statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
         return statement
 
     def delete_pictures(self) -> str:
@@ -254,4 +285,8 @@ class SQLStatements:
 
     def delete_hikes(self) -> str:
         statement = 'DELETE FROM hikes'
+        return statement
+
+    def get_hike_path(self, hike_id: int) -> str:
+        statement = "SELECT path FROM hikes WHERE hike_id == {}".format(hike_id)
         return statement

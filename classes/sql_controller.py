@@ -405,3 +405,49 @@ class SQLController:
 
         cursor.execute(self.statements.delete_hikes())
         self.connection.commit()
+
+    def upsert_hike(self, hike_id: str, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path))
+        self.connection.commit()
+
+    def upsert_picture(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.upsert_picture_row(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape))
+        self.connection.commit()
+
+    def get_size_of_hike(self, hike_id: int) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_size_of_hike(hike_id=hike_id))
+        row = cursor.fetchone()
+        if (row is None):
+            return None
+        else:
+            return row[0]
+
+    def get_hike_average_color(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
+        res = cursor.fetchall()
+        if (res is None):
+            return None
+        else:
+            return res[0]
+
+    def get_picture_dominant_color(self, time: float):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time))
+        res = cursor.fetchall()
+        return res[0]
+
+    def get_picture_at_timestamp(self, time: float):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_picture_with_timestamp(time=time))
+        res = cursor.fetchone()
+        return res[0]
+
+    def get_hike_path(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_path(hike_id))
+        row = cursor.fetchone()
+        return row
