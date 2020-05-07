@@ -19,7 +19,6 @@ from classes.kmeans import get_dominant_color_1D
 import logging
 
 GPIO.setmode(GPIO.BCM)           # Set's GPIO pins to BCM GPIO numbering
-INPUT_PIN = 26                   # Sets our input pin
 GPIO.setup(INPUT_PIN, GPIO.IN)   # Set our input pin to be an input
 
 g.init()
@@ -48,8 +47,8 @@ PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
 if os.name == 'nt':
     log_file = "C:\tmp\transfer.log"
 else:
-    directory = CAPRAPATH + '/' + "log"
-    log_file = CAPRAPATH + 'transferLog-' + time.strftime("%Y%m%d") + '.log'
+    directory = CAPRAPATH + "log/"
+    log_file = directory + 'transferLog-' + time.strftime("%Y%m%d") + '.log'
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True, mode=0o755)
 
@@ -72,10 +71,10 @@ class readHallEffectThread(threading.Thread):
 
     def run(self):
         while True:
-            if (GPIO.input(INPUT_PIN)):
-                g.HALL_EFFECT = True
-            else:
+            if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
+            else:
+                g.HALL_EFFECT = True
 
 
 def timenow():
@@ -147,7 +146,7 @@ def compute_checksum(currHike):
 
 def check_hike_postprocessing(currHike):
     hikeColor = pDBController.get_hike_average_color(currHike)
-    return hikeColor is not None and not (int(hikeColor[0]) == 0 and int(hikeColor[1]) == 0 and int(hikeColor[2]) == 0)
+    return hikeColor is not None and hikeColor and not (int(hikeColor[0]) == 0 and int(hikeColor[1]) == 0 and int(hikeColor[2]) == 0)
 
 
 def start_transfer():
@@ -243,6 +242,10 @@ def start_transfer():
                 print("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
                 logger.info("[{}] !!! Invalid rows detected in hike {}".format(timenow(), str(currHike)))
 
+        else:
+            print("[{}] Hike {} is fully transferred.".format(timenow(), str(currHike)))
+            logger.info("[{}] Hike {} is fully transferred.".format(timenow(), str(currHike)))
+
         # 4. POST PROCESSING: All pictures successfully transferred!
         # TODO: what if there is an exception while running the post-processing?
         if (currExpectedHikeSize * 3 == checkSum_transferred and not check_hike_postprocessing(currHike)):
@@ -276,6 +279,7 @@ def start_transfer():
                 # skip this row if a row with the specific timestamp already exists
                 # ** we still want to consider the timestamp and the average altitude even when skipping rows
                 if (pDBController.get_picture_at_timestamp(row[0]) > 0):
+                    color_rows_checked += 1
                     continue
 
                 picPath_cam1 = build_picture_path(currHike, row[4], 1)
@@ -367,6 +371,8 @@ start_time = time.time()
 
 copy_remote_db()
 getDBControllers()
+
+readHallEffectThread()
 
 start_transfer()
 
