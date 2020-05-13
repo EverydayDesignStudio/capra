@@ -8,6 +8,7 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from RPi import GPIO
 
 import sys
 import time
@@ -36,28 +37,43 @@ class Worker(QRunnable):
     def __init__(self, *args, **kwargs):
         super(Worker, self).__init__()
 
+        self.clk = 23
+        self.cnt = 24
+
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(self.cnt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+        self.clkLastState = GPIO.input(self.clk)
+
         self.count = 0
         self.signals = WorkerSignals()
 
     def run(self):
         while True:
-            # print('Worker.count: %d' % self.count)
-            self.count += 1
-            time.sleep(1)
-            self.signals.result.emit(self.count)
+            self.clkState = GPIO.input(self.clk)
+            self.cntState = GPIO.input(self.cnt)
+            if self.clkState != self.clkLastState:
+                if self.cntState != self.clkState:
+                    self.count += 1
+                    self.signals.result.emit(self.count)
+                else:
+                    self.count -= 1
+                    self.signals.result.emit(self.count)
+                # print(counter)
+            self.clkLastState = self.clkState
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.threadpool = QThreadPool()
 
-        self.index = 0
+        self.index = 1
         self.seconds = 0
 
         # Layout
         layout = QVBoxLayout()
 
-        self.title = QLabel("Background Thread Test")
         self.indexLabel = QLabel("Count: 0")
         self.timerLabel = QLabel("Timer: 0")
         self.workerThreadLabel = QLabel("Worker: 0")
@@ -65,16 +81,29 @@ class MainWindow(QMainWindow):
         self.button = QPushButton("Increment Count")
         self.button.pressed.connect(self.increment_label)
 
-        layout.addWidget(self.title)
-        layout.addWidget(self.indexLabel)
-        layout.addWidget(self.timerLabel)
-        layout.addWidget(self.button)
-        layout.addWidget(self.workerThreadLabel)
+        self.img = QPixmap(self.buildFile(self.index))
+        self.imgView = QLabel()
+        self.imgView.setPixmap(self.img)
+
+        # Grid - layout
+        self.grid = QGridLayout()
+        self.grid.setSpacing(0)
+        # self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.addWidget(self.imgView, 1, 1)
+        self.grid.addWidget(self.indexLabel, 3, 1)
+        self.grid.addWidget(self.button, 4, 1)
+        self.grid.addWidget(self.timerLabel, 2, 1)
+        self.grid.addWidget(self.workerThreadLabel, 5, 1)
 
         # Widget
         w = QWidget()
-        w.setLayout(layout)
+        w.setLayout(self.grid)
         self.setCentralWidget(w)
+
+        # Show the Qt app
+        self.setWindowTitle("Capra Explorer")
+        # self.setStyleSheet("background-color: yellow;")
+        self.setGeometry(350, 100, 1215, 720)  # posX, posY, w, h
         self.show()
 
         # Timer
@@ -112,6 +141,13 @@ class MainWindow(QMainWindow):
     def thread_result(self, result):
         print('From MainLoop: %d' % result)
         self.workerThreadLabel.setText('Worker: %d' % result)
+
+        self.img = QPixmap(self.buildFile(result))
+        self.imgView.setPixmap(self.img)
+
+    def buildFile(self, num) -> str:
+        # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
+        return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
 
     # def oh_no(self):
     #     # Pass in the function
