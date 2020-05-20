@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
-
-# Continually adds numbers on a background thread and 
-# passes it up to the mainloop once every 1 second
-
+# Slideshow application for the Explorer. 
+# Allows passing through photos with a smooth fading animation.
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -13,6 +11,8 @@ from RPi import GPIO
 import sys
 import time
 import traceback
+
+fileWideCounter = 0
 
 class WorkerSignals(QObject):
     '''
@@ -33,6 +33,7 @@ class WorkerSignals(QObject):
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
 
+
 class Worker(QRunnable):
     def __init__(self, *args, **kwargs):
         super(Worker, self).__init__()
@@ -40,7 +41,6 @@ class Worker(QRunnable):
         self.clk = 23
         self.cnt = 24
 
-        GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         GPIO.setup(self.cnt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
@@ -56,44 +56,119 @@ class Worker(QRunnable):
             if self.clkState != self.clkLastState:
                 if self.cntState != self.clkState:
                     self.count += 1
-                    self.signals.result.emit(self.count)
+                    # self.signals.result.emit(self.count)
                 else:
                     self.count -= 1
-                    self.signals.result.emit(self.count)
-                # print(counter)
+                    # self.signals.result.emit(self.count)
             self.clkLastState = self.clkState
+            # print(self.count)
+
+
+# https://www.sunfounder.com/learn/Super_Kit_V2_for_RaspberryPi/lesson-8-rotary-encoder-super-kit-for-raspberrypi.html
+class RotaryEncoder(QRunnable):
+    def __init__(self, PIN_A: int, PIN_B: int, *args, **kwargs):
+        super(RotaryEncoder, self).__init__()
+
+        self.RoAPin = PIN_A
+        self.RoBPin = PIN_B
+
+        self.globalCounter = 0
+        self.flag = 0
+        self.Last_RoB_Status = 0
+        self.Current_RoB_Status = 0
+
+        GPIO.setup(self.RoAPin, GPIO.IN)    # input mode
+        GPIO.setup(self.RoBPin, GPIO.IN)
+
+    def rotaryTurn(self):
+        global fileWideCounter
+        Last_RoB_Status = GPIO.input(self.RoBPin)
+
+        while(not GPIO.input(self.RoAPin)):
+            self.Current_RoB_Status = GPIO.input(self.RoBPin)
+            self.flag = 1
+        if self.flag == 1:
+            self.flag = 0
+            if (Last_RoB_Status == 0) and (self.Current_RoB_Status == 1):
+                self.globalCounter = self.globalCounter + 1
+                fileWideCounter = self.globalCounter
+                # print('globalCounter = {g}'.format(g=self.globalCounter))
+            if (Last_RoB_Status == 1) and (self.Current_RoB_Status == 0):
+                self.globalCounter = self.globalCounter - 1
+                fileWideCounter = self.globalCounter
+                # print('globalCounter = {g}'.format(g=self.globalCounter))
+
+    def run(self):
+        while True:
+            self.rotaryTurn()
+
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.threadpool = QThreadPool()
 
+        '''
+        app = QtWidgets.QApplication(sys.argv)
+        screen = app.primaryScreen()
+        print('Screen: %s' % screen.name())
+        size = screen.size()
+        print('Size: %d x %d' % (size.width(), size.height()))
+        rect = screen.availableGeometry()
+        print('Available: %d x %d' % (rect.width(), rect.height()))
+        '''
+        
         self.index = 1
         self.seconds = 0
 
+        self.setupGPIO()
+        self.setupUI()
+        self.setupThreads()
+
+    def setupGPIO(self):
+        # set the mode, alternative is GPIO.BOARD
+        GPIO.setmode(GPIO.BCM)
+
+        # define all of the hardware pins
+        self.PIN_ROTARY_A = 23
+        self.PIN_ROTARY_B = 24
+        self.PIN_ROTARY_BUTT = 25
+
+        self.PIN_MODE = 0
+        self.PIN_PREV = 0
+        self.PIN_PLAY_PAUSE = 0
+        self.PIN_NEXT = 0
+
+        # Accelerometer
+
+        # NeoPixels
+
+        # LED indicators
+        
+    def setupUI(self):
         # Layout
         layout = QVBoxLayout()
 
-        self.indexLabel = QLabel("Count: 0")
-        self.timerLabel = QLabel("Timer: 0")
-        self.workerThreadLabel = QLabel("Worker: 0")
+        # self.indexLabel = QLabel("Count: 0")
+        # self.timerLabel = QLabel("Timer: 0")
+        # self.workerThreadLabel = QLabel("Worker: 0")
 
-        self.button = QPushButton("Increment Count")
-        self.button.pressed.connect(self.increment_label)
+        # self.button = QPushButton("Increment Count")
+        # self.button.pressed.connect(self.increment_label)
 
         self.img = QPixmap(self.buildFile(self.index))
+        # self.img = self.img.scaled(640, 300)
         self.imgView = QLabel()
         self.imgView.setPixmap(self.img)
 
         # Grid - layout
         self.grid = QGridLayout()
         self.grid.setSpacing(0)
-        # self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.addWidget(self.imgView, 1, 1)
-        self.grid.addWidget(self.indexLabel, 3, 1)
-        self.grid.addWidget(self.button, 4, 1)
-        self.grid.addWidget(self.timerLabel, 2, 1)
-        self.grid.addWidget(self.workerThreadLabel, 5, 1)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.addWidget(self.imgView)
+        # self.grid.addWidget(self.indexLabel, 3, 1)
+        # self.grid.addWidget(self.button, 4, 1)
+        # self.grid.addWidget(self.timerLabel, 2, 1)
+        # self.grid.addWidget(self.workerThreadLabel, 5, 1)
 
         # Widget
         w = QWidget()
@@ -101,24 +176,30 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(w)
 
         # Show the Qt app
-        self.setWindowTitle("Capra Explorer")
-        # self.setStyleSheet("background-color: yellow;")
-        self.setGeometry(350, 100, 1215, 720)  # posX, posY, w, h
+        self.setWindowTitle("Capra Slideshow")
+        self.setStyleSheet("background-color: yellow;")
+        # self.setGeometry(350, 100, 1215, 720)  # posX, posY, w, h
+        # self.showFullScreen()
         self.show()
 
         # Timer
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.recurring_timer)
-        self.timer.start()
+        # self.timer = QTimer()
+        # self.timer.setInterval(1000)
+        # self.timer.timeout.connect(self.recurring_timer)
+        # self.timer.start()
 
-        # Start the bg Thread
-        self.worker = Worker()
-        self.worker.signals.result.connect(self.thread_result)
-        self.threadpool.start(self.worker)
-        # self.worker.run()
+    def setupThreads(self):
+        self.threadpool = QThreadPool()
+
+        # self.worker = Worker()
+        # self.worker.signals.result.connect(self.thread_result)
+        # self.threadpool.start(self.worker)
+
+        self.rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
+        self.threadpool.start(self.rotaryEncoder)
 
     def keyPressEvent(self, event):
+        global fileWideCounter
         if event.key() == Qt.Key_Escape:
             self.close()
         elif event.key() == Qt.Key_Left:
@@ -126,6 +207,7 @@ class MainWindow(QMainWindow):
             # self.updatePrev()
         elif event.key() == Qt.Key_Right:
             print('right')
+            print(fileWideCounter)
             # self.updateNext()
         else:
             print('other key pressed')
@@ -140,7 +222,7 @@ class MainWindow(QMainWindow):
 
     def thread_result(self, result):
         print('From MainLoop: %d' % result)
-        self.workerThreadLabel.setText('Worker: %d' % result)
+        # self.workerThreadLabel.setText('Worker: %d' % result)
 
         self.img = QPixmap(self.buildFile(result))
         self.imgView.setPixmap(self.img)
