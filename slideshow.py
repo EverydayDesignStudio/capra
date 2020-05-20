@@ -121,8 +121,13 @@ class MainWindow(QMainWindow):
         self.seconds = 0
 
         self.setupGPIO()
-        self.setupUI()
+
+        self.setupWindowUI()
+        self.setupLandscapeUI()
+
         self.setupThreads()
+
+        self.showFullScreen()
 
     def setupGPIO(self):
         # set the mode, alternative is GPIO.BOARD
@@ -144,49 +149,51 @@ class MainWindow(QMainWindow):
 
         # LED indicators
         
-    def setupUI(self):
-        # Layout
-        layout = QVBoxLayout()
+    def setupWindowUI(self):
+        # Window
+        self.setWindowTitle("Capra Slideshow")
+        self.setStyleSheet("background-color: black;")
 
-        # self.indexLabel = QLabel("Count: 0")
-        # self.timerLabel = QLabel("Timer: 0")
-        # self.workerThreadLabel = QLabel("Worker: 0")
-
-        # self.button = QPushButton("Increment Count")
-        # self.button.pressed.connect(self.increment_label)
-
-        self.img = QPixmap(self.buildFile(self.index))
-        # self.img = self.img.scaled(640, 300)
-        self.imgView = QLabel()
-        self.imgView.setPixmap(self.img)
-
-        # Grid - layout
+        # Grid - add all elements to the grid
         self.grid = QGridLayout()
         self.grid.setSpacing(0)
         self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.addWidget(self.imgView)
-        # self.grid.addWidget(self.indexLabel, 3, 1)
-        # self.grid.addWidget(self.button, 4, 1)
-        # self.grid.addWidget(self.timerLabel, 2, 1)
-        # self.grid.addWidget(self.workerThreadLabel, 5, 1)
 
         # Widget
         w = QWidget()
         w.setLayout(self.grid)
         self.setCentralWidget(w)
+        
+    def setupLandscapeUI(self):
+        print('landscape')
+        # Landscape image
+        img = QPixmap(self.buildFile(2561))
+        # self.img = self.img.scaled(640, 300)
+        imgLabel = QLabel()
+        imgLabel.setPixmap(img)
 
-        # Show the Qt app
-        self.setWindowTitle("Capra Slideshow")
-        self.setStyleSheet("background-color: yellow;")
-        # self.setGeometry(350, 100, 1215, 720)  # posX, posY, w, h
-        # self.showFullScreen()
-        self.show()
+        # Label overlay
+        testLabel = QLabel('Time Mode', self)
+        testLabel.move(1000, 700)
 
-        # Timer
-        # self.timer = QTimer()
-        # self.timer.setInterval(1000)
-        # self.timer.timeout.connect(self.recurring_timer)
-        # self.timer.start()
+        # Icon overlay
+        # self.modeImg = QPixmap('icons/altitude.png')
+        modeImg = QPixmap('/home/pi/capra/icons/altitude.png')
+        modeLabel = QLabel(self)
+        modeLabel.setPixmap(modeImg)
+        modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
+        # modeLabel.move(400, 400)
+
+        self.grid.addWidget(imgLabel)
+        # self.addWidget(self.modeLabel)
+
+        # self.grid.addWidget(self.indexLabel, 3, 1)
+        # self.grid.addWidget(self.button, 4, 1)
+        # self.grid.addWidget(self.timerLabel, 2, 1)
+        # self.grid.addWidget(self.workerThreadLabel, 5, 1)
+
+    def setupVerticalUI(self):
+        print('vertical')
 
     def setupThreads(self):
         self.threadpool = QThreadPool()
@@ -209,6 +216,8 @@ class MainWindow(QMainWindow):
             print('right')
             print(fileWideCounter)
             # self.updateNext()
+        elif event.key() == Qt.Key_Space:
+            print('space bar')
         else:
             print('other key pressed')
 
@@ -226,6 +235,9 @@ class MainWindow(QMainWindow):
 
         self.img = QPixmap(self.buildFile(result))
         self.imgView.setPixmap(self.img)
+
+    def buildLandscpae(self, num) -> str:
+        return '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
 
     def buildFile(self, num) -> str:
         # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
