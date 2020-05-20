@@ -152,7 +152,7 @@ class MainWindow(QMainWindow):
     def setupWindowUI(self):
         # Window
         self.setWindowTitle("Capra Slideshow")
-        self.setStyleSheet("background-color: black;")
+        # self.setStyleSheet("background-color: black;")
 
         # Grid - add all elements to the grid
         self.grid = QGridLayout()
@@ -165,35 +165,37 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(w)
         
     def setupLandscapeUI(self):
-        print('landscape')
-        # Landscape image
-        img = QPixmap(self.buildFile(2561))
+        # Image
+        img = QPixmap(self.buildLandscape(2561))
         # self.img = self.img.scaled(640, 300)
         imgLabel = QLabel()
-        imgLabel.setPixmap(img)
+        self.imgLabel.setPixmap(img)
+        self.grid.addWidget(self.imgLabel)
 
         # Label overlay
         testLabel = QLabel('Time Mode', self)
-        testLabel.move(1000, 700)
+        testLabel.move(1100, 15)
 
         # Icon overlay
-        # self.modeImg = QPixmap('icons/altitude.png')
+        modeBg = QLabel(self)
+        modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
+        modeBg.setGeometry(0, 0, 1280, 720)
+
         modeImg = QPixmap('/home/pi/capra/icons/altitude.png')
-        modeLabel = QLabel(self)
+        modeLabel = QLabel(self)  # need the self to set it absolutely
         modeLabel.setPixmap(modeImg)
         modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
-        # modeLabel.move(400, 400)
 
-        self.grid.addWidget(imgLabel)
-        # self.addWidget(self.modeLabel)
+    def setupVerticalUI(self):
+        print('vertical')
+        # img = QPixmap(self.buildFile(2561))
 
         # self.grid.addWidget(self.indexLabel, 3, 1)
         # self.grid.addWidget(self.button, 4, 1)
         # self.grid.addWidget(self.timerLabel, 2, 1)
         # self.grid.addWidget(self.workerThreadLabel, 5, 1)
 
-    def setupVerticalUI(self):
-        print('vertical')
+        # self.addWidget(self.modeLabel)
 
     def setupThreads(self):
         self.threadpool = QThreadPool()
@@ -233,10 +235,10 @@ class MainWindow(QMainWindow):
         print('From MainLoop: %d' % result)
         # self.workerThreadLabel.setText('Worker: %d' % result)
 
-        self.img = QPixmap(self.buildFile(result))
-        self.imgView.setPixmap(self.img)
+        img = QPixmap(self.buildFile(result))
+        self.imgLabel.setPixmap(img)
 
-    def buildLandscpae(self, num) -> str:
+    def buildLandscape(self, num) -> str:
         return '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
 
     def buildFile(self, num) -> str:
