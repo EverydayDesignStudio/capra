@@ -405,6 +405,8 @@ while True:
     # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
     try:
+        CAMERA_UP = True if os.system("ping -c 1 " + g.IP_ADDR_CAMERA) is 0 else False
+        if (CAMERA_UP):
             createLogger()
             start_transfer()
     # TODO: is it safe to handle the recovery step here?
