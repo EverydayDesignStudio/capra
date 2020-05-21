@@ -90,6 +90,10 @@ def timenow():
     return str(datetime.datetime.now()).split('.')[0]
 
 
+def isCameraUp():
+    return True if os.system("ping -c 1 " + g.IP_ADDR_CAMERA) is 0 else False
+
+
 def copy_remote_db():
     subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
 
@@ -180,6 +184,11 @@ def start_transfer():
 
         if (not g.HALL_EFFECT):
             print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            return
+        if (not isCameraUp()):
+            print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             return
 
         currExpectedHikeSize = cDBController.get_size_of_hike(currHike)
@@ -221,6 +230,11 @@ def start_transfer():
 
             if (not g.HALL_EFFECT):
                 print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                return
+            if (not isCameraUp()):
+                print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+                logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                 return
 
             print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
@@ -271,6 +285,11 @@ def start_transfer():
 
             if (not g.HALL_EFFECT):
                 print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                return
+            if (not isCameraUp()):
+                print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+                logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                 return
 
             print("[{}] Starting post-processing for hike {}..".format(timenow(), str(currHike)))
@@ -291,6 +310,11 @@ def start_transfer():
 
                 if (not g.HALL_EFFECT):
                     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                    logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                    return
+                if (not isCameraUp()):
+                    print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+                    logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                     return
 
                 # update timestamps
@@ -405,10 +429,13 @@ while True:
     # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
     try:
-        CAMERA_UP = True if os.system("ping -c 1 " + g.IP_ADDR_CAMERA) is 0 else False
-        if (CAMERA_UP):
+        if (isCameraUp()):
             createLogger()
             start_transfer()
+        else:
+            print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+
     # TODO: is it safe to handle the recovery step here?
     except:
         print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
