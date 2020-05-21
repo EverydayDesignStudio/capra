@@ -24,10 +24,12 @@ GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPI
 GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
 HALL_EFFECT_ON = threading.Event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
 
+
 VERBOSE = False
 
 hall_effect = False
 
+logger = None
 rsync_status = None
 cDBController = None
 pDBController = None
@@ -43,24 +45,6 @@ CAPRAPATH = g.CAPRAPATH_PROJECTOR
 DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
-
-# ### Create Logger ###
-if os.name == 'nt':
-    log_file = "C:\tmp\transfer.log"
-else:
-    directory = CAPRAPATH + "log/"
-    log_file = directory + 'transferLog-' + time.strftime("%Y%m%d") + '.log'
-    if not os.path.exists(directory):
-        os.makedirs(directory, exist_ok=True, mode=0o755)
-
-# create logger with 'spam_application'
-logger = logging.getLogger('CapraTransferLogger')
-logger.setLevel(logging.INFO)
-
-# create file handler which logs even debug messages
-fh = logging.FileHandler(log_file, 'a+')
-fh.setLevel(logging.INFO)
-logger.addHandler(fh)
 
 
 class readHallEffectThread(threading.Thread):
@@ -78,6 +62,28 @@ class readHallEffectThread(threading.Thread):
             else:
                 g.HALL_EFFECT = True
                 HALL_EFFECT_ON.set()
+
+
+def createLogger():
+    global logger
+
+    # ### Create Logger ###
+    if os.name == 'nt':
+        log_file = "C:\tmp\transfer.log"
+    else:
+        directory = CAPRAPATH + "log/"
+        log_file = directory + 'transferLog-' + time.strftime("%Y%m%d") + '.log'
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True, mode=0o755)
+
+    # create logger with 'spam_application'
+    logger = logging.getLogger('CapraTransferLogger')
+    logger.setLevel(logging.INFO)
+
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(log_file, 'a+')
+    fh.setLevel(logging.INFO)
+    logger.addHandler(fh)
 
 
 def timenow():
@@ -155,6 +161,7 @@ def check_hike_postprocessing(currHike):
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry, hall_effect
     global checkSum_transferred, checkSum_rotated, checkSum_total
+    global logger
 
     # TODO: add hall-effect breaks
 
@@ -374,8 +381,6 @@ def start_transfer():
         #     logger.info("[{}] MAX RETRY REACHED!! Giving up...".format(timenow()))
         #     exit()
 
-        # TODO: clean up partial files
-
             print("[{}] ---- hike {} took {} seconds for post-processing ---- ".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
             print("[{}] Hike {} complete. Took total {} seconds.".format(timenow(), currHike, str(time.time() - start_time)))
             print("[{}] Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
@@ -384,6 +389,8 @@ def start_transfer():
             logger.info("[{}] Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
 
         currHike += 1
+    print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
+    logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
 
 
 # ==================================================================
@@ -397,11 +404,9 @@ readHallEffectThread()
 while True:
     # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
-    start_transfer()
-
-print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
-logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
     try:
+            createLogger()
+            start_transfer()
     # TODO: is it safe to handle the recovery step here?
     except:
         print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
