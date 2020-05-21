@@ -428,9 +428,9 @@ readHallEffectThread()
 while True:
     # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
+    createLogger()
     try:
         if (isCameraUp()):
-            createLogger()
             start_transfer()
         else:
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
