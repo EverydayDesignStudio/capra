@@ -1,6 +1,7 @@
 import globals as g
 import glob                                         # File path pattern matching
 import os
+import sys
 import os.path
 import datetime
 import threading
@@ -394,8 +395,16 @@ getDBControllers()
 readHallEffectThread()
 
 while True:
+    # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
     start_transfer()
 
 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
 logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
+    try:
+    # TODO: is it safe to handle the recovery step here?
+    except:
+        print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+        logger.info("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+        python = sys.executable
+        os.execl(python, python, * sys.argv)
