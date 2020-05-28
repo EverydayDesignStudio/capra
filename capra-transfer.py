@@ -90,8 +90,20 @@ def timenow():
     return str(datetime.datetime.now()).split('.')[0]
 
 
+# https://stackoverflow.com/questions/28769023/get-output-of-system-ping-without-printing-to-the-console
 def isCameraUp():
-    return True if os.system("ping -c 1 " + g.IP_ADDR_CAMERA) is 0 else False
+    is_up = False
+    with open(os.devnull, 'w') as DEVNULL:
+        try:
+            subprocess.check_call(
+                ['ping', '-c', '3', g.IP_ADDR_CAMERA],
+                stdout=DEVNULL,  # suppress output
+                stderr=DEVNULL
+            )
+            is_up = True
+        except subprocess.CalledProcessError:
+            is_up = False
+    return is_up
 
 
 def copy_remote_db():
