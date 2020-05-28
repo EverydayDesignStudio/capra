@@ -171,7 +171,8 @@ def compute_checksum(currHike):
 
 def check_hike_postprocessing(currHike):
     hikeColor = pDBController.get_hike_average_color(currHike)
-    return hikeColor is not None and hikeColor and not (int(hikeColor[0]) == 0 and int(hikeColor[1]) == 0 and int(hikeColor[2]) == 0)
+    print("hike {} - hikeColor: {}".format(currHike, hikeColor))
+    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
 
 
 def start_transfer():
