@@ -1,9 +1,8 @@
 define INIT_MESSAGE
-For which device would you like to install dependencies?
 Run one of the following options:
 
 ----------------------------Camera----------------------------
-[make camera_setup1]		installs dependencies and adds line to /boot/config.txt for RTC
+[make camera_setup1]		installs dependencies, adds RTC /boot/config.txt, removes fake-hwclock
 [make camera_setup2] 		sets RTC, creates db, and setups services
 
 [make camera_install]		installs dependencies from pip3 and apt-get
