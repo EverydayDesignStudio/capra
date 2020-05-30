@@ -64,9 +64,16 @@ class readHallEffectThread(threading.Thread):
             if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
                 # HALL_EFFECT_ON.clear()
+                if (g.HALL_EFFECT != FLAG_HALL_VALUE_CHANGED):
+                    g.flag_start_transfer = False
+                prev_hall_value = False
             else:
                 g.HALL_EFFECT = True
+                # TODO: set the flag only when the rising signal is detected
                 # HALL_EFFECT_ON.set()
+                if (g.HALL_EFFECT != FLAG_HALL_VALUE_CHANGED):
+                    g.flag_start_transfer = True
+                prev_hall_value = True
 
 
 def createLogger():
@@ -452,7 +459,7 @@ while True:
     # HALL_EFFECT_ON.wait()
     createLogger()
     try:
-        if (isCameraUp()):
+        if (isCameraUp() and updateDB()):
             start_transfer()
         else:
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
