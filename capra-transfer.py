@@ -63,17 +63,19 @@ class readHallEffectThread(threading.Thread):
         while True:
             if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
-                # HALL_EFFECT_ON.clear()
-                if (g.HALL_EFFECT != FLAG_HALL_VALUE_CHANGED):
+                HALL_EFFECT_ON.clear()
+                if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
                     g.flag_start_transfer = False
-                prev_hall_value = False
+                    g.PREV_HALL_VALUE = False
             else:
                 g.HALL_EFFECT = True
-                # TODO: set the flag only when the rising signal is detected
-                # HALL_EFFECT_ON.set()
-                if (g.HALL_EFFECT != FLAG_HALL_VALUE_CHANGED):
+                # set the flag only when the rising signal is detected
+                if (g.FLAG_FIRST_RUN):
+                    HALL_EFFECT_ON.set()
+                if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
                     g.flag_start_transfer = True
-                prev_hall_value = True
+                    g.FLAG_FIRST_RUN = True
+                    g.PREV_HALL_VALUE = True
 
 
 def createLogger():
@@ -222,8 +224,6 @@ def start_transfer():
     global logger
     global color_rows_checked, color_rows_error, domColors
 
-    # TODO: add hall-effect breaks
-
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
     print("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
@@ -234,15 +234,15 @@ def start_transfer():
     currHike = 1
     checkSum = 0
 
-    currHike = 16
+    currHike = 28
 
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
 
-        # if (not g.HALL_EFFECT):
-        #     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     return
+        if (not g.HALL_EFFECT):
+            print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            return
         if (not isCameraUp()):
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
@@ -295,15 +295,6 @@ def start_transfer():
         # 3. transfer is not complete - still need to copy more pictures
         if (checkSum_transferred < currExpectedHikeSize * 3 or not check_hike_postprocessing(currHike)):
 
-            # if (not g.HALL_EFFECT):
-            #     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-            #     logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-            #     return
-            if (not isCameraUp()):
-                print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-                logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-                return
-
             print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             logger.info("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
             # TRANSFER
@@ -326,10 +317,10 @@ def start_transfer():
             while(i < len(validRows)):
                 row = validRows[i]
 
-                # if (not g.HALL_EFFECT):
-                #     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-                #     logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-                #     return
+                if (not g.HALL_EFFECT):
+                    print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                    logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+                    return
                 if (not isCameraUp()):
                     print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                     logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
@@ -447,8 +438,6 @@ def start_transfer():
 
 
 # ==================================================================
-start_time = time.time()
-
 copy_remote_db()
 getDBControllers()
 
@@ -456,11 +445,17 @@ readHallEffectThread()
 
 while True:
     # TODO: how to detect false positives?
-    # HALL_EFFECT_ON.wait()
+    HALL_EFFECT_ON.wait()
     createLogger()
+    start_time = time.time()
     try:
         if (isCameraUp() and updateDB()):
             start_transfer()
+            # if transfer is successfully finished pause running until camera is dismounted and re-mounted
+            print("## Transfer finished. Pause the script")
+            g.FLAG_FIRST_RUN = False
+            g.flag_start_transfer = False
+            HALL_EFFECT_ON.clear()
         else:
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))

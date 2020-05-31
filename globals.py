@@ -7,13 +7,13 @@ def init():
     # TODO: determine statis IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
-    # IP_ADDR_PROJECTOR = '192.168.123.193'
-    IP_ADDR_PROJECTOR = '192.168.1.193'
+    IP_ADDR_PROJECTOR = '192.168.123.193'
+    # IP_ADDR_PROJECTOR = '192.168.1.193'
 
     global IP_ADDR_CAMERA
     # IP_ADDR_CAMERA = '192.168.0.149'
-    # IP_ADDR_CAMERA = '192.168.123.100'
-    IP_ADDR_CAMERA = '192.168.1.100'
+    IP_ADDR_CAMERA = '192.168.123.100'
+    # IP_ADDR_CAMERA = '192.168.1.100'
 
     # Databases
     global DBNAME_MASTER
@@ -33,6 +33,10 @@ def init():
 
     global HALL_EFFECT
     HALL_EFFECT = None
+    global PREV_HALL_VALUE
+    PREV_HALL_VALUE = False
+    global FLAG_FIRST_RUN
+    FLAG_FIRST_RUN = True
 
     global FILENAME
     global FILENAME_ROTATED
