@@ -21,14 +21,11 @@ from classes.kmeans import get_dominant_color_1D
 import logging
 g.init()
 
-GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPIO numbering
-GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
-# HALL_EFFECT_ON = threading.Event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
-
-
 VERBOSE = False
 
-hall_effect = False
+GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPIO numbering
+GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
+HALL_EFFECT_ON = threading.Event()                  # https://blog.miguelgrinberg.com/post/how-to-make-python-wait
 
 logger = None
 rsync_status = None
@@ -49,6 +46,7 @@ color_rows_error = 0
 CAPRAPATH = g.CAPRAPATH_PROJECTOR
 DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
+CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
 
 
@@ -120,10 +118,27 @@ def isCameraUp():
     return is_up
 
 
+def updateDB():
+    proc = subprocess.Popen(["sqldiff", CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
+    line = proc.stdout.readline()
+    if line != b'':
+        # there are new incoming changes in DB
+        print("## Updated DB detected. Starting the transfer process...")
+        return True
+    else:
+        # two databases are identical
+        print("## DB is still fresh.")
+        return False
+
+
 def copy_remote_db():
     subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
-
     time.sleep(1)
+    return
+
+
+def make_backup_remote_db():
+    subprocess.Popen9(['cp', CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
     return
 
 
@@ -438,9 +453,7 @@ def start_transfer():
 
 
 # ==================================================================
-copy_remote_db()
 getDBControllers()
-
 readHallEffectThread()
 
 while True:
@@ -449,16 +462,28 @@ while True:
     createLogger()
     start_time = time.time()
     try:
-        if (isCameraUp() and updateDB()):
+        if (isCameraUp()):
+            copy_remote_db()
+
+            # if camera DB is still fresh, do not run transfer script
+            if (not updateDB()):
+                g.FLAG_FIRST_RUN = False
+                g.flag_start_transfer = False
+                HALL_EFFECT_ON.clear()
+                continue
+
             start_transfer()
             # if transfer is successfully finished pause running until camera is dismounted and re-mounted
             print("## Transfer finished. Pause the script")
             g.FLAG_FIRST_RUN = False
             g.flag_start_transfer = False
             HALL_EFFECT_ON.clear()
+            make_backup_remote_db()
         else:
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+
+
 
     # TODO: is it safe to handle the recovery step here?
     # TODO: how to halt when everything is transferred and ?

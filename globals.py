@@ -26,6 +26,8 @@ def init():
     # DBNAME_CAMERA = "capra_camera.db"
     # TODO: change this
     DBNAME_CAMERA = "capra_camera_test.db"
+    global DBNAME_CAMERA_BAK
+    DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
 
     # Hall Effect Sensor
     global HALL_EFFECT_PIN
