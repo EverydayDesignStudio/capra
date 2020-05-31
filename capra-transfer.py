@@ -61,19 +61,30 @@ class readHallEffectThread(threading.Thread):
         while True:
             if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
-                HALL_EFFECT_ON.clear()
-                if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
-                    g.flag_start_transfer = False
-                    g.PREV_HALL_VALUE = False
             else:
                 g.HALL_EFFECT = True
-                # set the flag only when the rising signal is detected
-                if (g.FLAG_FIRST_RUN):
-                    HALL_EFFECT_ON.set()
-                if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
-                    g.flag_start_transfer = True
-                    g.FLAG_FIRST_RUN = True
-                    g.PREV_HALL_VALUE = True
+
+            if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
+                if (g.HALL_BOUNCE_TIMER is None):
+                    print("signal change! setting the timer..")
+                    g.HALL_BOUNCE_TIMER = current_milli_time()
+
+                if (current_milli_time() - g.HALL_BOUNCE_TIMER > g.HALL_BOUNCE_LIMIT):
+                    print("the signal is valid!")
+                    if (g.HALL_EFFECT):
+                        print("\tFalse -> True")
+                        g.PREV_HALL_VALUE = True
+                        HALL_EFFECT_ON.set()
+                        g.flag_start_transfer = True
+                    else:
+                        print("\tTrue -> False")
+                        g.PREV_HALL_VALUE = False
+                        HALL_EFFECT_ON.clear()
+                        g.flag_start_transfer = False
+
+            elif (g.HALL_BOUNCE_TIMER is not None):
+                print("signal change is lost. resetting the timer")
+                g.HALL_BOUNCE_TIMER = None
 
 
 def createLogger():
@@ -102,6 +113,9 @@ def timenow():
     return str(datetime.datetime.now()).split('.')[0]
 
 
+def current_milli_time():
+    return int(round(time.time() * 1000))
+
 # https://stackoverflow.com/questions/28769023/get-output-of-system-ping-without-printing-to-the-console
 def isCameraUp():
     is_up = False
@@ -119,7 +133,9 @@ def isCameraUp():
 
 
 def updateDB():
-    proc = subprocess.Popen(["sqldiff", CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
+    # TODO: restore this
+    # proc = subprocess.Popen(["sqldiff", CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
+    proc = subprocess.Popen(["sqldiff", CAMERA_DB, PROJECTOR_DB], stdout=subprocess.PIPE)
     line = proc.stdout.readline()
     if line != b'':
         # there are new incoming changes in DB
@@ -138,7 +154,7 @@ def copy_remote_db():
 
 
 def make_backup_remote_db():
-    subprocess.Popen9(['cp', CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
+    subprocess.Popen(['cp', CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
     return
 
 
@@ -232,7 +248,6 @@ def dominant_color_wrapper(row, picPathCam2):
     print("[{}]\t\t ** Dominant color for pic {} is completed!".format(timenow(), row[4]))
 
 
-
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry, hall_effect
     global checkSum_transferred, checkSum_rotated, checkSum_total
@@ -248,8 +263,6 @@ def start_transfer():
 
     currHike = 1
     checkSum = 0
-
-    currHike = 28
 
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
@@ -457,7 +470,6 @@ getDBControllers()
 readHallEffectThread()
 
 while True:
-    # TODO: how to detect false positives?
     HALL_EFFECT_ON.wait()
     createLogger()
     start_time = time.time()
@@ -467,7 +479,6 @@ while True:
 
             # if camera DB is still fresh, do not run transfer script
             if (not updateDB()):
-                g.FLAG_FIRST_RUN = False
                 g.flag_start_transfer = False
                 HALL_EFFECT_ON.clear()
                 continue
@@ -475,7 +486,6 @@ while True:
             start_transfer()
             # if transfer is successfully finished pause running until camera is dismounted and re-mounted
             print("## Transfer finished. Pause the script")
-            g.FLAG_FIRST_RUN = False
             g.flag_start_transfer = False
             HALL_EFFECT_ON.clear()
             make_backup_remote_db()
@@ -483,12 +493,14 @@ while True:
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
 
-
-
     # TODO: is it safe to handle the recovery step here?
-    # TODO: how to halt when everything is transferred and ?
-    except:
+    except Exception as e:
         print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
         logger.info("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+        if hasattr(e, 'message'):
+            print(e.message)
+        else:
+            print(e)
+
         python = sys.executable
         os.execl(python, python, * sys.argv)

@@ -34,11 +34,14 @@ def init():
     HALL_EFFECT_PIN = 26
 
     global HALL_EFFECT
-    HALL_EFFECT = None
     global PREV_HALL_VALUE
+    HALL_EFFECT = None
     PREV_HALL_VALUE = False
-    global FLAG_FIRST_RUN
-    FLAG_FIRST_RUN = True
+
+    global HALL_BOUNCE_LIMIT
+    global HALL_BOUNCE_TIMER
+    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
+    HALL_BOUNCE_TIMER = None
 
     global FILENAME
     global FILENAME_ROTATED
