@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-# Sets time on the DS3231 Real Time Clock
-# This has to be done upon setup of every new camera
+# Get time from DS3231
 
 import time                     # For unix timestamps
 from datetime import datetime   # For printing readable time

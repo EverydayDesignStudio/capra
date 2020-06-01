@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-# Sets time on the DS3231 Real Time Clock
-# This has to be done upon setup of every new camera
+# Sets time *incorrectly* on the DS3231 Real Time Clock
 
 import time                     # For unix timestamps
 from datetime import datetime   # For printing readable time
@@ -14,18 +13,13 @@ def main():
     i2c = busio.I2C(3, 2)
     rtc = adafruit_ds3231.DS3231(i2c)
 
-    rtc.datetime = time.struct_time(current_struct_time())
+    rtc.datetime = time.struct_time((2017,1,20, 15,6,0, 0,20,0))
+
     print_rtc_time(rtc)
 
 
-def current_struct_time() -> Tuple:
-    timestamp = time.time()
-    result = time.localtime(timestamp)
-    return result
-
-
 def print_rtc_time(rtc):
-    print("TIME WAS SET TO: ")
+    print("DS3231 TIME WAS SET TO: ")
     timestamp = rtc.datetime
     print(timestamp)
 

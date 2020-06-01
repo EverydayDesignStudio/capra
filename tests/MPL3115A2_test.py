@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Distributed with a free-will license.
 # Use it any way you want, profit or free, provided it fits in the licenses of its associated works.
 # MPL3115A2
@@ -10,8 +12,7 @@ import time
 # Get I2C bus
 bus = smbus.SMBus(1)
 
-
-while(1):
+while True:
     # MPL3115A2 address, 0x60(96)
     # Select control register, 0x26(38)
     #		0xB9(185)	Active mode, OSR = 128, Altimeter mode
@@ -57,6 +58,6 @@ while(1):
 
     # Output data to screen
     # print "Pressure : %.2f kPa" %pressure
-    print "Altitude : %.2f m" %altitude
+    print('Altitude : %.2f m' % altitude)
     # print "Temperature in Celsius  : %.2f C" %cTemp
     # print "Temperature in Fahrenheit  : %.2f F" %fTemp
