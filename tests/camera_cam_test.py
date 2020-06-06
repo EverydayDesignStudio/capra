@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import time             # Time keeping
+import os               # File system
 import picamera         # Interfacting with PiCamera
+import time             # Time keeping
 import RPi.GPIO as gpio # Interfacing with IO 
 
 SEL_1 = 22
@@ -34,8 +35,11 @@ def camcapture(_cam, _camno):
             gpio.output(SEL_1, True)
             gpio.output(SEL_2, True)
         time.sleep(0.2)
-        dir = '/home/pi/Desktop/cam-tests/'
-        photoname = dir + 'cam' + str(_camno) + '.jpg'
+        DIR = '/home/pi/Desktop/cam-tests/'
+        if not os.path.exists(DIR):
+            print("Creating new directory on Desktop")
+            os.mkdir(DIR)
+        photoname = DIR + 'cam' + str(_camno) + '.jpg'
         print(photoname)
         _cam.capture(photoname)
         print('✅ cam', str(_camno), '- picture taken!')
