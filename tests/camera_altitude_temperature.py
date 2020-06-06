@@ -25,7 +25,7 @@ sensor = adafruit_mpl3115a2.MPL3115A2(i2c)
 # reports.  It will change day by day and even hour by hour with weather
 # changes.  Remember altitude estimation from barometric pressure is not exact!
 # Set this to a value in pascals:
-sensor.sealevel_pressure = 102250
+sensor.sealevel_pressure = 101000
 
 # Main loop to read the sensor values and print them every second.
 while True:

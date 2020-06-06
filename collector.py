@@ -62,7 +62,7 @@ gpio.setup(SEL_2, gpio.OUT)         # camera control select 2
 
 i2c = busio.I2C(board.SCL, board.SDA)  # Initialize I2C for MPL3115A2 altimeter
 altimeter = adafruit_mpl3115a2.MPL3115A2(i2c)
-altimeter.sealevel_pressure = 102250   # Set this to a value in pascals:
+altimeter.sealevel_pressure = 101000   # Set this to a value in pascals:
 
 gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
@@ -208,7 +208,7 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
 def query_altimeter(sql_ctrl: SQLController) -> float:
     # Logic taken from:
     # https://github.com/adafruit/Adafruit_CircuitPython_MPL3115A2/blob/master/examples/mpl3115a2_simpletest.py
-    altitude = altimeter.altitude
+    altitude = round(altimeter.altitude, 2)
 
     # Safety check for altitude
     # If altitude is above or below these extremes, there is an error value
