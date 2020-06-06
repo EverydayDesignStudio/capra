@@ -16,11 +16,13 @@ import picamera              # For interfacting with the PiCamera
 import RPi.GPIO as gpio      # For interfacing with the pins of the Raspberry Pi
 import smbus                 # For interfacing over I2C with the altimeter
 import time                  # For unix timestamps
+import board                 # For I2C reading for MPL3115A2 Altimeter
 import busio                 # For interfacing with DS3231 Real Time Clock
 import adafruit_ds3231       #
+import adafruit_mpl3115a2    # For altimeter
+import adafruit_mpl3115a2
 from threading import Thread # For threading
 import subprocess            # For calling shutdown
-
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
@@ -28,7 +30,7 @@ from classes.button import Button  # For threading interrupts for button presses
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
 from classes.piezo_player import PiezoPlayer  # For playing sounds
-from classes.led_player import RedBlueLED  # For controlling LED on Buttonboard
+from classes.led_player import RGB_LED  # For controlling LED on Buttonboard
 
 
 DB = '/home/pi/capra-storage/capra_camera.db'
@@ -38,10 +40,12 @@ DIRECTORY = '/home/pi/capra-storage/'
 BUTTON_PLAYPAUSE = 17   # BOARD - 11
 SEL_1 = 22              # BOARD - 15
 SEL_2 = 23              # BOARD - 16
-LED_BLUE = 26           # BOARD - 33
-LED_RED = 13            # BOARD - 37
+LED_RED = 13            # BOARD - 33
+LED_GREEN = 26          # BOARD - 37
+LED_BLUE = 14           # BOARD - 8
 PIEZO = 12              # BOARD - 32
 LDO = 6                 # BOARD - 31
+
 
 # Hike specifics
 RESOLUTION = (1280, 720)
@@ -53,11 +57,16 @@ NEW_HIKE_TIME = 9000      # 2.5 hours
 
 gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
-gpio.setup(SEL_1, gpio.OUT)         # select 1
-gpio.setup(SEL_2, gpio.OUT)         # select 2
+gpio.setup(SEL_1, gpio.OUT)         # camera control select 1
+gpio.setup(SEL_2, gpio.OUT)         # camera control select 2
+
+i2c = busio.I2C(board.SCL, board.SDA)  # Initialize I2C for MPL3115A2 altimeter
+altimeter = adafruit_mpl3115a2.MPL3115A2(i2c)
+altimeter.sealevel_pressure = 102250   # Set this to a value in pascals:
+
 gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
-red_blue_led = RedBlueLED(LED_RED, LED_BLUE)  # red and blue LED
+rgb_led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # red and blue LED
 altitude_error_list = []            # empty list for ROWIDs for altitudes taken from previous record
 
 
@@ -151,8 +160,8 @@ def switch_to_hike_logger(hike_num: int):
 def check_low_battery_turn_off():
     print('The battery status is: {n}'.format(n=gpio.input(LDO)))
     logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
-    if (gpio.input(LDO) == gpio.LOW):
-        red_blue_led.turn_blue()
+    if gpio.input(LDO) == gpio.LOW:
+        rgb_led.turn_blue()
         piezo.play_stop_recording_jingle()
         time.sleep(10)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
@@ -196,26 +205,16 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
 
 # Collect raw data from altimeter and compute altitude
 # Error check the value, then return. Return value in meters
-def query_altimeter(bus: smbus, sql_ctrl: SQLController) -> float:
+def query_altimeter(sql_ctrl: SQLController) -> float:
     # Logic taken from:
-    # https://www.instructables.com/id/Raspberry-Pi-MPL3115A2-Precision-Altimeter-Sensor--1/
-
-    # MPL3115A2 address, 0x60(96) - Select control register, 0x26(38)
-    # 0xB9(185)	Active mode, OSR = 128(0x80), Altimeter mode
-    bus.write_byte_data(0x60, 0x26, 0xB9)
-
-    # MPL3115A2 address, 0x60(96)
-    # Read data back from 0x00(00), 6 bytes
-    # status, tHeight MSB1, tHeight MSB, tHeight LSB, temp MSB, temp LSB
-    data = bus.read_i2c_block_data(0x60, 0x00, 6)
-    tHeight = ((data[1] * 65536) + (data[2] * 256) + (data[3] & 0xF0)) / 16
-    altitude = round(tHeight / 16.0, 2)
+    # https://github.com/adafruit/Adafruit_CircuitPython_MPL3115A2/blob/master/examples/mpl3115a2_simpletest.py
+    altitude = altimeter.altitude
 
     # Safety check for altitude
     # If altitude is above or below these extremes, there is an error value
     # These are chosen instead of Mt. Everest & Dead Sea due to the issue that
     # the altimeter is acting more as a relative input, the specific amount doesn't
-    # matter as much as showing higher or lower than another location
+    # matter as much as showing higher or lower than another locations
     if altitude > 600000 or altitude < -60000:
         print_and_log('Altitude ERROR: {a}'.format(a=altitude))
 
@@ -231,7 +230,7 @@ def query_altimeter(bus: smbus, sql_ctrl: SQLController) -> float:
         print_and_log('Altitude is: {a}'.format(a=altitude))
 
         # First we need to check to see if there are altitude values to go back and fix
-        while (len(altitude_error_list) > 0):
+        while len(altitude_error_list) > 0:
             # get last ROWID in the list and change the altitude
             rowid = altitude_error_list.pop()
             sql_ctrl.set_altitude_for_rowid(rowid, altitude)
@@ -251,11 +250,10 @@ def main():
     set_system_time_from_RTC()
 
     # Initialize and setup hardware
-    i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
+    #i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     # i2c = busio.I2C(3, 2)                         # Setup I2C for DS3231
-    # get_RTC_time(i2c)                             # Update system time from RTC
-    red_blue_led.turn_off()
-    red_blue_led.turn_red()
+    rgb_led.turn_off()
+    rgb_led.turn_pink()
     piezo.play_power_on_jingle()
 
     pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
@@ -265,10 +263,10 @@ def main():
     # As long as initially paused, do not create new hike yet
     print("Waiting for initial unpause...")
     logging.info("Waiting for initial unpause...")
-    while(shared.pause):
+    while shared.pause:
         # Check if battery is LOW and turn off the RPi if LOW
         check_low_battery_turn_off()
-        if(not prev_pause):
+        if not prev_pause:
             logging.info('Pause button pressed --> PAUSED!')
             prev_pause = True
         logging.info('>>>>>PAUSED!<<<<<')
@@ -276,17 +274,17 @@ def main():
         time.sleep(1)
     print("Initial unpause!")
     logging.info('Pause button pressed --> UNPAUSE!')
-    red_blue_led.turn_off()
+    rgb_led.turn_off()
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=DB)
     created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
     if created:     # new hike created; blink 6 times in purple
-        red_blue_led.blink_purple_new_hike()
+        rgb_led.blink_teal_new_hike()
         # os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
         # os.chmod(DB, 766)
-    else:           # continue last hike; blink 6 times in red
-        red_blue_led.blink_red_continue_hike()
+    else:           # continue last hike; blink 6 times in green
+        rgb_led.blink_green_continue_hike()
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
     photo_index = sql_controller.get_last_photo_index_of_hike(hike_num)
@@ -302,20 +300,20 @@ def main():
         check_low_battery_turn_off()
 
         # Pause the program if applicable
-        while(shared.pause):
-            if(not prev_pause):
+        while shared.pause:
+            if not prev_pause:
                 logging.info('Paused')
                 prev_pause = True
-                red_blue_led.turn_red()
+                rgb_led.turn_pink()
                 piezo.play_paused_jingle()
             print(">PAUSED!<")
             logging.info(">PAUSED!<")
             time.sleep(1)
         # Unpause program
-        if(prev_pause):
+        if prev_pause:
             logging.info('Unpaused')
             prev_pause = False
-            red_blue_led.turn_off()
+            rgb_led.turn_off()
             piezo.play_start_recording_jingle()
 
         # Read the time as UNIX timestamp
@@ -326,7 +324,7 @@ def main():
         photo_index += 1
 
         # Get altitude before a new entry is added to the database
-        altitude = query_altimeter(i2c_bus, sql_controller)
+        altitude = query_altimeter(sql_controller)
 
         sql_controller.create_new_picture(hike_num, photo_index, current_time)
 
@@ -343,16 +341,16 @@ def main():
         # timestamp = get_RTC_time(i2c)
 
         # Blink to notify that the timelapse is still going
-        red_blue_led.blink_blue_new_picture()
+        rgb_led.blink_green_new_picture()
 
         # Log on every 5th picture
-        if (photo_index % 5 == 0):
+        if photo_index % 5 == 0:
             # piezo.play_still_recording_jingle()
             logging.info('Cameras still alive (5 pictures taken)')
 
         # Wait until 2.5 seconds have passed since last picture
         # while(get_RTC_time(i2c) < timestamp + 2.5):
-        while(time.time() < timestamp + 2.5):
+        while time.time() < timestamp + 2.5:
             pass
 
 
@@ -362,5 +360,5 @@ if __name__ == "__main__":
     except Exception as error:
         logging.exception('===== Error ===== ')
         logging.exception(error)
-        red_blue_led.blink_red_quick()
+        rgb_led.blink_red_quick()
         piezo.play_mario()

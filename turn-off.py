@@ -7,20 +7,25 @@
 import time
 import RPi.GPIO as gpio
 import subprocess
-from classes.piezo_player import PiezoPlayer
+from classes.led_player import RGB_LED          # For controlling LED on Buttonboard
+from classes.piezo_player import PiezoPlayer    # For controlling piezo
 
-BUTTON_OFF = 25     # BOARD - 22
-LED_BTM = 26        # BOARD - 37
-PIEZO_PIN = 12      # BOARD - 32
+
+BUTTON_OFF = 25         # BOARD - 22
+LED_RED = 13            # BOARD - 33
+LED_GREEN = 26          # BOARD - 37
+LED_BLUE = 14           # BOARD - 8
+PIEZO_PIN = 12          # BOARD - 32
 
 gpio.setmode(gpio.BCM)
 gpio.setup(BUTTON_OFF, gpio.IN)
-gpio.setup(LED_BTM, gpio.OUT)
+gpio.setup(LED_BLUE, gpio.OUT)
+rgb_led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # red, green, blue LED
 player = PiezoPlayer(PIEZO_PIN)
 
 is_startup = True
 
-while(True):
+while True:
     # Only play the startup jingle on startup
     if is_startup:
         is_startup = False
@@ -29,12 +34,12 @@ while(True):
 
     timer = 0
     duration = 10
-    while(gpio.input(BUTTON_OFF)):
+    while gpio.input(BUTTON_OFF):
         print("Turning off in: ", str(duration - timer))
         timer += 1
         time.sleep(0.1)
-        if (timer > duration):
-            gpio.output(LED_BTM, True)
+        if timer > duration:
+            rgb_led.turn_white()
             player.play_stop_recording_jingle()
             time.sleep(1)
             subprocess.call(['shutdown', '-h', 'now'], shell=False)
