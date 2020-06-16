@@ -25,11 +25,11 @@ def camcapture(_cam, _camno):
     else:
         if _camno == 1:
             print("select cam 1")
-            gpio.output(SEL_1, False)
+            gpio.output(SEL_1, True)
             gpio.output(SEL_2, False)
         if _camno == 2:
             print("select cam 2")
-            gpio.output(SEL_1, True)
+            gpio.output(SEL_1, False)
             gpio.output(SEL_2, False)
         if _camno == 3:
             print("select cam 3")
