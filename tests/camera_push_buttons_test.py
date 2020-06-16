@@ -10,21 +10,23 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(OFF, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+
 def write(line):
     sys.stdout.write(line)
     sys.stdout.flush()
+
 
 write("--- Push Button Values ---")
 
 while True:
     input_play_pause = GPIO.input(PLAY_PAUSE)
-    if input_play_pause == True:
+    if input_play_pause == 1:
         status_pp = 'Button is pressed'
     else:
         status_pp = 'Button is not pressed'
 
     input_off = GPIO.input(OFF)
-    if input_off == True:
+    if input_off == 1:
         status_off = 'Button is pressed'
     else:
         status_off = 'Button is not pressed'

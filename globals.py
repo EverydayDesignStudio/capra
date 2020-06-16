@@ -75,3 +75,7 @@ def init():
 
     global COLOR_DIMY
     COLOR_DIMY = 95
+
+    # Camera
+    global SEALEVEL_PRESSURE
+    SEALEVEL_PRESSURE = 101500

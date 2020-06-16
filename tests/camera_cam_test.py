@@ -16,6 +16,7 @@ gpio.setup(SEL_2, gpio.OUT)  # select 2
 
 RESOLUTION = (1280, 720)
 
+
 # For Selecting Cam and taking + saving a picture
 def camcapture(_cam, _camno):
     print('selectcam( ', _camno, ' )')
@@ -44,6 +45,7 @@ def camcapture(_cam, _camno):
         _cam.capture(photoname)
         print('✅ cam', str(_camno), '- picture taken!')
 
+
 def main():
     # Initialize camera object
     print('initializing camera')
@@ -58,6 +60,8 @@ def main():
     camcapture(cam, 2)
     camcapture(cam, 3)
     print('\n🎉 Your cameras are connected properly!')
+    print('Check folder ~/Desktop/cam-tests to verify quality of images.')
+
 
 if __name__ == "__main__":
     main()
