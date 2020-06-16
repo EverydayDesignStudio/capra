@@ -81,35 +81,6 @@ def print_and_log(message: str):
     logging.info(message)
 
 
-# Set the system time from the DS3231 Real Time Clock
-def set_system_time_from_RTC():
-    print_and_log('Getting time from hardware clock')
-
-    # Get the hardware clock time
-    stream = os.popen('sudo hwclock -r')
-    hwclock = stream.read()
-    print_and_log("Hardware clock is:")
-    print_and_log(hwclock)
-
-    # Set date from hardware clock time
-    os.popen('sudo date --set="{hwc}"'.format(hwc=hwclock))
-
-    stream = os.popen('date')
-    date = stream.read()
-    print_and_log("Date is now:")
-    print_and_log(date)
-
-
-# Get the time from the DS3231 Real Time Clock
-def get_RTC_time(I2C):
-    rtc = adafruit_ds3231.DS3231(I2C)
-    logging.info('Time from RTC(DS3231) is: {t}'.format(t=rtc.datetime))
-    logging.info('Time from RTC(DS3231) is: {t}'.format(t=time.mktime(rtc.datetime)))
-    time.mktime(rtc.datetime)
-    logging.info('Time from Raspberry Pi clock: {t}'.format(t=time.time()))
-    # return(t)
-
-
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     logging.info('Initializing camera objects')
@@ -249,9 +220,6 @@ def main():
     # Once a hike is started the logger switches to a hike specific log
     initialize_startup_logger()
 
-    # Set the system time to the DS3231 real time clock
-    #set_system_time_from_RTC()
-
     # Initialize and setup hardware
     #i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
     # i2c = busio.I2C(3, 2)                         # Setup I2C for DS3231
@@ -320,8 +288,7 @@ def main():
             piezo.play_start_recording_jingle()
 
         # Read the time as UNIX timestamp
-        # current_time = get_RTC_time(i2c)
-        current_time = time.time()
+        timestamp = round(time.time(), 0)
 
         # New picture: increment photo index & add row to database
         photo_index += 1
@@ -329,7 +296,7 @@ def main():
         # Get altitude before a new entry is added to the database
         altitude = query_altimeter(sql_controller)
 
-        sql_controller.create_new_picture(hike_num, photo_index, current_time)
+        sql_controller.create_new_picture(hike_num, photo_index, timestamp)
 
         # Take pictures
         camcapture(pi_cam, 1, hike_num, photo_index, sql_controller)
@@ -340,9 +307,6 @@ def main():
         sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
         sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
 
-        timestamp = time.time()  # OLD: this takes the time from the RPi, not the DS3221
-        # timestamp = get_RTC_time(i2c)
-
         # Blink to notify that the timelapse is still going
         rgb_led.blink_green_new_picture()
 
@@ -351,9 +315,8 @@ def main():
             # piezo.play_still_recording_jingle()
             logging.info('Cameras still alive (5 pictures taken)')
 
-        # Wait until 2.5 seconds have passed since last picture
-        # while(get_RTC_time(i2c) < timestamp + 2.5):
-        while time.time() < timestamp + 2.5:
+        # Wait until 5 seconds have passed since starting to take the pictures
+        while time.time() < timestamp + 5.0:
             pass
 
 
