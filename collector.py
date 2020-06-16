@@ -31,6 +31,8 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
 from classes.piezo_player import PiezoPlayer  # For playing sounds
 from classes.led_player import RGB_LED  # For controlling LED on Buttonboard
+import globals as g
+g.init()
 
 
 DB = '/home/pi/capra-storage/capra_camera.db'
@@ -53,20 +55,22 @@ RESOLUTION = (1280, 720)
 # NEW_HIKE_TIME = 21600   # 6 hours
 # NEW_HIKE_TIME = 16200   # 4.5 hours
 # NEW_HIKE_TIME = 10800   # 3 hours
-NEW_HIKE_TIME = 9000      # 2.5 hours
+# NEW_HIKE_TIME = 9000    # 2.5 hours
+NEW_HIKE_TIME = 3600      # 1 hour 
 
 gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
 gpio.setup(SEL_1, gpio.OUT)         # camera control select 1
 gpio.setup(SEL_2, gpio.OUT)         # camera control select 2
 
-i2c = busio.I2C(board.SCL, board.SDA)  # Initialize I2C for MPL3115A2 altimeter
+# Initialize I2C for MPL3115A2 altimeter
+i2c = busio.I2C(board.SCL, board.SDA)
 altimeter = adafruit_mpl3115a2.MPL3115A2(i2c)
-altimeter.sealevel_pressure = 101000   # Set this to a value in pascals:
+altimeter.sealevel_pressure = g.SEALEVEL_PRESSURE
 
 gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
 piezo = PiezoPlayer(PIEZO)          # piezo buzzer
-rgb_led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # red and blue LED
+rgb_led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # RGB LED
 altitude_error_list = []            # empty list for ROWIDs for altitudes taken from previous record
 
 
@@ -204,27 +208,26 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
 
 
 # Collect raw data from altimeter and compute altitude
-# Error check the value, then return. Return value in meters
+# Error check the value, then return value in **meters**
 def query_altimeter(sql_ctrl: SQLController) -> float:
     # Logic taken from:
     # https://github.com/adafruit/Adafruit_CircuitPython_MPL3115A2/blob/master/examples/mpl3115a2_simpletest.py
     altitude = round(altimeter.altitude, 2)
 
     # Safety check for altitude
-    # If altitude is above or below these extremes, there is an error value
-    # These are chosen instead of Mt. Everest & Dead Sea due to the issue that
-    # the altimeter is acting more as a relative input, the specific amount doesn't
-    # matter as much as showing higher or lower than another locations
-    if altitude > 600000 or altitude < -60000:
+    # If altitude is above or below these extremes, there is a value error
+    # These are rounded ~values for Mt. Everest & Dead Sea
+    if altitude > 10000 or altitude < -1000:
         print_and_log('Altitude ERROR: {a}'.format(a=altitude))
 
         # Change the value of altitude prior to saving it
         altitude = sql_ctrl.get_last_altitude()
 
         # Save the rowid, so we can go back and change to a future altitude,
-        # ensuring the altitude was from this hike (i.e. altimeter fails on 1st picture)
-        last_error_rowid = sql_ctrl.get_last_rowid()
-        altitude_error_list.append(last_error_rowid)
+        # ensuring the replacement altitude is from this hike (i.e. altimeter fails on 1st picture)
+        last_rowid = sql_ctrl.get_last_rowid()
+        # This entry in the database will be the next index, hence the +1
+        altitude_error_list.append(last_rowid + 1)
     else:
         # We have received a valid altitude
         print_and_log('Altitude is: {a}'.format(a=altitude))
@@ -242,12 +245,12 @@ def query_altimeter(sql_ctrl: SQLController) -> float:
 # Main Loop
 # ------------------------------------------------------------------------------
 def main():
-    # Initialize logger that is used while startup up device
+    # Initialize logger that is used while device starts up
     # Once a hike is started the logger switches to a hike specific log
     initialize_startup_logger()
 
     # Set the system time to the DS3231 real time clock
-    set_system_time_from_RTC()
+    #set_system_time_from_RTC()
 
     # Initialize and setup hardware
     #i2c_bus = smbus.SMBus(1)                        # Setup I2C bus

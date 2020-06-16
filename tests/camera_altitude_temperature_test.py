@@ -26,7 +26,6 @@ sensor = adafruit_mpl3115a2.MPL3115A2(i2c)
 # changes.  Remember altitude estimation from barometric pressure is not exact!
 # Set this to a value in pascals:
 sensor.sealevel_pressure = g.SEALEVEL_PRESSURE
-# sensor.sealevel_pressure = 101500
 
 
 def write(line):

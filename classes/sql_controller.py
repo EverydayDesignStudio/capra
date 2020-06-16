@@ -40,6 +40,8 @@ class SQLController:
 
         return picture
 
+    # Helper method for returning expected number
+    # If nothing is returned from db, return 0
     def _get_num_from_statement(self, statement: str):
         cursor = self.connection.cursor()
         cursor.execute(statement)
