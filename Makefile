@@ -2,14 +2,16 @@ define INIT_MESSAGE
 Run one of the following options:
 
 ----------------------------Camera----------------------------
-[make camera_setup1]		installs dependencies, adds RTC /boot/config.txt, removes fake-hwclock
-[make camera_setup2] 		sets RTC, creates db, and sets up services
+[make camera_setup1]		install dependencies, add RTC and UART to /boot/config.txt, remove fake-hwclock
+[make camera_setup2] 		set RTC, create db, and set up services
 
-[make camera_install]		installs dependencies from pip3 and apt-get
-[make camera_clock1_use_rtc]	*only run once*: add line to /boot/config.txt for RTC, set RTC from NTP
-[make camera_clock2_set_rtc]	sets RTC to correct time from NTP
-[make camera_db]		creates a new database along with file storage
-[make camera_services]		loads services to be run on startup
+Individual Make commands, if manually needed
+[make camera_install]		install dependencies from pip3 and apt-get
+[make camera_clock1_use_rtc]	*only run once* : add RTC to /boot/config.txt, set RTC from NTP
+[make camera_clock2_set_rtc]	set RTC to correct time from NTP
+[make camera_startup_pin]	*only run once* : enable UART in /boot/config.txt
+[make camera_db]		create a new database along with file storage
+[make camera_services]		load services to be run on startup
 
 ----------------------------Projector----------------------------
 [make projector]		installs dependencies and creates db
@@ -63,6 +65,9 @@ camera_clock1_use_rtc:
 
 camera_clock2_set_rtc:
 	./setup/set_rtc.py
+
+camera_startup_pin:
+	sudo ./setup/enable_startup_pin.py
 
 camera_db:
 	./setup/create_db_camera.py
