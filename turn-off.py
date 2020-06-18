@@ -40,6 +40,6 @@ while True:
         time.sleep(0.1)
         if timer > duration:
             rgb_led.turn_white()
-            player.play_stop_recording_jingle()
+            player.play_power_off_jingle()
             time.sleep(1)
             subprocess.call(['shutdown', '-h', 'now'], shell=False)

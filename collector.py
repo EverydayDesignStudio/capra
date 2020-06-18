@@ -23,6 +23,7 @@ import adafruit_mpl3115a2    # For altimeter
 import adafruit_mpl3115a2
 from threading import Thread # For threading
 import subprocess            # For calling shutdown
+import psutil                # For checking free space of system
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
@@ -56,7 +57,7 @@ RESOLUTION = (1280, 720)
 # NEW_HIKE_TIME = 16200   # 4.5 hours
 # NEW_HIKE_TIME = 10800   # 3 hours
 # NEW_HIKE_TIME = 9000    # 2.5 hours
-NEW_HIKE_TIME = 3600      # 1 hour 
+NEW_HIKE_TIME = 3600      # 1 hour
 
 gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
@@ -134,11 +135,25 @@ def switch_to_hike_logger(hike_num: int):
 # Check if camera battery is low and turn off camera if it is
 def check_low_battery_turn_off():
     print('The battery status is: {n}'.format(n=gpio.input(LDO)))
-    logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
     if gpio.input(LDO) == gpio.LOW:
-        rgb_led.turn_blue()
-        piezo.play_stop_recording_jingle()
-        time.sleep(10)
+        logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
+        rgb_led.turn_red()
+        piezo.play_low_battery_storage_jingle()
+        time.sleep(5)
+        subprocess.call(['shutdown', '-h', 'now'], shell=False)
+
+
+# Check if camera storage is low and turn off if it is
+def check_low_storage_turn_off():
+    path = '/home/pi/'
+    bytes_available = psutil.disk_usage(path).free
+    megs_available = round(bytes_available / 1024 / 1024, 0)
+    print('{m} Megabytes Available'.format(m=megs_available))
+    if megs_available < 512:
+        logging.info('Megabytes Available: {m}'.format(m=megs_available))
+        rgb_led.turn_orange()
+        piezo.play_low_battery_storage_jingle()
+        time.sleep(5)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
@@ -235,8 +250,9 @@ def main():
     print("Waiting for initial unpause...")
     logging.info("Waiting for initial unpause...")
     while shared.pause:
-        # Check if battery is LOW and turn off the RPi if LOW
+        # Check if battery or storage is LOW and turn off the RPi if LOW
         check_low_battery_turn_off()
+        check_low_storage_turn_off()
         if not prev_pause:
             logging.info('Pause button pressed --> PAUSED!')
             prev_pause = True
@@ -267,8 +283,9 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
-        # Check if battery is LOW and turn off the RPi if LOW
+        # Check if battery or storage is LOW and turn off the RPi if LOW
         check_low_battery_turn_off()
+        check_low_storage_turn_off()
 
         # Pause the program if applicable
         while shared.pause:
@@ -312,7 +329,6 @@ def main():
 
         # Log on every 5th picture
         if photo_index % 5 == 0:
-            # piezo.play_still_recording_jingle()
             logging.info('Cameras still alive (5 pictures taken)')
 
         # Wait until 5 seconds have passed since starting to take the pictures

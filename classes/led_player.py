@@ -43,6 +43,10 @@ class RGB_LED:
         GPIO.output(self.LED_GREEN, True)
         GPIO.output(self.LED_BLUE, True)
 
+    def turn_orange(self):
+        GPIO.output(self.LED_RED, True)
+        GPIO.output(self.LED_GREEN, True)
+
     def turn_white(self):
         GPIO.output(self.LED_RED, True)
         GPIO.output(self.LED_GREEN, True)
@@ -61,7 +65,7 @@ class RGB_LED:
         self.blink(self.LED_BLUE, 4, 0.3)
 
     def blink_red_quick(self):
-        self.blink(self.LED_RED, 10, 0.1)
+        self.blink(self.LED_RED, 15, 0.1)
 
     def blink_teal_new_hike(self):
         for i in range(6):

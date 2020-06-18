@@ -19,6 +19,7 @@ def sleep_off():
 
 
 led.turn_off()
+
 print('Turn red')
 led.turn_red()
 sleep_off()
@@ -33,6 +34,9 @@ led.turn_pink()
 sleep_off()
 print('Turn teal')
 led.turn_teal()
+sleep_off()
+print('Turn orange')
+led.turn_orange()
 sleep_off()
 print('Turn white')
 led.turn_white()
