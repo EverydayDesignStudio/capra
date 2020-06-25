@@ -3,14 +3,13 @@
 import RPi.GPIO as GPIO
 import time
 from classes.led_player import RGB_LED
+import globals as g
+g.init()
 
-LED_RED = 13                # BOARD - 33
-LED_GREEN = 26              # BOARD - 37
-LED_BLUE = 14               # BOARD - 8
 GPIO.setwarnings(False)     # Turn off GPIO warnings
 GPIO.setmode(GPIO.BCM)      # Broadcom pin numbers
 
-led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # RGB LED
+led = RGB_LED(g.LED_RED, g.LED_GREEN, g.LED_BLUE)  # RGB LED
 
 
 def sleep_off():

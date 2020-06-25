@@ -3,11 +3,12 @@
 import RPi.GPIO as GPIO
 import time
 from classes.piezo_player import PiezoPlayer
+import globals as g
+g.init()
 
-PIEZO = 12                  # BOARD - 32
-GPIO.setwarnings(False)     # Turn off GPIO warnings
-GPIO.setmode(GPIO.BCM)      # Broadcom pin numbers
-piezo = PiezoPlayer(PIEZO)  # piezo buzzer
+GPIO.setwarnings(False)         # Turn off GPIO warnings
+GPIO.setmode(GPIO.BCM)          # Broadcom pin numbers
+piezo = PiezoPlayer(g.PIEZO)    # piezo buzzer
 
 piezo.play_power_on_jingle()
 time.sleep(1)

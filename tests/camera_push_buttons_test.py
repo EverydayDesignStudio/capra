@@ -3,12 +3,12 @@
 import RPi.GPIO as GPIO
 import time
 import sys
+import globals as g
+g.init()
 
-PLAY_PAUSE = 17
-OFF = 25
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(OFF, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(g.BUTTON_PLAYPAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(g.BUTTON_OFF, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 def write(line):
@@ -19,13 +19,13 @@ def write(line):
 write("--- Push Button Values ---")
 
 while True:
-    input_play_pause = GPIO.input(PLAY_PAUSE)
+    input_play_pause = GPIO.input(g.BUTTON_PLAYPAUSE)
     if input_play_pause == 1:
         status_pp = 'Button is pressed'
     else:
         status_pp = 'Button is not pressed'
 
-    input_off = GPIO.input(OFF)
+    input_off = GPIO.input(g.BUTTON_OFF)
     if input_off == 1:
         status_off = 'Button is pressed'
     else:

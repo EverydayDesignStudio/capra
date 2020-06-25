@@ -3,18 +3,15 @@
 import os               # File system
 import picamera         # Interfacting with PiCamera
 import time             # Time keeping
-import RPi.GPIO as gpio # Interfacing with IO 
-
-SEL_1 = 22
-SEL_2 = 23
+import RPi.GPIO as gpio # Interfacing with IO
+import globals as g
+g.init()
 
 # Initialize GPIO pins
 gpio.setmode(gpio.BCM)
 gpio.setwarnings(False)
-gpio.setup(SEL_1, gpio.OUT)  # select 1
-gpio.setup(SEL_2, gpio.OUT)  # select 2
-
-RESOLUTION = (1280, 720)
+gpio.setup(g.SEL_1, gpio.OUT)  # select 1
+gpio.setup(g.SEL_2, gpio.OUT)  # select 2
 
 
 # For Selecting Cam and taking + saving a picture
@@ -25,16 +22,16 @@ def camcapture(_cam, _camno):
     else:
         if _camno == 1:
             print("select cam 1")
-            gpio.output(SEL_1, True)
-            gpio.output(SEL_2, False)
+            gpio.output(g.SEL_1, True)
+            gpio.output(g.SEL_2, False)
         if _camno == 2:
             print("select cam 2")
-            gpio.output(SEL_1, False)
-            gpio.output(SEL_2, False)
+            gpio.output(g.SEL_1, False)
+            gpio.output(g.SEL_2, False)
         if _camno == 3:
             print("select cam 3")
-            gpio.output(SEL_1, True)
-            gpio.output(SEL_2, True)
+            gpio.output(g.SEL_1, True)
+            gpio.output(g.SEL_2, True)
         time.sleep(0.2)
         DIR = '/home/pi/Desktop/cam-tests/'
         if not os.path.exists(DIR):
@@ -49,11 +46,11 @@ def camcapture(_cam, _camno):
 def main():
     # Initialize camera object
     print('initializing camera')
-    gpio.output(SEL_1, False)
-    gpio.output(SEL_2, False)
+    gpio.output(g.SEL_1, False)
+    gpio.output(g.SEL_2, False)
     time.sleep(0.1)
     cam = picamera.PiCamera()
-    cam.resolution = RESOLUTION
+    cam.resolution = g.CAM_RESOLUTION
 
     # Take three pictures
     camcapture(cam, 1)

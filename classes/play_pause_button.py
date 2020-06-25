@@ -4,11 +4,9 @@ import RPi.GPIO as gpio
 
 
 shared.init()  # Initialize shared variables
-# BUTTON_PLAYPAUSE = 17  # BOARD - 11
-# gpio.setmode(gpio.BCM)
 
 
-class Button:
+class PlayPauseButton:
     def __init__(self, BUTTON):
         self._running = True
         self.BUTTON = BUTTON

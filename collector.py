@@ -20,59 +20,36 @@ import board                 # For I2C reading for MPL3115A2 Altimeter
 import busio                 # For interfacing with DS3231 Real Time Clock
 import adafruit_ds3231       #
 import adafruit_mpl3115a2    # For altimeter
-import adafruit_mpl3115a2
 from threading import Thread # For threading
 import subprocess            # For calling shutdown
 import psutil                # For checking free space of system
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
-from classes.button import Button  # For threading interrupts for button presses
+from classes.play_pause_button import PlayPauseButton  # For threading interrupts for button presses
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
 from classes.piezo_player import PiezoPlayer  # For playing sounds
 from classes.led_player import RGB_LED  # For controlling LED on Buttonboard
+
+# PIN and Settings values are stored here
 import globals as g
 g.init()
 
-
-DB = '/home/pi/capra-storage/capra_camera.db'
-DIRECTORY = '/home/pi/capra-storage/'
-
-# Pin configurations
-BUTTON_PLAYPAUSE = 17   # BOARD - 11
-SEL_1 = 22              # BOARD - 15
-SEL_2 = 23              # BOARD - 16
-LED_RED = 13            # BOARD - 33
-LED_GREEN = 26          # BOARD - 37
-LED_BLUE = 14           # BOARD - 8
-PIEZO = 12              # BOARD - 32
-LDO = 6                 # BOARD - 31
-
-
-# Hike specifics
-RESOLUTION = (1280, 720)
-# NEW_HIKE_TIME = 43200   # 12 hours
-# NEW_HIKE_TIME = 21600   # 6 hours
-# NEW_HIKE_TIME = 16200   # 4.5 hours
-# NEW_HIKE_TIME = 10800   # 3 hours
-# NEW_HIKE_TIME = 9000    # 2.5 hours
-NEW_HIKE_TIME = 3600      # 1 hour
-
+# Setup GPIO PINS
 gpio.setwarnings(False)             # Turn off GPIO warnings
 gpio.setmode(gpio.BCM)              # Broadcom pin numbers
-gpio.setup(SEL_1, gpio.OUT)         # camera control select 1
-gpio.setup(SEL_2, gpio.OUT)         # camera control select 2
+gpio.setup(g.SEL_1, gpio.OUT)       # camera control select 1
+gpio.setup(g.SEL_2, gpio.OUT)       # camera control select 2
 
-# Initialize I2C for MPL3115A2 altimeter
-i2c = busio.I2C(board.SCL, board.SDA)
+i2c = busio.I2C(board.SCL, board.SDA)  # Initialize I2C for MPL3115A2 altimeter
 altimeter = adafruit_mpl3115a2.MPL3115A2(i2c)
 altimeter.sealevel_pressure = g.SEALEVEL_PRESSURE
 
-gpio.setup(LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
-piezo = PiezoPlayer(PIEZO)          # piezo buzzer
-rgb_led = RGB_LED(LED_RED, LED_GREEN, LED_BLUE)  # RGB LED
-altitude_error_list = []            # empty list for ROWIDs for altitudes taken from previous record
+gpio.setup(g.LDO, gpio.IN, pull_up_down=gpio.PUD_DOWN)  # low dropout (low power detection) from PowerBoost
+piezo = PiezoPlayer(g.PIEZO)        # piezo buzzer
+rgb_led = RGB_LED(g.LED_RED, g.LED_GREEN, g.LED_BLUE)  # RGB LED
+altitude_error_list = []            # empty list for ROWIDs that have junk altitude values
 
 
 # Helper functions
@@ -85,8 +62,8 @@ def print_and_log(message: str):
 # Initialize and return picamera object
 def initialize_picamera(resolution: tuple) -> picamera:
     logging.info('Initializing camera objects')
-    gpio.output(SEL_1, False)
-    gpio.output(SEL_2, False)
+    gpio.output(g.SEL_1, False)
+    gpio.output(g.SEL_2, False)
     time.sleep(0.2)
     logging.info('Select pins OK')
     pi_cam = picamera.PiCamera()
@@ -102,7 +79,7 @@ def initialize_picamera(resolution: tuple) -> picamera:
 
 # Start threading interrupt for Play/pause button
 def initialize_background_play_pause():
-    PP_INTERRUPT = Button(BUTTON_PLAYPAUSE)  # Create class
+    PP_INTERRUPT = PlayPauseButton(g.BUTTON_PLAYPAUSE)  # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
     PP_THREAD.start()  # Start Thread
 
@@ -134,9 +111,10 @@ def switch_to_hike_logger(hike_num: int):
 
 # Check if camera battery is low and turn off camera if it is
 def check_low_battery_turn_off():
-    print('The battery status is: {n}'.format(n=gpio.input(LDO)))
-    if gpio.input(LDO) == gpio.LOW:
-        logging.info('The battery status is: {n}'.format(n=gpio.input(LDO)))
+    status = gpio.input(g.LDO)
+    print('The battery status is: {s}'.format(s=status))
+    if status == gpio.LOW:
+        logging.info('The battery status is: {s}'.format(s=status))
         rgb_led.turn_red()
         piezo.play_low_battery_storage_jingle()
         time.sleep(5)
@@ -160,37 +138,37 @@ def check_low_storage_turn_off():
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
     print('select cam{n}'.format(n=cam_num))
-    logging.info('select cam{n}'.format(n=cam_num))
+    # logging.info('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
         raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
     else:
         if cam_num == 1:
-            gpio.output(SEL_1, True)
-            gpio.output(SEL_2, False)
+            gpio.output(g.SEL_1, True)
+            gpio.output(g.SEL_2, False)
             print("cam 1 selected")
-            logging.info('cam 1 selected')
+            # logging.info('cam 1 selected')
         if cam_num == 2:
-            gpio.output(SEL_1, False)
-            gpio.output(SEL_2, False)
+            gpio.output(g.SEL_1, False)
+            gpio.output(g.SEL_2, False)
             print("cam 2 selected")
-            logging.info('cam 2 selected')
+            # logging.info('cam 2 selected')
         if cam_num == 3:
-            gpio.output(SEL_1, True)
-            gpio.output(SEL_2, True)
+            gpio.output(g.SEL_1, True)
+            gpio.output(g.SEL_2, True)
             print("cam 3 selected")
-            logging.info('cam 3 selected')
+            # logging.info('cam 3 selected')
         time.sleep(0.2)  # it takes some time for the pin selection
 
         # Build image file path
-        image_path = '{d}hike{h}/{p}_cam{c}.jpg'.format(d=DIRECTORY, h=hike_num, p=photo_index, c=cam_num)
+        image_path = '{d}hike{h}/{p}_cam{c}.jpg'.format(d=g.DIRECTORY, h=hike_num, p=photo_index, c=cam_num)
         print(image_path)
-        logging.info(image_path)
+        # logging.info(image_path)
 
         # Take the picture
         pi_cam.capture(image_path)
         sql_controller.set_image_path(cam_num, image_path, hike_num, photo_index)
         print('cam {c} -- picture taken!'.format(c=cam_num))
-        logging.info('cam {c} -- picture taken!'.format(c=cam_num))
+        # logging.info('cam {c} -- picture taken!'.format(c=cam_num))
 
 
 # Collect raw data from altimeter and compute altitude
@@ -236,41 +214,36 @@ def main():
     initialize_startup_logger()
 
     # Initialize and setup hardware
-    #i2c_bus = smbus.SMBus(1)                        # Setup I2C bus
-    # i2c = busio.I2C(3, 2)                         # Setup I2C for DS3231
     rgb_led.turn_off()
     rgb_led.turn_pink()
     piezo.play_power_on_jingle()
 
-    pi_cam = initialize_picamera(RESOLUTION)  # Setup the camera
-    initialize_background_play_pause()              # Setup play/pause button
+    pi_cam = initialize_picamera(g.CAM_RESOLUTION)  # Setup the camera
+    initialize_background_play_pause()          # Setup play/pause button
     prev_pause = True
 
+    print('--------------------- POWERED ON ---------------------')
+    logging.info('--------------------- POWERED ON ---------------------')
     # As long as initially paused, do not create new hike yet
-    print("Waiting for initial unpause...")
-    logging.info("Waiting for initial unpause...")
     while shared.pause:
         # Check if battery or storage is LOW and turn off the RPi if LOW
         check_low_battery_turn_off()
         check_low_storage_turn_off()
-        if not prev_pause:
-            logging.info('Pause button pressed --> PAUSED!')
-            prev_pause = True
-        logging.info('>>>>>PAUSED!<<<<<')
-        print('>>>>>PAUSED!<<<<<')
+
+        if round(time.time(), 0) % 60 == 0:
+            logging.info('>>>>>Another minute initially PAUSED!')
+            print('>>>>>Another minute initially PAUSED!')
         time.sleep(1)
-    print("Initial unpause!")
-    logging.info('Pause button pressed --> UNPAUSE!')
+    print('>>>>>Pause button pressed --> FIRST UNPAUSE!')
+    logging.info('>>>>>Pause button pressed --> FIRST UNPAUSE!')
     rgb_led.turn_off()
 
     # Create SQL controller and update hike information
-    sql_controller = SQLController(database=DB)
-    created = sql_controller.will_create_new_hike(NEW_HIKE_TIME, DIRECTORY)
-    if created:     # new hike created; blink 6 times in purple
+    sql_controller = SQLController(database=g.DB)
+    created = sql_controller.will_create_new_hike(g.NEW_HIKE_TIME, g.DIRECTORY)
+    if created:     # new hike created: blink teal
         rgb_led.blink_teal_new_hike()
-        # os.chmod(DIRECTORY, 766) # set permissions to be read and written to when run manually
-        # os.chmod(DB, 766)
-    else:           # continue last hike; blink 6 times in green
+    else:           # continue last hike: blink green
         rgb_led.blink_green_continue_hike()
     time.sleep(1)
     hike_num = sql_controller.get_last_hike_id()
@@ -290,16 +263,14 @@ def main():
         # Pause the program if applicable
         while shared.pause:
             if not prev_pause:
-                logging.info('Paused')
+                logging.info('>PAUSED!<')
                 prev_pause = True
                 rgb_led.turn_pink()
                 piezo.play_paused_jingle()
-            print(">PAUSED!<")
-            logging.info(">PAUSED!<")
             time.sleep(1)
         # Unpause program
         if prev_pause:
-            logging.info('Unpaused')
+            logging.info('>UNPAUSED!<')
             prev_pause = False
             rgb_led.turn_off()
             piezo.play_start_recording_jingle()
