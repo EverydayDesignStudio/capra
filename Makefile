@@ -7,7 +7,7 @@ Run one of the following options:
 
 Individual Make commands, if manually needed
 [make camera_install]		install dependencies from pip3 and apt-get
-[make camera_clock1_use_rtc]	*only run once* : add RTC to /boot/config.txt, set RTC from NTP
+[make camera_clock1_use_rtc]	*only run once* : add RTC to /boot/config.txt, remove fake-hwclock
 [make camera_clock2_set_rtc]	set RTC to correct time from NTP
 [make camera_startup_pin]	*only run once* : enable UART in /boot/config.txt
 [make camera_db]		create a new database along with file storage
@@ -43,25 +43,20 @@ sudo pip3 install -r setup/requirements_collector.txt
 sudo ./setup/install_apps_collector.sh
 endef
 
-define CAMERA_DB_SERVICES
-./setup/create_db_camera.py
-./services/init-camera-services
-endef
-
 camera_setup1:
 	$(call CAMERA_INSTALL)
 	sudo ./setup/use_rtc.py
 	./setup/set_rtc.py
 
 camera_setup2:
-	$(call CAMERA_DB_SERVICES)
+	./setup/create_db_camera.py
+	./services/init-camera-services
 
 camera_install:
 	$(call CAMERA_INSTALL)
 
 camera_clock1_use_rtc:
 	sudo ./setup/use_rtc.py
-	./setup/set_rtc.py
 
 camera_clock2_set_rtc:
 	./setup/set_rtc.py
