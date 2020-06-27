@@ -13,10 +13,11 @@ import globals as g
 g.init()
 
 gpio.setmode(gpio.BCM)
+gpio.setwarnings(False)
 gpio.setup(g.BUTTON_OFF, gpio.IN)
 gpio.setup(g.LED_BLUE, gpio.OUT)
 rgb_led = RGB_LED(g.LED_RED, g.LED_GREEN, g.LED_BLUE)  # red, green, blue LED
-player = PiezoPlayer(g.PIEZO_PIN)
+player = PiezoPlayer(g.PIEZO)
 
 while True:
     print("Waiting for turnoff...")
