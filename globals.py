@@ -109,11 +109,11 @@ def init():
     # Camera Settings
     global SEALEVEL_PRESSURE
     SEALEVEL_PRESSURE = 101500
-
     global CAM_RESOLUTION
     CAM_RESOLUTION = (1280, 720)
-
     global NEW_HIKE_TIME
     # NEW_HIKE_TIME = 10800   # 3 hours
     # NEW_HIKE_TIME = 9000    # 2.5 hours
     NEW_HIKE_TIME = 3600      # 1 hour
+    global CAM_INTERVAL
+    CAM_INTERVAL = 5        # 5 seconds

@@ -26,7 +26,7 @@ import psutil                # For checking free space of system
 
 # Import custom modules
 import shared  # For shared variables between main code and button interrupts
-from classes.play_pause_button import PlayPauseButton  # For threading interrupts for button presses
+from classes.camera_buttons import PlayPauseButton, TurnOffButton  # For threading interrupts for button presses
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController  # For interacting with the DB
 from classes.piezo_player import PiezoPlayer  # For playing sounds
@@ -77,9 +77,15 @@ def initialize_picamera(resolution: tuple) -> picamera:
     return pi_cam
 
 
-# Start threading interrupt for Play/pause button
+# Start threading interrupts for Play/Pause button & Turn Off button
 def initialize_background_play_pause():
     PP_INTERRUPT = PlayPauseButton(g.BUTTON_PLAYPAUSE)  # Create class
+    PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
+    PP_THREAD.start()  # Start Thread
+
+
+def initialize_background_turn_off():
+    PP_INTERRUPT = TurnOffButton(g.BUTTON_OFF)  # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
     PP_THREAD.start()  # Start Thread
 
@@ -109,14 +115,27 @@ def switch_to_hike_logger(hike_num: int):
     log.addHandler(fileh)           # set the new handler
 
 
+# Check if camera turn off button has been pressed
+def check_button_turn_off():
+    if shared.turn_off:
+        rgb_led.turn_white()
+        piezo.play_power_off_jingle()
+        logging.info('--------------------- POWERED OFF ---------------------')
+        logging.info('-------------------- Button Pressed -------------------\n')
+        time.sleep(2)
+        subprocess.call(['shutdown', '-h', 'now'], shell=False)
+
+
 # Check if camera battery is low and turn off camera if it is
 def check_low_battery_turn_off():
     status = gpio.input(g.LDO)
     print('The battery status is: {s}'.format(s=status))
     if status == gpio.LOW:
-        logging.info('The battery status is: {s}'.format(s=status))
         rgb_led.turn_red()
         piezo.play_low_battery_storage_jingle()
+        logging.info('--------------------- POWERED OFF ---------------------')
+        logging.info('The battery status is: {s}'.format(s=status))
+        logging.info('--------------------- Low Battery -------------------\n')
         time.sleep(5)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
@@ -128,9 +147,11 @@ def check_low_storage_turn_off():
     megs_available = round(bytes_available / 1024 / 1024, 0)
     print('{m} Megabytes Available'.format(m=megs_available))
     if megs_available < 512:
-        logging.info('Megabytes Available: {m}'.format(m=megs_available))
         rgb_led.turn_orange()
         piezo.play_low_battery_storage_jingle()
+        logging.info('--------------------- POWERED OFF ---------------------')
+        logging.info('Megabytes Available: {m}'.format(m=megs_available))
+        logging.info('--------------------- Low Storage -------------------\n')
         time.sleep(5)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
@@ -226,7 +247,8 @@ def main():
     logging.info('--------------------- POWERED ON ---------------------')
     # As long as initially paused, do not create new hike yet
     while shared.pause:
-        # Check if battery or storage is LOW and turn off the RPi if LOW
+        # Check for turn off button, LOW battery, or LOW storage
+        check_button_turn_off()
         check_low_battery_turn_off()
         check_low_storage_turn_off()
 
@@ -256,7 +278,8 @@ def main():
     # Start the time lapse
     # --------------------------------------------------------------------------
     while(True):
-        # Check if battery or storage is LOW and turn off the RPi if LOW
+        # Check for turn off button, LOW battery, or LOW storage
+        check_button_turn_off()
         check_low_battery_turn_off()
         check_low_storage_turn_off()
 
@@ -303,7 +326,7 @@ def main():
             logging.info('Cameras still alive (5 pictures taken)')
 
         # Wait until 5 seconds have passed since starting to take the pictures
-        while time.time() < timestamp + 5.0:
+        while time.time() < timestamp + g.CAM_INTERVAL:
             pass
 
 

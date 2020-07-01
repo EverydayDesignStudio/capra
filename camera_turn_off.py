@@ -24,13 +24,13 @@ while True:
     gpio.wait_for_edge(g.BUTTON_OFF, gpio.RISING)
 
     timer = 0
-    duration = 10
+    duration = 40
     while gpio.input(g.BUTTON_OFF):
         print("Turning off in: ", str(duration - timer))
         timer += 1
-        time.sleep(0.2)
+        time.sleep(0.3)
         if timer > duration:
-            rgb_led.turn_white()
+            rgb_led.turn_blue()
             player.play_power_off_jingle()
             time.sleep(1)
             subprocess.call(['shutdown', '-h', 'now'], shell=False)
