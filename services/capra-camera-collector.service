@@ -4,8 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/usr/bin/python3 /home/pi/capra/collector.py
+ExecStart=/usr/bin/python3 /home/pi/capra/camera_collector.py
 
 [Install]
 WantedBy=multi-user.target
-

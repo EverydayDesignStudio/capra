@@ -364,10 +364,9 @@ class SQLController:
             print('Continuing last hike:')
             return False
 
-    def create_new_picture(self, hike_id: int, photo_index: int, photo_time: float):
+    def create_new_picture(self, hike_id: int, photo_index: int, time: float):
         cursor = self.connection.cursor()
-        ts = photo_time
-        cursor.execute(self.statements.insert_new_picture(ts, hike_id, photo_index))
+        cursor.execute(self.statements.insert_new_picture(time, hike_id, photo_index))
         self.connection.commit()
 
     def _set_hike_path(self, hike_id: int, hike_path: str):
@@ -380,21 +379,19 @@ class SQLController:
         cursor.execute(self.statements.update_picture_image_path(cam_num, path, hike_id, photo_index))
         self.connection.commit()
 
-    def set_picture_time_altitude(self, altitude: float, hike_id: int, photo_index: int):
+    def set_picture_altitude(self, altitude: float, hike_id: int, photo_index: int):
         cursor = self.connection.cursor()
-        ts = time.time()
-        cursor.execute(self.statements.update_picture_time_altitude(ts, altitude, hike_id, photo_index))
+        cursor.execute(self.statements.update_picture_altitude(altitude, hike_id, photo_index))
         self.connection.commit()
 
-    def set_hike_endtime_picture_count(self, count: int, hike_id: int):
+    def set_hike_endtime_picture_count(self, time: float, count: int, hike_id: int):
         cursor = self.connection.cursor()
-        ts = time.time()
-        cursor.execute(self.statements.update_hike_endtime_picture_count(ts, count, hike_id))
+        cursor.execute(self.statements.update_hike_endtime_picture_count(time, count, hike_id))
         self.connection.commit()
 
     def set_altitude_for_rowid(self, alt: float, id: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_picture_altitude(alt, id))
+        cursor.execute(self.statements.update_picture_altitude_for_id(alt, id))
         self.connection.commit()
 
     # Transfer

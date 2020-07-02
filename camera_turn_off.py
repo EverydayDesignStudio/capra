@@ -9,6 +9,7 @@ import RPi.GPIO as gpio
 import subprocess
 from classes.led_player import RGB_LED          # For controlling LED on Buttonboard
 from classes.piezo_player import PiezoPlayer    # For controlling piezo
+
 import globals as g
 g.init()
 
@@ -28,8 +29,9 @@ while True:
     while gpio.input(g.BUTTON_OFF):
         print("Turning off in: ", str(duration - timer))
         timer += 1
-        time.sleep(0.3)
+        time.sleep(0.2)
         if timer > duration:
+            rgb_led.turn_off()
             rgb_led.turn_blue()
             player.play_power_off_jingle()
             time.sleep(1)

@@ -1,8 +1,9 @@
 import time
-import shared
 import RPi.GPIO as GPIO
-from classes.led_player import RGB_LED  # For controlling LED on Buttonboard
+from classes.piezo_player import PiezoPlayer    # For controlling piezo
+
 import globals as g
+import shared
 g.init()        # Initialize global constants
 shared.init()   # Initialize shared variables
 
@@ -26,12 +27,14 @@ class PlayPauseButton:
 
 
 class TurnOffButton:
-    def __init__(self, BUTTON):
+    def __init__(self, BUTTON, piezo):
         self._running = True
         self.BUTTON = BUTTON
+        print('following line is the button value:')
+        print(BUTTON)
         GPIO.setwarnings(False)
         GPIO.setup(self.BUTTON, GPIO.IN)
-        self.rgb_led = RGB_LED(g.LED_RED, g.LED_GREEN, g.LED_BLUE)  # red, green, blue LED
+        self.piezo = piezo
 
     def terminate(self):
         self._running = False
@@ -39,7 +42,8 @@ class TurnOffButton:
     def run(self):
         while self._running:
             print("=========Waiting for Turn Off=========")
-            GPIO.wait_for_edge(self.BUTTON, GPIO.RISING)
+            # GPIO.wait_for_edge(self.BUTTON, GPIO.RISING)
+            time.sleep(0.5)
 
             timer = 0
             duration = 10
@@ -49,7 +53,5 @@ class TurnOffButton:
                 time.sleep(0.2)
                 if timer > duration:  # Set turn_off to True
                     shared.turn_off = True
-                    self.rgb_led.turn_white()
-                    # player.play_power_off_jingle()
-                    # time.sleep(1)
-                    # subprocess.call(['shutdown', '-h', 'now'], shell=False)
+                    self.piezo.play_power_off_jingle()
+                    time.sleep(2)

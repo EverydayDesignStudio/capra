@@ -85,7 +85,7 @@ def initialize_background_play_pause():
 
 
 def initialize_background_turn_off():
-    PP_INTERRUPT = TurnOffButton(g.BUTTON_OFF)  # Create class
+    PP_INTERRUPT = TurnOffButton(g.BUTTON_OFF, piezo)  # Create class
     PP_THREAD = Thread(target=PP_INTERRUPT.run)  # Create Thread
     PP_THREAD.start()  # Start Thread
 
@@ -119,10 +119,9 @@ def switch_to_hike_logger(hike_num: int):
 def check_button_turn_off():
     if shared.turn_off:
         rgb_led.turn_white()
-        piezo.play_power_off_jingle()
+        # piezo.play_power_off_jingle()  # This is instead being called from the bg thread
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('-------------------- Button Pressed -------------------\n')
-        time.sleep(2)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
@@ -136,7 +135,7 @@ def check_low_battery_turn_off():
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('The battery status is: {s}'.format(s=status))
         logging.info('--------------------- Low Battery -------------------\n')
-        time.sleep(5)
+        time.sleep(2)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
@@ -152,7 +151,7 @@ def check_low_storage_turn_off():
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('Megabytes Available: {m}'.format(m=megs_available))
         logging.info('--------------------- Low Storage -------------------\n')
-        time.sleep(5)
+        time.sleep(2)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
@@ -189,7 +188,7 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         pi_cam.capture(image_path)
         sql_controller.set_image_path(cam_num, image_path, hike_num, photo_index)
         print('cam {c} -- picture taken!'.format(c=cam_num))
-        # logging.info('cam {c} -- picture taken!'.format(c=cam_num))
+        logging.info('cam {c} -- picture taken!'.format(c=cam_num))
 
 
 # Collect raw data from altimeter and compute altitude
@@ -240,7 +239,8 @@ def main():
     piezo.play_power_on_jingle()
 
     pi_cam = initialize_picamera(g.CAM_RESOLUTION)  # Setup the camera
-    initialize_background_play_pause()          # Setup play/pause button
+    initialize_background_turn_off()           # Setup the Off button
+    initialize_background_play_pause()              # Setup Play/Pause button
     prev_pause = True
 
     print('--------------------- POWERED ON ---------------------')
@@ -315,8 +315,8 @@ def main():
         camcapture(pi_cam, 3, hike_num, photo_index, sql_controller)
 
         # Update the database with metadata for picture & hike
-        sql_controller.set_picture_time_altitude(altitude, hike_num, photo_index)
-        sql_controller.set_hike_endtime_picture_count(photo_index, hike_num)
+        sql_controller.set_picture_altitude(altitude, hike_num, photo_index)
+        sql_controller.set_hike_endtime_picture_count(timestamp, photo_index, hike_num)
 
         # Blink to notify that the timelapse is still going
         rgb_led.blink_green_new_picture()

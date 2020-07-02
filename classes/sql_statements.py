@@ -220,13 +220,13 @@ class SQLStatements:
 
         return statement
 
-    def update_picture_time_altitude(self, time: float, altitude: float, hike_id: int, photo_index: int) -> str:
-        statement = 'UPDATE pictures SET time={t}, altitude={a}, updated_date_time=datetime() \
-            WHERE hike={h} AND index_in_hike={p}'.format(t=time, a=altitude, h=hike_id, p=photo_index)
+    def update_picture_altitude(self, altitude: float, hike_id: int, photo_index: int) -> str:
+        statement = 'UPDATE pictures SET altitude={a}, updated_date_time=datetime() \
+            WHERE hike={h} AND index_in_hike={p}'.format(a=altitude, h=hike_id, p=photo_index)
         print(statement)
         return statement
 
-    def update_picture_altitude(self, altitude: float, rowid: int) -> str:
+    def update_picture_altitude_for_id(self, altitude: float, rowid: int) -> str:
         statement = 'UPDATE  pictures SET altitude={a}, updated_date_time=datetime() \
             WHERE ROWID={r}'.format(a=altitude, r=rowid)
         return statement
