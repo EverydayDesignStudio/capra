@@ -7,13 +7,13 @@ def init():
     # TODO: determine statis IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
-    # IP_ADDR_PROJECTOR = '192.168.123.193'
-    IP_ADDR_PROJECTOR = '192.168.1.193'
+    IP_ADDR_PROJECTOR = '192.168.123.193'
+    # IP_ADDR_PROJECTOR = '192.168.1.193'
 
     global IP_ADDR_CAMERA
     # IP_ADDR_CAMERA = '192.168.0.149'
-    # IP_ADDR_CAMERA = '192.168.123.100'
-    IP_ADDR_CAMERA = '192.168.1.100'
+    IP_ADDR_CAMERA = '192.168.123.100'
+    # IP_ADDR_CAMERA = '192.168.1.100'
 
     # Databases
     global DBNAME_MASTER
@@ -26,13 +26,22 @@ def init():
     # DBNAME_CAMERA = "capra_camera.db"
     # TODO: change this
     DBNAME_CAMERA = "capra_camera_test.db"
+    global DBNAME_CAMERA_BAK
+    DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
 
     # Hall Effect Sensor
     global HALL_EFFECT_PIN
     HALL_EFFECT_PIN = 26
 
     global HALL_EFFECT
+    global PREV_HALL_VALUE
     HALL_EFFECT = None
+    PREV_HALL_VALUE = False
+
+    global HALL_BOUNCE_LIMIT
+    global HALL_BOUNCE_TIMER
+    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
+    HALL_BOUNCE_TIMER = None
 
     global FILENAME
     global FILENAME_ROTATED
