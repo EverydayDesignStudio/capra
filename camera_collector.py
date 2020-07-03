@@ -135,7 +135,7 @@ def check_low_battery_turn_off():
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('The battery status is: {s}'.format(s=status))
         logging.info('--------------------- Low Battery -------------------\n')
-        time.sleep(2)
+        time.sleep(5)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
@@ -150,7 +150,7 @@ def check_low_storage_turn_off():
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('Megabytes Available: {m}'.format(m=megs_available))
         logging.info('--------------------- Low Storage -------------------\n')
-        time.sleep(2)
+        time.sleep(5)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
