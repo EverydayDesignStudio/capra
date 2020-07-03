@@ -13,6 +13,7 @@ Individual Make commands, if manually needed
 [make camera_db]		create a new database along with file storage
 [make camera_services]		load services to be run on startup
 
+
 ----------------------------Projector----------------------------
 [make projector]		installs dependencies and creates db
 [make projector_db]		creates a new database along file storage
@@ -26,8 +27,8 @@ init:
 
 # -------------- Projector --------------
 define PROJECTOR_INSTALL
-sudo pip3 install -r setup/requirements_explorer.txt
-sudo ./setup/install_apps_explorer.sh
+sudo pip3 install -r setup/requirements_projector.txt
+sudo ./setup/install_apps_projector.sh
 endef
 
 projector:
@@ -39,8 +40,8 @@ projector_db:
 
 # -------------- Camera --------------
 define CAMERA_INSTALL
-sudo pip3 install -r setup/requirements_collector.txt
-sudo ./setup/install_apps_collector.sh
+sudo pip3 install -r setup/requirements_camera.txt
+sudo ./setup/install_apps_camera.sh
 endef
 
 camera_setup1:
