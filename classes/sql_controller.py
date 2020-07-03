@@ -298,10 +298,9 @@ class SQLController:
             time_since = current_time - last_time
             return round(time_since, 0)
 
-    def _create_new_hike(self):
+    def _create_new_hike(self, time):
         cursor = self.connection.cursor()
-        t = time.time()
-        cursor.execute(self.statements.insert_new_hike(t))
+        cursor.execute(self.statements.insert_new_hike(time))
         self.connection.commit()
 
     def get_hike_count(self) -> int:
@@ -343,13 +342,13 @@ class SQLController:
         return rowid
 
     # Determine whether to create new hike or continue the last hike
-    def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY) -> bool:
+    def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY, time) -> bool:
         time_since_last_hike = self._get_time_since_last_hike()
 
         # Create a new hike; -1 indicates this is the first hike in db
         if time_since_last_hike > NEW_HIKE_TIME or time_since_last_hike == -1:
             print('Creating new hike:')
-            self._create_new_hike()
+            self._create_new_hike(time)
 
             # Create folder in harddrive to save photos
             hike_num = self.get_last_hike_id()

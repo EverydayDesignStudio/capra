@@ -122,13 +122,13 @@ def check_button_turn_off():
         # piezo.play_power_off_jingle()  # This is instead being called from the bg thread
         logging.info('--------------------- POWERED OFF ---------------------')
         logging.info('-------------------- Button Pressed -------------------\n')
+        time.sleep(1)
         subprocess.call(['shutdown', '-h', 'now'], shell=False)
 
 
 # Check if camera battery is low and turn off camera if it is
 def check_low_battery_turn_off():
     status = gpio.input(g.LDO)
-    print('The battery status is: {s}'.format(s=status))
     if status == gpio.LOW:
         rgb_led.turn_red()
         piezo.play_low_battery_storage_jingle()
@@ -144,7 +144,6 @@ def check_low_storage_turn_off():
     path = '/home/pi/'
     bytes_available = psutil.disk_usage(path).free
     megs_available = round(bytes_available / 1024 / 1024, 0)
-    print('{m} Megabytes Available'.format(m=megs_available))
     if megs_available < 512:
         rgb_led.turn_orange()
         piezo.play_low_battery_storage_jingle()
@@ -157,7 +156,7 @@ def check_low_storage_turn_off():
 
 # Select camera + take a photo + save photo in file system and db
 def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, sql_controller: SQLController):
-    print('select cam{n}'.format(n=cam_num))
+    # print('select cam{n}'.format(n=cam_num))
     # logging.info('select cam{n}'.format(n=cam_num))
     if cam_num < 1 or cam_num > 3:
         raise Exception('{n} is an invalid camera number. It must be 1, 2, or 3.'.format(n=cam_num))
@@ -165,30 +164,27 @@ def camcapture(pi_cam: picamera, cam_num: int, hike_num: int, photo_index: int, 
         if cam_num == 1:
             gpio.output(g.SEL_1, True)
             gpio.output(g.SEL_2, False)
-            print("cam 1 selected")
+            # print("cam 1 selected")
             # logging.info('cam 1 selected')
         if cam_num == 2:
             gpio.output(g.SEL_1, False)
             gpio.output(g.SEL_2, False)
-            print("cam 2 selected")
+            # print("cam 2 selected")
             # logging.info('cam 2 selected')
         if cam_num == 3:
             gpio.output(g.SEL_1, True)
             gpio.output(g.SEL_2, True)
-            print("cam 3 selected")
+            # print("cam 3 selected")
             # logging.info('cam 3 selected')
         time.sleep(0.2)  # it takes some time for the pin selection
 
         # Build image file path
         image_path = '{d}hike{h}/{p}_cam{c}.jpg'.format(d=g.DIRECTORY, h=hike_num, p=photo_index, c=cam_num)
-        print(image_path)
-        # logging.info(image_path)
 
         # Take the picture
         pi_cam.capture(image_path)
         sql_controller.set_image_path(cam_num, image_path, hike_num, photo_index)
-        print('cam {c} -- picture taken!'.format(c=cam_num))
-        logging.info('cam {c} -- picture taken!'.format(c=cam_num))
+        logging.info(image_path)
 
 
 # Collect raw data from altimeter and compute altitude
@@ -202,7 +198,7 @@ def query_altimeter(sql_ctrl: SQLController) -> float:
     # If altitude is above or below these extremes, there is a value error
     # These are rounded ~values for Mt. Everest & Dead Sea
     if altitude > 10000 or altitude < -1000:
-        print_and_log('Altitude ERROR: {a}'.format(a=altitude))
+        logging.info('Altitude ERROR: {a}'.format(a=altitude))
 
         # Change the value of altitude prior to saving it
         altitude = sql_ctrl.get_last_altitude()
@@ -214,7 +210,7 @@ def query_altimeter(sql_ctrl: SQLController) -> float:
         altitude_error_list.append(last_rowid + 1)
     else:
         # We have received a valid altitude
-        print_and_log('Altitude is: {a}'.format(a=altitude))
+        logging.info('Altitude is: {a}'.format(a=altitude))
 
         # First we need to check to see if there are altitude values to go back and fix
         while len(altitude_error_list) > 0:
@@ -239,11 +235,10 @@ def main():
     piezo.play_power_on_jingle()
 
     pi_cam = initialize_picamera(g.CAM_RESOLUTION)  # Setup the camera
-    initialize_background_turn_off()           # Setup the Off button
-    initialize_background_play_pause()              # Setup Play/Pause button
+    initialize_background_turn_off()  # Setup the Off button
+    initialize_background_play_pause()  # Setup Play/Pause button
     prev_pause = True
 
-    print('--------------------- POWERED ON ---------------------')
     logging.info('--------------------- POWERED ON ---------------------')
     # As long as initially paused, do not create new hike yet
     while shared.pause:
@@ -253,16 +248,15 @@ def main():
         check_low_storage_turn_off()
 
         if round(time.time(), 0) % 60 == 0:
-            logging.info('>>>>>Another minute initially PAUSED!')
-            print('>>>>>Another minute initially PAUSED!')
+            logging.info('>>>>>Another minute initially PAUSED')
         time.sleep(1)
-    print('>>>>>Pause button pressed --> FIRST UNPAUSE!')
-    logging.info('>>>>>Pause button pressed --> FIRST UNPAUSE!')
+    logging.info('>>>>>Pause button pressed --> FIRST UNPAUSE')
     rgb_led.turn_off()
 
     # Create SQL controller and update hike information
     sql_controller = SQLController(database=g.DB)
-    created = sql_controller.will_create_new_hike(g.NEW_HIKE_TIME, g.DIRECTORY)
+    timestamp = round(time.time(), 0)
+    created = sql_controller.will_create_new_hike(g.NEW_HIKE_TIME, g.DIRECTORY, timestamp)
     if created:     # new hike created: blink teal
         rgb_led.blink_teal_new_hike()
     else:           # continue last hike: blink green
@@ -286,20 +280,29 @@ def main():
         # Pause the program if applicable
         while shared.pause:
             if not prev_pause:
-                logging.info('>PAUSED!<')
+                logging.info('>PAUSED<')
                 prev_pause = True
                 rgb_led.turn_pink()
                 piezo.play_paused_jingle()
+
+            # Check for turn off button, LOW battery, or LOW storage
+            check_button_turn_off()
+            check_low_battery_turn_off()
+            check_low_storage_turn_off()
+
+            if round(time.time(), 0) % 60 == 0:
+                logging.info('>>>>> + 1 minute PAUSED')
             time.sleep(1)
         # Unpause program
         if prev_pause:
-            logging.info('>UNPAUSED!<')
+            logging.info('>UNPAUSED<')
             prev_pause = False
             rgb_led.turn_off()
             piezo.play_start_recording_jingle()
 
         # Read the time as UNIX timestamp
         timestamp = round(time.time(), 0)
+        logging.info('Unix Timestamp: {t}'.format(t=timestamp))
 
         # New picture: increment photo index & add row to database
         photo_index += 1
