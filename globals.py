@@ -3,6 +3,9 @@ def init():
     # *** Explorer -> Projector
     # *** Collector -> Camera
 
+    # Transfer
+    # --------------------------------------------------------------------------
+
     # IP Addresses
     # TODO: determine statis IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
@@ -28,25 +31,6 @@ def init():
     DBNAME_CAMERA = "capra_camera_test.db"
     global DBNAME_CAMERA_BAK
     DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
-
-    # Hall Effect Sensor
-    global HALL_EFFECT_PIN
-    HALL_EFFECT_PIN = 26
-
-    global HALL_EFFECT
-    global PREV_HALL_VALUE
-    HALL_EFFECT = None
-    PREV_HALL_VALUE = False
-
-    global HALL_BOUNCE_LIMIT
-    global HALL_BOUNCE_TIMER
-    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
-    HALL_BOUNCE_TIMER = None
-
-    global FILENAME
-    global FILENAME_ROTATED
-    FILENAME = "[!\.]*_cam[1-3].jpg"
-    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
 
     # Paths
     global DATAPATH_CAMERA
@@ -84,6 +68,75 @@ def init():
 
     global COLOR_DIMY
     COLOR_DIMY = 95
+
+    # Projector
+    # --------------------------------------------------------------------------
+
+    # Projector Pins
+    global HALL_EFFECT_PIN
+    HALL_EFFECT_PIN = 26    # BOARD - 37
+    global BUTT_MODE
+    BUTT_MODE = 20          # BOARD - 38
+    global BUTT_PLAY_PAUSE
+    BUTT_PLAY_PAUSE = 5     # BOARD - 29
+    global BUTT_PREV        # Eagle says this is NEXT
+    BUTT_PREV = 6           # BOARD - 31
+    global BUTT_NEXT        # Eagle says this is PREV
+    BUTT_NEXT = 13          # BOARD - 33
+    global OFF_BUTTON
+    OFF_BUTTON = 4          # BOARD - 7
+    global ON_BUTTON
+    ON_BUTTON = 3           # BOARD - 5
+
+    global ACCEL_SCL
+    ACCEL_SCL = 3           # BOARD - 5
+    global ACCEL_SDA
+    ACCEL_SDA = 2           # BOARD - 3
+
+    global ENC1_BUTT
+    ENC1_BUTT = 25          # BOARD - 22
+    global ENC1_A
+    ENC1_A = 23             # BOARD - 16
+    global ENC1_B
+    ENC1_B = 24             # BOARD - 18
+
+    global NEO1
+    NEO1 = 18               # BOARD - 12
+    global WHITE_LED1
+    WHITE_LED1 = 21         # BOARD - 40
+    global WHITE_LED2
+    WHITE_LED2 = 16         # BOARD - 36
+    global WHITE_LED3
+    WHITE_LED3 = 19         # BOARD - 35
+
+    global RGB1_RED
+    RGB1_RED = 15           # BOARD - 10
+    global RGB1_GREEN
+    RGB1_GREEN = 11         # BOARD - 11
+    global RGB1_BLUE
+    RGB1_BLUE = 14          # BOARD - 8
+
+    global RGB2_RED
+    RGB2_RED = 7            # BOARD - 26
+    global RGB2_GREEN
+    RGB2_GREEN = 8          # BOARD - 24
+    global RGB2_BLUE
+    RGB2_BLUE = 11          # BOARD - 23
+
+    # Projector Status and Settings
+    global HALL_EFFECT
+    global PREV_HALL_VALUE
+    HALL_EFFECT = None
+    PREV_HALL_VALUE = False
+    global HALL_BOUNCE_LIMIT
+    global HALL_BOUNCE_TIMER
+    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
+    HALL_BOUNCE_TIMER = None
+
+    global FILENAME
+    global FILENAME_ROTATED
+    FILENAME = "[!\.]*_cam[1-3].jpg"
+    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
 
     # Camera
     # --------------------------------------------------------------------------
