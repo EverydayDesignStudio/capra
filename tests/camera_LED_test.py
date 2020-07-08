@@ -1,38 +1,43 @@
 #!/usr/bin/env python3
 
-import RPi.GPIO as gpio
+import RPi.GPIO as GPIO
 import time
+from classes.led_player import RGB_LED
+import globals as g
+g.init()
 
-RED = 13            # BOARD - 33
-GREEN = 26          # BOARD - 37
-BLUE = 19           # BOARD - 35
+GPIO.setwarnings(False)     # Turn off GPIO warnings
+GPIO.setmode(GPIO.BCM)      # Broadcom pin numbers
 
-gpio.setwarnings(False)     # Turn off GPIO warning
-gpio.setmode(gpio.BCM)
-gpio.setup(RED, gpio.OUT)
-gpio.setup(GREEN, gpio.OUT)
-gpio.setup(BLUE, gpio.OUT)
+led = RGB_LED(g.LED_RED, g.LED_GREEN, g.LED_BLUE)  # RGB LED
 
-def on_off(pin: int):
-    gpio.output(pin, True)
-    time.sleep(2)
-    gpio.output(pin, False)
 
-def mixer(pin1: int, pin2: int):
-    gpio.output(pin1, True)
-    gpio.output(pin2, True)
-    time.sleep(4)
-    gpio.output(pin1, False)
-    gpio.output(pin2, False)
+def sleep_off():
+    time.sleep(1)
+    led.turn_off()
 
-# Individuals
-on_off(RED)
-on_off(GREEN)
-on_off(BLUE)
 
-print('BLUE + GREEN')
-mixer(BLUE, GREEN)
-print('BLUE + RED')
-mixer(BLUE, RED)
-print('RED + GREEN')
-mixer(RED, GREEN)
+led.turn_off()
+
+print('Turn red')
+led.turn_red()
+sleep_off()
+print('Turn green')
+led.turn_green()
+sleep_off()
+print('Turn blue')
+led.turn_blue()
+sleep_off()
+print('Turn pink')
+led.turn_pink()
+sleep_off()
+print('Turn teal')
+led.turn_teal()
+sleep_off()
+print('Turn orange')
+led.turn_orange()
+sleep_off()
+print('Turn white')
+led.turn_white()
+sleep_off()
+print('Turn off')

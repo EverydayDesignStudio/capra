@@ -12,11 +12,13 @@ def main():
     change_config()
     remove_fake_hwclock()
 
+
 # /boot/config.txt
 def change_config():
     with open("/boot/config.txt", "a") as file:
         file.write("\n# RTC\ndtoverlay=i2c-rtc,ds3231\n")
     print("✅ Updated /boot/config.txt")
+
 
 # Remove fake-hwclock which can interfere with the real hwclock
 def remove_fake_hwclock():
@@ -30,6 +32,7 @@ def remove_fake_hwclock():
     print("✅ Removed: systemctl disable fake-hwclock")
 
     print("🎉 fake-hwclock removed!")
+
 
 if __name__ == "__main__":
     main()

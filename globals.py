@@ -84,3 +84,45 @@ def init():
 
     global COLOR_DIMY
     COLOR_DIMY = 95
+
+    # Camera
+    # --------------------------------------------------------------------------
+
+    # Camera Storage
+    global DB
+    DB = '/home/pi/capra-storage/capra_camera.db'
+
+    global DIRECTORY
+    DIRECTORY = '/home/pi/capra-storage/'
+
+    # Camera Pins
+    global BUTTON_PLAYPAUSE
+    BUTTON_PLAYPAUSE = 17   # BOARD - 11
+    global BUTTON_OFF
+    BUTTON_OFF = 25         # BOARD - 22
+    global SEL_1
+    SEL_1 = 22              # BOARD - 15
+    global SEL_2
+    SEL_2 = 23              # BOARD - 16
+    global LED_RED
+    LED_RED = 13            # BOARD - 33
+    global LED_GREEN
+    LED_GREEN = 26          # BOARD - 37
+    global LED_BLUE
+    LED_BLUE = 14           # BOARD - 8
+    global PIEZO
+    PIEZO = 12              # BOARD - 32
+    global LDO
+    LDO = 6                 # BOARD - 31
+
+    # Camera Settings
+    global SEALEVEL_PRESSURE
+    SEALEVEL_PRESSURE = 101500
+    global CAM_RESOLUTION
+    CAM_RESOLUTION = (1280, 720)
+    global NEW_HIKE_TIME
+    # NEW_HIKE_TIME = 10800   # 3 hours
+    # NEW_HIKE_TIME = 9000    # 2.5 hours
+    NEW_HIKE_TIME = 3600      # 1 hour
+    global CAM_INTERVAL
+    CAM_INTERVAL = 5        # 5 seconds

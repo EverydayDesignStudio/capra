@@ -8,30 +8,49 @@ import RPi.GPIO as GPIO
 import time
 
 
-class RedBlueLED:
-    def __init__(self, red_pin: int, blue_pin: int):
+class RGB_LED:
+    def __init__(self, red_pin: int, green_pin: int, blue_pin: int):
         self.LED_RED = red_pin
+        self.LED_GREEN = green_pin
         self.LED_BLUE = blue_pin
-        print('RedBlueLEDPlayer object created for RED pin: {r} & BLUE pin: {b}'
-              .format(r=red_pin, b=blue_pin))
+        print('RGBLEDPlayer object created for RED pin: {r}, GREEN pin: {g}, & BLUE pin: {b}'
+              .format(r=red_pin, g=green_pin, b=blue_pin))
         GPIO.setup(red_pin, GPIO.OUT)       # Red LED
+        GPIO.setup(green_pin, GPIO.OUT)     # Green LED
         GPIO.setup(blue_pin, GPIO.OUT)      # BLUE LED
 
     # Functions
     # --------------------------------------------------------------------------
     def turn_off(self):
-        GPIO.output(self.LED_BLUE, False)
         GPIO.output(self.LED_RED, False)
-
-    def turn_blue(self):
-        GPIO.output(self.LED_BLUE, True)
+        GPIO.output(self.LED_GREEN, False)
+        GPIO.output(self.LED_BLUE, False)
 
     def turn_red(self):
         GPIO.output(self.LED_RED, True)
 
-    def turn_purple(self):
+    def turn_green(self):
+        GPIO.output(self.LED_GREEN, True)
+
+    def turn_blue(self):
         GPIO.output(self.LED_BLUE, True)
+
+    def turn_pink(self):
         GPIO.output(self.LED_RED, True)
+        GPIO.output(self.LED_BLUE, True)
+
+    def turn_teal(self):
+        GPIO.output(self.LED_GREEN, True)
+        GPIO.output(self.LED_BLUE, True)
+
+    def turn_orange(self):
+        GPIO.output(self.LED_RED, True)
+        GPIO.output(self.LED_GREEN, True)
+
+    def turn_white(self):
+        GPIO.output(self.LED_RED, True)
+        GPIO.output(self.LED_GREEN, True)
+        GPIO.output(self.LED_BLUE, True)
 
     # Helper function for blinking
     def blink(self, pin: int, repeat: int, interval: float) -> None:
@@ -46,21 +65,21 @@ class RedBlueLED:
         self.blink(self.LED_BLUE, 4, 0.3)
 
     def blink_red_quick(self):
-        self.blink(self.LED_RED, 10, 0.1)
+        self.blink(self.LED_RED, 15, 0.1)
 
-    def blink_purple_new_hike(self):
+    def blink_teal_new_hike(self):
         for i in range(6):
-            self.turn_purple()
+            self.turn_teal()
             time.sleep(.15)
             self.turn_off()
             time.sleep(.15)
 
-    def blink_red_continue_hike(self):
+    def blink_green_continue_hike(self):
         for i in range(6):
-            self.turn_red()
+            self.turn_green()
             time.sleep(.15)
             self.turn_off()
             time.sleep(.15)
 
-    def blink_blue_new_picture(self):
-        self.blink(self.LED_BLUE, 2, 0.15)
+    def blink_green_new_picture(self):
+        self.blink(self.LED_GREEN, 2, 0.15)
