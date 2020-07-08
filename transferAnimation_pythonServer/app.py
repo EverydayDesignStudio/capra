@@ -17,6 +17,7 @@ cors = CORS(app, resources={r"/hello/*"})
 
 JSON_DBSummary = None;
 JSON_TransferPics = None;
+JSON_Timestamp = None;
 
 @app.route('/hello/hi', methods=['GET', 'POST'])
 @cross_origin()
@@ -36,12 +37,20 @@ def hello():
             JSON_DBSummary = json.load(f)
         return jsonify(JSON_DBSummary);
 
+
 @app.route("/hello/users/")
 def list_users():
     # return jsonify(user="joe")
     with open('./transferPics.json') as f:
         JSON_TransferPics = json.load(f)
     return jsonify(JSON_TransferPics);
+
+
+@app.route("/hello/update/")
+def update():
+    with open('./test.json') as f:
+        JSON_Timestamp = json.load(f)
+    return jsonify(JSON_Timestamp);
 
 # @app.route('/foo', methods=['POST'])
 # @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
