@@ -369,10 +369,11 @@ def start_transfer():
                         # (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
                         src = row[5][:-5] + str(camNum) + row[5][-4:]      # "/home/pi/capra-storage/hike1/1_cam2.jpg" --> "/home/pi/capra-storage/hike1/1_cam(*).jpg"
                         expectedPath = build_hike_path(currHike) + src.split('/')[-1]
+                        isNew = False
 
                         if (not os.path.exists(build_picture_path(currHike, row[4], camNum))):
-                            # TODO: add "--remove-source-files" option - do not rely on the number of files; just transfer everything for this hike
-                            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
+                            isNew = True
+                            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '--remove-source-files', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
                             rsync_status.wait()
 
                             # report if rsync is failed
@@ -403,6 +404,13 @@ def start_transfer():
                             #  1. calculate dominant HSV/RGB colors
                             #  2. update path to each picture for camera 1, 2, 3
                             threads.append(threadPool.submit(dominant_color_wrapper, currHike, row, build_picture_path(currHike, row[4], 2)))
+
+                            # resize and rotate for newly added pictures
+                            if (isNew):
+                                if (camNum == 2):
+                                    rotate_photo(build_picture_path(currHike, row[4], camNum), build_picture_path(currHike, row[4], camNum, True), 90)
+
+                                resize_photo(build_picture_path(currHike, row[4], camNum), 427, 720)
 
                         camNum += 1
 
