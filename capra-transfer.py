@@ -429,14 +429,11 @@ def start_transfer():
                     pDBController.upsert_picture(*commit)
 
                 # make a row for the hike table with postprocessed values
+                compute_checksum(currHike)
                 avgAlt /= numValidRows
                 hikeDomCol = []
                 if (checkSum_total / 4 > g.COLOR_CLUSTER):
                     hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
-
-                # wait until dominant color for a hike is determined
-                while not hikeDomCol:
-                    time.sleep(0.5)
 
                 # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
                 print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
