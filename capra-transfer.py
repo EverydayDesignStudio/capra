@@ -421,6 +421,7 @@ def start_transfer():
                     color, commit = thread.result()
                     domColors.append([color[0], color[1], color[2]])
                     commits.append(commit)
+                threadPool.shutdown(wait=True)
 
                 # commit changes
                 #  ** sqlite does not support concurrent write options
@@ -432,6 +433,10 @@ def start_transfer():
                 hikeDomCol = []
                 if (checkSum_total / 4 > g.COLOR_CLUSTER):
                     hikeDomCol = get_dominant_color_1D(domColors, g.COLOR_CLUSTER)
+
+                # wait until dominant color for a hike is determined
+                while not hikeDomCol:
+                    time.sleep(0.5)
 
                 # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
                 print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
