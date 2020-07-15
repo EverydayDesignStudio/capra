@@ -423,14 +423,21 @@ class SQLController:
         else:
             return row[0]
 
-    def get_hike_average_color(self, hike_id: int):
+    def get_hike_average_color(self, hike_id: int, camNum: int = 0):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
-        res = cursor.fetchall()
-        if (res is None):
+        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id, camNum=camNum))
+        res = cursor.fetchone()
+
+        tmp = res[0].strip("()").split(',')
+        ret = []
+
+        if (tmp is None):
             return None
         else:
-            return res[0]
+            tmp[0]
+            for i in tmp[0]:
+            	ret.append(int(i))
+            return ret
 
     def get_picture_dominant_color(self, time: float):
         cursor = self.connection.cursor()

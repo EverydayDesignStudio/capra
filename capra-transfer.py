@@ -217,9 +217,15 @@ def compute_checksum(currHike):
     checkSum_total = checkSum_transferred + checkSum_rotated
 
 
-def check_hike_postprocessing(currHike):
-    hikeColor = pDBController.get_hike_average_color(currHike)
+def validate_color(hikeColor):
     return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
+
+
+def check_hike_postprocessing(currHike):
+    hikeColor1 = pDBController.get_hike_average_color(currHike, 1)
+    hikeColor2 = pDBController.get_hike_average_color(currHike, 2)
+    hikeColor3 = pDBController.get_hike_average_color(currHike, 3)
+    return validate_color(hikeColor1) and validate_color(hikeColor2) and validate_color(hikeColor3)
 
 
 def dominant_color_wrapper(currHike, row, picPathCam2):
