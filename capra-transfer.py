@@ -249,6 +249,10 @@ def dominant_color_wrapper(currHike, row, picPathCam2):
 
     color = color_res.split(", ")
 
+    # round color values to the nearest hundredth
+    for i in range(len(color)):
+        color[i] = round(color[i], 2)
+
     # (time, hikeID, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
     picPathCam1 = build_picture_path(currHike, row[4], 1)
     picPathCam3 = build_picture_path(currHike, row[4], 3)
@@ -444,7 +448,7 @@ def start_transfer():
                 # (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
                 print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
                 logger.info("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
-                pDBController.upsert_hike(currHike, avgAlt, hikeDomCol[0], hikeDomCol[1], hikeDomCol[2], startTime, endTime, color_rows_checked, dest)
+                pDBController.upsert_hike(currHike, avgAlt, round(hikeDomCol[0], 2), round(hikeDomCol[1], 2), round(hikeDomCol[2], 2), startTime, endTime, color_rows_checked, dest)
 
                 # suppose hike is finished, now do the resizing
                 print("[{}]   Hike {} took {} seconds for transfer & PP.".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
