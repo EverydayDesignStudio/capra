@@ -108,7 +108,7 @@ def init():
 
     # Camera Settings
     global SEALEVEL_PRESSURE
-    SEALEVEL_PRESSURE = 101500
+    SEALEVEL_PRESSURE = 102000
     global CAM_RESOLUTION
     CAM_RESOLUTION = (1280, 720)
     global NEW_HIKE_TIME
