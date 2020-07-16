@@ -287,8 +287,19 @@ class SQLStatements:
         statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 
-    def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
-        statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
+    # def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
+    #     statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
+    #     return statement
+
+    def get_dominant_color_for_picture_of_given_timestamp(self, time: float, camNum : int = 0):
+        statement = ""
+
+        # for default color, return cam2's color (the middle one)
+        if (camNum == 0):
+            statement = 'SELECT camera2_color_hsv FROM pictures WHERE time == {}'.format(time)
+        else:
+            statement = 'SELECT camera{}_color_hsv FROM pictures WHERE time == {}'.format(camNum, time)
+
         return statement
 
     def delete_pictures(self) -> str:
