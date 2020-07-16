@@ -29,7 +29,7 @@ DROP TABLE IF EXISTS "pictures";
 -- picture_id is here, but not in CAMERA db
 CREATE TABLE "pictures" (
 	"picture_id"		INTEGER PRIMARY KEY UNIQUE,
-	"timestamp"				REAL UNIQUE,
+	"time"				REAL UNIQUE,
 	"year"				INTEGER,
 	"month"				INTEGER,
 	"day"				INTEGER,
@@ -57,19 +57,33 @@ DROP TABLE IF EXISTS "hikes";
 
 -- hike_id is not PRIMARY KEY AUTOINCREMENT since it will never be incremented
 -- on the projector and in the off case it is, it could get out of sync with camera
+-- CREATE TABLE "hikes" (
+-- 	"hike_id"			INTEGER UNIQUE,
+-- 	"avg_altitude"		REAL,
+-- 	"avg_hue" 	REAL,
+-- 	"avg_saturation"	REAL,
+-- 	"avg_value" 	REAL,
+-- 	"start_time"		REAL UNIQUE,
+-- 	"end_time"			REAL UNIQUE,
+-- 	"pictures"			INTEGER,
+-- 	"path" 				TEXT UNIQUE,
+-- 	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
+-- 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
+-- );
+
 CREATE TABLE "hikes" (
 	"hike_id"			INTEGER UNIQUE,
 	"avg_altitude"		REAL,
 	"avg_color_camera1_hsv"	TEXT,
 	"avg_color_camera2_hsv"	TEXT,
 	"avg_color_camera3_hsv"	TEXT,
-	"start_timestamp"		REAL UNIQUE,
+	"start_time"		REAL UNIQUE,
 	"start_year"		INTEGER,
 	"start_month"		INTEGER,
 	"start_day"		INTEGER,
 	"start_minute"		INTEGER,
 	"start_dayofweek"		INTEGER,
-	"end_timestamp"			REAL UNIQUE,
+	"end_time"			REAL UNIQUE,
 	"end_year"		INTEGER,
 	"end_month"		INTEGER,
 	"end_day"		INTEGER,
