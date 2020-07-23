@@ -492,16 +492,15 @@ class SQLController:
         cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time, camNum=camNum))
         res = cursor.fetchone()
 
+        if (res[0] is None):
+            return None
+
         tmp = res[0].strip("()").split(',')
         ret = []
 
-        if (tmp is None):
-            return None
-        else:
-            tmp[0]
-            for i in tmp[0]:
-            	ret.append(float(i))
-            return ret
+        for i in tmp:
+            ret.append(float(i))
+        return ret
 
     def get_picture_at_timestamp(self, time: float):
         cursor = self.connection.cursor()

@@ -244,7 +244,6 @@ class SQLStatements:
     # Transfer
     # --------------------------------------------------------------------------
     def select_valid_photos_in_given_hike(self, hike_id: int) -> int:
-        # TODO: update the MAX value to Mt. Everest
         statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= 0 AND \
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
         return statement
@@ -327,8 +326,8 @@ class SQLStatements:
         statement = 'INSERT OR REPLACE INTO hikes \
             (hike_id, avg_altitude, \
                 avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv, \
-                start_time, start_year, start_month, start_day, start_minute, start_dayofweek \
-                end_time, end_year, end_month, end_day, end_minute, end_dayofweek \
+                start_time, start_year, start_month, start_day, start_minute, start_dayofweek, \
+                end_time, end_year, end_month, end_day, end_minute, end_dayofweek, \
                 pictures, path) \
             VALUES ({}, {}, \
                     "{}", "{}", "{}", \
@@ -338,7 +337,7 @@ class SQLStatements:
             '.format(hike_id, avg_altitude,
                         avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv,
                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
-                        end_time, end_year, end_month, end_day, end_minutes, end_dayofweek,
+                        end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
                         pictures, path)
         return statement
 
