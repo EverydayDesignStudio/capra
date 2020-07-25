@@ -189,18 +189,6 @@ def build_picture_path(hikeID, index, camNum, rotated=False):
     return build_hike_path(hikeID) + str(index) + '_cam' + str(camNum) + insert + '.jpg'
 
 
-def resize_photo(photoPath, w, h):
-    im = Image.open(photoPath)
-    im = im.resize((w, h), Image.ANTIALIAS)
-    im.save(photoPath)
-
-
-def rotate_photo(srcFile, destFile, angle):
-    image = Image.open(srcFile)
-    image_rotated = image.copy().rotate(angle, expand=True)
-    image_rotated.save(destFile)
-
-
 def compute_checksum(currHike):
     global checkSum_total, checkSum_rotated, checkSum_transferred
     checkSum_transferred = count_files_in_directory(build_hike_path(currHike), g.FILENAME)
@@ -424,18 +412,16 @@ def start_transfer():
                             print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
                             logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
 
-
-                    # Do Post-processing for each row
                     # resize and rotate for newly added pictures
-                    if (not os.path.exists(build_picture_path(currHike, index_in_hike, 2, True))):
-                        rotate_photo(picPathCam2, build_picture_path(currHike, index_in_hike, 2, True), 90)
+                    #    1. make a copy of pic2 as pic2'f'
                     if (not os.path.exists(picPathCam2f)):
-                        rotate_photo(picPathCam2, picPathCam2f, 90)
+                        Image.open(picPathCam2).copy().save(picPathCam2f)
 
+                    #    2. resize to 427x720 and rotate 90 deg
                     if (isNew):
-                        resize_photo(picPathCam1, 427, 720)
-                        resize_photo(picPathCam2, 427, 720)
-                        resize_photo(picPathCam3, 427, 720)
+                        Image.open(picPathCam1).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        Image.open(picPathCam2).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        Image.open(picPathCam3).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
 
                     # skip this row if a row with the specific timestamp already exists
                     # ** we still want to consider the timestamp and the average altitude even when skipping rows
@@ -517,13 +503,17 @@ def start_transfer():
                     picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
                     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
 
-                    # Make a copy for the second image and rorate CCW 90
-                    rotate_photo(picPathCam2, picPathCam2f, 90)
+                    # resize and rotate for newly added pictures
+                    #    1. make a copy of pic2 as pic2'f'
+                    if (not os.path.exists(picPathCam2f)):
+                        Image.open(picPathCam2).copy().save(picPathCam2f)
 
-                    # Resize three images
-                    resize_photo(picPathCam1, 427, 720)
-                    resize_photo(picPathCam2, 427, 720)
-                    resize_photo(picPathCam3, 427, 720)
+                    #    2. resize to 427x720 and rotate 90 deg
+                    if (isNew):
+                        Image.open(picPathCam1).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        Image.open(picPathCam2).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        Image.open(picPathCam3).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+
 
                     i += 1
 
