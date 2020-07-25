@@ -262,11 +262,12 @@ def dominant_color_wrapper(currHike, row):
     #   camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
 
     # ** 0 is monday in dayofweek
+    # ** camera_landscape points to the path to cam2 pic
     commit = (row[0], picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, index_in_hike, row[1],
                 picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
                 picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
-                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), "tmpLandscape")
+                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2)
 
     # TODO: pass information needed for the transfer animation as a JSON file
 
