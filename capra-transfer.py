@@ -185,7 +185,7 @@ def build_hike_path(hikeID, makeNew=False):
 def build_picture_path(hikeID, index, camNum, rotated=False):
     insert = ""
     if (rotated):
-        insert = "r"
+        insert = "f"
     return build_hike_path(hikeID) + str(index) + '_cam' + str(camNum) + insert + '.jpg'
 
 
@@ -398,7 +398,7 @@ def start_transfer():
                     index_in_hike = row[4]
                     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
                     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
-                    picPathCam2r = build_picture_path(currHike, index_in_hike, 2, True)
+                    picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
                     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
                     isNew = False
 
@@ -429,6 +429,8 @@ def start_transfer():
                     # resize and rotate for newly added pictures
                     if (not os.path.exists(build_picture_path(currHike, index_in_hike, 2, True))):
                         rotate_photo(picPathCam2, build_picture_path(currHike, index_in_hike, 2, True), 90)
+                    if (not os.path.exists(picPathCam2f)):
+                        rotate_photo(picPathCam2, picPathCam2f, 90)
 
                     if (isNew):
                         resize_photo(picPathCam1, 427, 720)
@@ -512,11 +514,11 @@ def start_transfer():
                     row = validRows[i]
                     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
                     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
-                    picPathCam2r = build_picture_path(currHike, index_in_hike, 2, True)
+                    picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
                     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
 
                     # Make a copy for the second image and rorate CCW 90
-                    rotate_photo(picPathCam2, picPathCam2r, 90)
+                    rotate_photo(picPathCam2, picPathCam2f, 90)
 
                     # Resize three images
                     resize_photo(picPathCam1, 427, 720)
