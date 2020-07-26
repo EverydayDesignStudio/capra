@@ -219,10 +219,27 @@ def dominant_color_wrapper(currHike, row):
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
 
+    if (pDBController.get_picture_at_timestamp(row[0]) > 0):
+        color1 = pDBController.get_picture_dominant_color(row[0], 1)
+        color2 = pDBController.get_picture_dominant_color(row[0], 2)
+        color3 = pDBController.get_picture_dominant_color(row[0], 3)
+
     try:
-        color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
-        color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
-        color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
+        # round color values to the nearest hundredth
+        if (color1 is None):
+            color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
+            color1 = color_res1.split(", ")
+            roundToHundredth(color1)
+
+        if (color2 is None):
+            color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
+            color2 = color_res2.split(", ")
+            roundToHundredth(color2)
+
+        if (color3 is None):
+            color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
+            color3 = color_res3.split(", ")
+            roundToHundredth(color3)
 
     # TODO: check if invalid files are handled correctly
     # TODO: how do we redo failed rows?
@@ -231,15 +248,6 @@ def dominant_color_wrapper(currHike, row):
         print(traceback.format_exc())
         logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
         logger.info(traceback.format_exc())
-
-    color1 = color_res1.split(", ")
-    color2 = color_res2.split(", ")
-    color3 = color_res3.split(", ")
-
-    # round color values to the nearest hundredth
-    roundToHundredth(color1)
-    roundToHundredth(color2)
-    roundToHundredth(color3)
 
     picDatetime = datetime.datetime.fromtimestamp(row[0])
 
@@ -423,22 +431,10 @@ def start_transfer():
                         Image.open(picPathCam2).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
                         Image.open(picPathCam3).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
 
-                    # skip this row if a row with the specific timestamp already exists
-                    # ** we still want to consider the timestamp and the average altitude even when skipping rows
-                    if (pDBController.get_picture_at_timestamp(row[0]) > 0):
-                        col1 = pDBController.get_picture_dominant_color(row[0], 1)
-                        col2 = pDBController.get_picture_dominant_color(row[0], 2)
-                        col3 = pDBController.get_picture_dominant_color(row[0], 3)
-
-                        if (col1 is not None and col2 is not None and col3 is not None):
-                            domColorsCam1.append([col1[0], col1[1], col1[2]])
-                            domColorsCam2.append([col2[0], col2[1], col2[2]])
-                            domColorsCam3.append([col3[0], col3[1], col3[2]])
-                        else:
-                            # concurrently extract the dominant color
-                            #  1. calculate dominant HSV/RGB colors
-                            #  2. update path to each picture for camera 1, 2, 3
-                            threads.append(threadPool.submit(dominant_color_wrapper, currHike, row))
+                    # concurrently extract the dominant color
+                    #    1. calculate dominant HSV/RGB colors
+                    #    2. update path to each picture for camera 1, 2, 3
+                    threads.append(threadPool.submit(dominant_color_wrapper, currHike, row))
 
                     i += 1
 
