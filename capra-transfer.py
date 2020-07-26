@@ -217,6 +217,7 @@ def dominant_color_wrapper(currHike, row):
     index_in_hike = row[3]
     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
+    picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
 
     if (pDBController.get_picture_at_timestamp(row[0]) > 0):
@@ -263,7 +264,7 @@ def dominant_color_wrapper(currHike, row):
                 currHike, index_in_hike, row[1],
                 picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
                 picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
-                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2)
+                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2f)
 
     # TODO: pass information needed for the transfer animation as a JSON file
 
