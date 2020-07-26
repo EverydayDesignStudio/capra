@@ -374,9 +374,9 @@ class SQLStatements:
 
         # for default color, return cam2's color (the middle one)
         if (camNum == 0):
-            statement = 'SELECT camera2_color_hsv FROM pictures WHERE time == {}'.format(time)
+            statement = 'SELECT camera2_color_hsv, camera2_color_rgb FROM pictures WHERE time == {}'.format(time)
         else:
-            statement = 'SELECT camera{}_color_hsv FROM pictures WHERE time == {}'.format(camNum, time)
+            statement = 'SELECT camera{}_color_hsv, camera{}_color_rgb FROM pictures WHERE time == {}'.format(camNum, camNum, time)
 
         return statement
 
