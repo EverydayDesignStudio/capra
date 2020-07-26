@@ -214,7 +214,7 @@ def roundToHundredth(lst):
 
 
 def dominant_color_wrapper(currHike, row):
-    index_in_hike = row[4]
+    index_in_hike = row[3]
     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
@@ -227,9 +227,9 @@ def dominant_color_wrapper(currHike, row):
     # TODO: check if invalid files are handled correctly
     # TODO: how do we redo failed rows?
     except:
-        print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[4])))
+        print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
         print(traceback.format_exc())
-        logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[4])))
+        logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
         logger.info(traceback.format_exc())
 
     color1 = color_res1.split(", ")
@@ -360,7 +360,7 @@ def start_transfer():
                 # for row in validRows:
                 while(i < numValidRows):
                     # row:
-                    #   (time, alt, color, hike, index, cam1, cam2, cam3, date_created, date_updated)
+                    #   (time, alt, hike, index, cam1, cam2, cam3, date_created, date_updated)
                     row = validRows[i]
 
                     if (not g.HALL_EFFECT):
@@ -382,8 +382,8 @@ def start_transfer():
 
                     # "/home/pi/capra-storage/hike1/1_cam2.jpg"
                     #   --> "/home/pi/capra-storage/hike1/1_cam*"
-                    src = row[5][:-5] + '*'
-                    index_in_hike = row[4]
+                    src = row[4][:-5] + '*'
+                    index_in_hike = row[3]
                     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
                     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
                     picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
