@@ -130,6 +130,7 @@ def check_button_turn_off():
 def check_low_battery_turn_off():
     status = gpio.input(g.LDO)
     if status == gpio.LOW:
+        rgb_led.turn_off()
         rgb_led.turn_red()
         piezo.play_low_battery_storage_jingle()
         logging.info('--------------------- POWERED OFF ---------------------')
@@ -145,6 +146,7 @@ def check_low_storage_turn_off():
     bytes_available = psutil.disk_usage(path).free
     megs_available = round(bytes_available / 1024 / 1024, 0)
     if megs_available < 512:
+        rgb_led.turn_off()
         rgb_led.turn_orange()
         piezo.play_low_battery_storage_jingle()
         logging.info('--------------------- POWERED OFF ---------------------')
