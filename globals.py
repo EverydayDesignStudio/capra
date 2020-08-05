@@ -44,9 +44,9 @@ def init():
     HALL_BOUNCE_TIMER = None
 
     global FILENAME
-    global FILENAME_ROTATED
+    global FILENAME_FULLSIZE
     FILENAME = "[!\.]*_cam[1-3].jpg"
-    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
+    FILENAME_FULLSIZE = "[!\.]*_cam2f.jpg"
 
     # Paths
     global DATAPATH_CAMERA

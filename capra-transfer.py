@@ -196,7 +196,7 @@ def build_picture_path(hikeID, index, camNum, rotated=False):
 def compute_checksum(currHike):
     global checkSum_total, checkSum_rotated, checkSum_transferred
     checkSum_transferred = count_files_in_directory(build_hike_path(currHike), g.FILENAME)
-    checkSum_rotated = count_files_in_directory(build_hike_path(currHike), g.FILENAME_ROTATED)
+    checkSum_rotated = count_files_in_directory(build_hike_path(currHike), g.FILENAME_FULLSIZE)
     checkSum_total = checkSum_transferred + checkSum_rotated
 
 
