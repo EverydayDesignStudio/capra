@@ -53,7 +53,7 @@ DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
-BLACK_IMAGE = DATAPATH + "black.jpeg"
+DUMMY_IMAGE = DATAPATH + "dummy.jpg"
 
 class readHallEffectThread(threading.Thread):
     def __init__(self):
@@ -490,6 +490,7 @@ def start_transfer():
 
                 # commit changes
                 #  ** sqlite does not support concurrent write options
+                print(".. Pictures for hike {} start committing..".format(currHike))
                 for commit in commits:
                     pDBController.upsert_picture(*commit)
 
