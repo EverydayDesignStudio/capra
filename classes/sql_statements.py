@@ -258,6 +258,8 @@ class SQLStatements:
                             hike: int,
                             index_in_hike: int,
                             altitude: float,
+                            altrank_hike: int,
+                            altrank_global: int,
                             camera1: str,
                             camera1_color_hsv: str,
                             camera1_color_rgb: str,
@@ -274,21 +276,21 @@ class SQLStatements:
         statement = 'INSERT OR REPLACE INTO pictures \
             (time, \
                 year, month, day, minute, dayofweek, \
-                hike, index_in_hike, altitude, \
+                hike, index_in_hike, altitude, altrank_hike, altrank_global, \
                 camera1, camera1_color_hsv, camera1_color_rgb, \
                 camera2, camera2_color_hsv, camera2_color_rgb, \
                 colrank_value, colrank_hike, colrank_global, \
                 camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape) \
             VALUES ({}, \
                     {}, {}, {}, {}, {}, \
-                    {}, {}, {}, \
+                    {}, {}, {}, {}, {}, \
                     "{}", "{}", "{}", \
                     "{}", "{}", "{}", \
                     {}, {}, {}, \
                     "{}", "{}", "{}", "{}")\
             '.format(time,
                         year, month, day, minute, dayofweek,
-                        hike, index_in_hike, altitude,
+                        hike, index_in_hike, altitude, altrank_hike, altrank_global,
                         camera1, camera1_color_hsv, camera1_color_rgb,
                         camera2, camera2_color_hsv, camera2_color_rgb,
                         colrank_value, colrank_hike, colrank_global,

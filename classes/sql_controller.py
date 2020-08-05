@@ -442,6 +442,8 @@ class SQLController:
                             hike: int,
                             index_in_hike: int,
                             altitude: float,
+                            altrank_hike: int,
+                            altrank_global: int,
                             camera1: str,
                             camera1_color_hsv: str,
                             camera1_color_rgb: str,
@@ -457,7 +459,7 @@ class SQLController:
                             camera_landscape: str):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.upsert_picture_row(time, year, month, day, minute, dayofweek,
-                                                            hike, index_in_hike, altitude,
+                                                            hike, index_in_hike, altitude, altrank_hike, altrank_global,
                                                             camera1, camera1_color_hsv, camera1_color_rgb,
                                                             camera2, camera2_color_hsv, camera2_color_rgb,
                                                             colrank_value, colrank_hike, colrank_global,

@@ -265,7 +265,7 @@ def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCount
     picDatetime = datetime.datetime.fromtimestamp(row[0])
 
     # (time, year, month, day, minute, dayofweek,
-    #   hike, index_in_hike, altitude,
+    #   hike, index_in_hike, altitude, altrank_hike, altrank_global,
     #   camera1, camera1_color_hsv, camera1_color_rgb,
     #   camera2, camera2_color_hsv, camera2_color_rgb,
     #   colrank_value, colrank_hike, colrank_global,
@@ -274,7 +274,7 @@ def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCount
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2 pic
     commit = (row[0], picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, row[1],
+                currHike, index_in_hike, row[1], colrankHikeCounter, colrankGlobalCounter,
                 picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
                 picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
                 -1, colrankHikeCounter, colrankGlobalCounter,
@@ -510,6 +510,8 @@ def start_transfer():
                 # TODO: color ranking
                 # https://github.com/EverydayDesignStudio/capra-color/blob/master/generate_colors.py
 
+                # TODO: altitude ranking
+
                 hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
                 hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
 
@@ -581,6 +583,9 @@ def start_transfer():
         logger.info("[{}] Proceeding to the next hike... {} -> {}".format(timenow(), str(currHike), str(currHike + 1)))
 
         currHike += 1
+
+    # TODO: global color ranking
+    # TODO: global altitude ranking
 
     print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
     logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
