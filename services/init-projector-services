@@ -22,4 +22,16 @@ echo "Enabling service..."
 sudo systemctl enable /lib/systemd/system/capra-projector-startup.service
 echo "✅ Service has been enabled!"
 
+# Capra projector turn off service
+echo "Enabling capra-projector-turn-off service..."
+sudo cp services/capra-projector-turn-off.service /lib/systemd/system/
+echo "✅ Moved capra-projector-turn-off.service to /lib/systemd/system/"
+sudo chmod 644 /lib/systemd/system/capra-projector-turn-off.service
+echo "✅ Changed permissions"
+echo "Reloading daemon..."
+sudo systemctl daemon-reload
+echo "Enabling service..."
+sudo systemctl enable /lib/systemd/system/capra-projector-turn-off.service
+echo "✅ Service has been enabled!"
+
 exit 0
