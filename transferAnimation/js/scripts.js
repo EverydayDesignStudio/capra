@@ -3,7 +3,7 @@
 // http://jsfiddle.net/nbyrd/XNSSR/     - connect to DB
 
 // https://stackoverflow.com/questions/3102819/disable-same-origin-policy-in-chrome
-// >> chromium-browser --disable-web-security --user-data-dir="/home/pi/capra/transferAnimation_pythonServer/"
+// >> chromium-browser --disable-web-security --start-fullscreen --user-data-dir="/home/pi/capra/transferAnimation_pythonServer/"
 
 
 // function printJSON(data) {
@@ -27,6 +27,7 @@ function getDBSummary() {
      jsonpCallback: 'callback',
      crossDomain: true,
      success: function (data) {
+       $( ".container" ).empty();
        $(".container").append('<div>' + data.dbName + '</div>');
      }
   });
@@ -40,7 +41,27 @@ function getLatestTransferredPic() {
      jsonpCallback: 'callback',
      crossDomain: true,
      success: function (data) {
+       $( ".container" ).empty();
        $(".container").append('<div>' + "Path to Picture is: " + data.picPath + '</div>');
+     }
+  });
+}
+
+function testTime() {
+  $.ajax({
+     type: "GET",
+     url: "http://127.0.0.1:5000/hello/update" ,
+     dataType: 'json',
+     jsonpCallback: 'callback',
+     crossDomain: true,
+     statusCode: {
+        500: function() {
+          console.log("Script exhausted");
+        }
+      },
+     success: function (data) {
+       $( ".container" ).empty();
+       $(".container").append('<div>' + "Latest Update at " + data.currentTime + '</div>');
      }
   });
 }

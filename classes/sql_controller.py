@@ -404,14 +404,61 @@ class SQLController:
         cursor.execute(self.statements.delete_hikes())
         self.connection.commit()
 
-    def upsert_hike(self, hike_id: str, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str):
+    def upsert_hike(self,
+                        hike_id: int,
+                        avg_altitude: float,
+                        avg_color_camera1_hsv: str,
+                        avg_color_camera2_hsv: str,
+                        avg_color_camera3_hsv: str,
+                        start_time: float,
+                        start_year: int,
+                        start_month: int,
+                        start_day: int,
+                        start_minute: int,
+                        start_dayofweek: int,
+                        end_time: float,
+                        end_year: int,
+                        end_month: int,
+                        end_day: int,
+                        end_minute: int,
+                        end_dayofweek: int,
+                        pictures: int,
+                        path: str):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path))
+        cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude,
+                                                        avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv,
+                                                        start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
+                                                        end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                                                        pictures, path))
         self.connection.commit()
 
-    def upsert_picture(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str):
+    def upsert_picture(self,
+                            time: float,
+                            year: int,
+                            month: int,
+                            day: int,
+                            minute: int,
+                            dayofweek: int,
+                            hike: int,
+                            index_in_hike: int,
+                            altitude: float,
+                            camera1: str,
+                            camera1_color_hsv: str,
+                            camera1_color_rgb: str,
+                            camera2: str,
+                            camera2_color_hsv: str,
+                            camera2_color_rgb: str,
+                            camera3: str,
+                            camera3_color_hsv: str,
+                            camera3_color_rgb: str,
+                            camera_landscape: str):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.upsert_picture_row(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape))
+        cursor.execute(self.statements.upsert_picture_row(time, year, month, day, minute, dayofweek,
+                                                            hike, index_in_hike, altitude,
+                                                            camera1, camera1_color_hsv, camera1_color_rgb,
+                                                            camera2, camera2_color_hsv, camera2_color_rgb,
+                                                            camera3, camera3_color_hsv, camera3_color_rgb,
+                                                            camera_landscape))
         self.connection.commit()
 
     def get_size_of_hike(self, hike_id: int) -> int:
@@ -423,20 +470,44 @@ class SQLController:
         else:
             return row[0]
 
-    def get_hike_average_color(self, hike_id: int):
+    def get_hike_average_color(self, hike_id: int, camNum: int = 0):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
-        res = cursor.fetchall()
-        if (res is None):
+        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id, camNum=camNum))
+        res = cursor.fetchone()
+
+        if (res is None or res[0] is None):
+            return None
+
+        tmp = res[0].strip("()").split(',')
+        ret = []
+
+        if (tmp is None):
             return None
         else:
-            return res[0]
+            for i in tmp:
+            	ret.append(float(i))
+            return ret
 
-    def get_picture_dominant_color(self, time: float):
+    # returns an array that represents the dominant color in HSV value: [float, float, float]
+    def get_picture_dominant_color(self, time: float, camNum: int = 0):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time))
-        res = cursor.fetchall()
-        return res[0]
+        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time, camNum=camNum))
+        res = cursor.fetchone()
+
+        if (res is None or res[0] is None):
+            return None
+
+        ret = []
+
+        hsv = res[0].strip("()").split(',')
+        for i in hsv:
+            ret.append(float(i))
+
+        rgb = res[0].strip("()").split(',')
+        for i in rgb:
+            ret.append(float(i))
+
+        return ret
 
     def get_picture_at_timestamp(self, time: float):
         cursor = self.connection.cursor()

@@ -244,28 +244,118 @@ class SQLStatements:
     # Transfer
     # --------------------------------------------------------------------------
     def select_valid_photos_in_given_hike(self, hike_id: int) -> int:
-        # TODO: update the MAX value to Mt. Everest
         statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= 0 AND \
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
         return statement
 
-    def upsert_picture_row(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str) -> int:
+    # def upsert_picture_row(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str) -> int:
+    #     statement = 'INSERT OR REPLACE INTO pictures \
+    #         (time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape) \
+    #         VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}", "{}", "{}", "{}")\
+    #         '.format(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
+    #     return statement
+
+    def upsert_picture_row(self,
+                            time: float,
+                            year: int,
+                            month: int,
+                            day: int,
+                            minute: int,
+                            dayofweek: int,
+                            hike: int,
+                            index_in_hike: int,
+                            altitude: float,
+                            camera1: str,
+                            camera1_color_hsv: str,
+                            camera1_color_rgb: str,
+                            camera2: str,
+                            camera2_color_hsv: str,
+                            camera2_color_rgb: str,
+                            camera3: str,
+                            camera3_color_hsv: str,
+                            camera3_color_rgb: str,
+                            camera_landscape: str) -> int:
         statement = 'INSERT OR REPLACE INTO pictures \
-            (time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape) \
-            VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}", "{}", "{}", "{}")\
-            '.format(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
+            (time, \
+                year, month, day, minute, dayofweek, \
+                hike, index_in_hike, altitude, \
+                camera1, camera1_color_hsv, camera1_color_rgb, \
+                camera2, camera2_color_hsv, camera2_color_rgb, \
+                camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape) \
+            VALUES ({}, \
+                    {}, {}, {}, {}, {}, \
+                    {}, {}, {}, \
+                    "{}", "{}", "{}", \
+                    "{}", "{}", "{}", \
+                    "{}", "{}", "{}", "{}")\
+            '.format(time,
+                        year, month, day, minute, dayofweek,
+                        hike, index_in_hike, altitude,
+                        camera1, camera1_color_hsv, camera1_color_rgb,
+                        camera2, camera2_color_hsv, camera2_color_rgb,
+                        camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
         return statement
 
-    def upsert_hike_row(self, hike_id: int, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str) -> str:
+    # def upsert_hike_row(self, hike_id: int, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str) -> str:
+    #     statement = 'INSERT OR REPLACE INTO hikes \
+    #         (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
+    #         VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
+    #         '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+    #     return statement
+
+    def upsert_hike_row(self,
+                        hike_id: int,
+                        avg_altitude: float,
+                        avg_color_camera1_hsv: str,
+                        avg_color_camera2_hsv: str,
+                        avg_color_camera3_hsv: str,
+                        start_time: float,
+                        start_year: int,
+                        start_month: int,
+                        start_day: int,
+                        start_minute: int,
+                        start_dayofweek: int,
+                        end_time: float,
+                        end_year: int,
+                        end_month: int,
+                        end_day: int,
+                        end_minute: int,
+                        end_dayofweek: int,
+                        pictures: int,
+                        path: str) -> str:
         statement = 'INSERT OR REPLACE INTO hikes \
-            (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
-            VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
-            '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
+            (hike_id, avg_altitude, \
+                avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv, \
+                start_time, start_year, start_month, start_day, start_minute, start_dayofweek, \
+                end_time, end_year, end_month, end_day, end_minute, end_dayofweek, \
+                pictures, path) \
+            VALUES ({}, {}, \
+                    "{}", "{}", "{}", \
+                    {}, {}, {}, {}, {}, {}, \
+                    {}, {}, {}, {}, {}, {}, \
+                    {}, "{}")\
+            '.format(hike_id, avg_altitude,
+                        avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv,
+                        start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
+                        end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                        pictures, path)
         return statement
 
-    def get_hike_average_color(self, hike_id: int):
-        statement = 'SELECT avg_hue, avg_saturation, avg_value FROM hikes WHERE hike_id == {}'.format(hike_id)
+    # def get_hike_average_color(self, hike_id: int):
+    #     statement = 'SELECT avg_hue, avg_saturation, avg_value FROM hikes WHERE hike_id == {}'.format(hike_id)
+    #     return statement
+
+    def get_hike_average_color(self, hike_id: int, camNum : int = 0):
+        statement = ""
+
+        # for default color, return cam2's color (the middle one)
+        if (camNum == 0):
+            statement = 'SELECT avg_color_camera2_hsv FROM hikes WHERE hike_id == {}'.format(hike_id)
+        else:
+            statement = 'SELECT avg_color_camera{}_hsv FROM hikes WHERE hike_id == {}'.format(camNum, hike_id)
+
         return statement
+
 
     def get_size_of_hike(self, hike_id: int):
         statement = 'SELECT pictures FROM hikes WHERE hike_id == {}'.format(hike_id)
@@ -275,8 +365,19 @@ class SQLStatements:
         statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 
-    def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
-        statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
+    # def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
+    #     statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
+    #     return statement
+
+    def get_dominant_color_for_picture_of_given_timestamp(self, time: float, camNum : int = 0):
+        statement = ""
+
+        # for default color, return cam2's color (the middle one)
+        if (camNum == 0):
+            statement = 'SELECT camera2_color_hsv, camera2_color_rgb FROM pictures WHERE time == {}'.format(time)
+        else:
+            statement = 'SELECT camera{}_color_hsv, camera{}_color_rgb FROM pictures WHERE time == {}'.format(camNum, camNum, time)
+
         return statement
 
     def delete_pictures(self) -> str:
