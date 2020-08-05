@@ -39,6 +39,9 @@ checkSum_transferred = 0
 checkSum_rotated = 0
 checkSum_total = 0
 
+colrankHikeCounter = 0
+colrankGlobalCounter = 0
+
 domColors = []
 commits = []        # deferred commits due to concurrency
 threads = []
@@ -213,42 +216,50 @@ def roundToHundredth(lst):
     return lst
 
 
-def dominant_color_wrapper(currHike, row):
+def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCounter):
     index_in_hike = row[3]
     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
     picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
+    color1 = None
+    color2 = None
+    color3 = None
+
+#    print("{}: {}".format(index_in_hike, row))
 
     if (pDBController.get_picture_at_timestamp(row[0]) > 0):
         color1 = pDBController.get_picture_dominant_color(row[0], 1)
         color2 = pDBController.get_picture_dominant_color(row[0], 2)
         color3 = pDBController.get_picture_dominant_color(row[0], 3)
+    else:
+        try:
+            # round color values to the nearest hundredth
+            if (color1 is None):
+                color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
+                color1 = color_res1.split(", ")
 
-    try:
-        # round color values to the nearest hundredth
-        if (color1 is None):
-            color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
-            color1 = color_res1.split(", ")
-            roundToHundredth(color1)
 
-        if (color2 is None):
-            color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
-            color2 = color_res2.split(", ")
-            roundToHundredth(color2)
+            if (color2 is None):
+                color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
+                color2 = color_res2.split(", ")
 
-        if (color3 is None):
-            color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
-            color3 = color_res3.split(", ")
-            roundToHundredth(color3)
 
-    # TODO: check if invalid files are handled correctly
-    # TODO: how do we redo failed rows?
-    except:
-        print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
-        print(traceback.format_exc())
-        logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
-        logger.info(traceback.format_exc())
+            if (color3 is None):
+                color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
+                color3 = color_res3.split(", ")
+
+        # TODO: check if invalid files are handled correctly
+        # TODO: how do we redo failed rows?
+        except:
+            print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
+            print(traceback.format_exc())
+            logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
+            logger.info(traceback.format_exc())
+
+    roundToHundredth(color1)
+    roundToHundredth(color2)
+    roundToHundredth(color3)
 
     picDatetime = datetime.datetime.fromtimestamp(row[0])
 
@@ -256,6 +267,7 @@ def dominant_color_wrapper(currHike, row):
     #   hike, index_in_hike, altitude,
     #   camera1, camera1_color_hsv, camera1_color_rgb,
     #   camera2, camera2_color_hsv, camera2_color_rgb,
+    #   colrank_value, colrank_hike, colrank_global,
     #   camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
 
     # ** 0 is monday in dayofweek
@@ -264,6 +276,7 @@ def dominant_color_wrapper(currHike, row):
                 currHike, index_in_hike, row[1],
                 picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
                 picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
+                -1, colrankHikeCounter, colrankGlobalCounter,
                 picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2f)
 
     # TODO: pass information needed for the transfer animation as a JSON file
@@ -273,7 +286,7 @@ def dominant_color_wrapper(currHike, row):
 
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry, hall_effect
-    global checkSum_transferred, checkSum_rotated, checkSum_total
+    global checkSum_transferred, checkSum_rotated, checkSum_total, colrankHikeCounter, colrankGlobalCounter
     global logger
     global domColors, commits, threads, threadPool
 
@@ -286,6 +299,8 @@ def start_transfer():
 
     currHike = 1
     checkSum = 0
+
+    colrankGlobalCounter = 0
 
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
@@ -309,6 +324,8 @@ def start_transfer():
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
         expectedCheckSumTotal = currExpectedHikeSize * 4
+
+        colrankHikeCounter = 0
 
         # 1. skip empty hikes
         if (currExpectedHikeSize == 0):
@@ -380,6 +397,9 @@ def start_transfer():
                         print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                         logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                         return
+                    colrankHikeCounter += 1
+                    colrankGlobalCounter += 1
+
 
                     # update timestamps
                     if (row[0] < startTime):
@@ -409,11 +429,13 @@ def start_transfer():
                             or os.path.exists(picPathCam2)
                             or os.path.exists(picPathCam3)):
 
-                            for tmpfile in glob.glob(tmpPath[:-5] + '*'):
+                            tmpPath = picPathCam1[:-5]
+                            for tmpfile in glob.glob(tmpPath + '*'):
                                 os.remove(tmpfile)
 
                         isNew = True
-                        rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '--remove-source-files', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
+                        # '--remove-source-files',
+                        rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
                         rsync_status.wait()
 
                         # report if rsync is failed
@@ -435,7 +457,7 @@ def start_transfer():
                     # concurrently extract the dominant color
                     #    1. calculate dominant HSV/RGB colors
                     #    2. update path to each picture for camera 1, 2, 3
-                    threads.append(threadPool.submit(dominant_color_wrapper, currHike, row))
+                    threads.append(threadPool.submit(dominant_color_wrapper, currHike, row, colrankHikeCounter, colrankGlobalCounter))
 
                     i += 1
 
@@ -466,6 +488,9 @@ def start_transfer():
                     roundToHundredth(hikeDomCol1)
                     roundToHundredth(hikeDomCol2)
                     roundToHundredth(hikeDomCol3)
+
+                # TODO: color ranking
+                # https://github.com/EverydayDesignStudio/capra-color/blob/master/generate_colors.py
 
                 hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
                 hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)

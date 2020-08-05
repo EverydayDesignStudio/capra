@@ -448,6 +448,9 @@ class SQLController:
                             camera2: str,
                             camera2_color_hsv: str,
                             camera2_color_rgb: str,
+                            colrank_value: float,
+                            colrank_hike: int,
+                            colrank_global: int,
                             camera3: str,
                             camera3_color_hsv: str,
                             camera3_color_rgb: str,
@@ -457,6 +460,7 @@ class SQLController:
                                                             hike, index_in_hike, altitude,
                                                             camera1, camera1_color_hsv, camera1_color_rgb,
                                                             camera2, camera2_color_hsv, camera2_color_rgb,
+                                                            colrank_value, colrank_hike, colrank_global,
                                                             camera3, camera3_color_hsv, camera3_color_rgb,
                                                             camera_landscape))
         self.connection.commit()

@@ -248,13 +248,6 @@ class SQLStatements:
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
         return statement
 
-    # def upsert_picture_row(self, time: float, hike: int, index_in_hike: int, altitude: float, hue: float, saturation: float, value: float, red: float, green: float, blue: float, camera1: str, camera2: str, camera3: str, camera_landscape: str) -> int:
-    #     statement = 'INSERT OR REPLACE INTO pictures \
-    #         (time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape) \
-    #         VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}", "{}", "{}", "{}")\
-    #         '.format(time, hike, index_in_hike, altitude, hue, saturation, value, red, green, blue, camera1, camera2, camera3, camera_landscape)
-    #     return statement
-
     def upsert_picture_row(self,
                             time: float,
                             year: int,
@@ -271,6 +264,9 @@ class SQLStatements:
                             camera2: str,
                             camera2_color_hsv: str,
                             camera2_color_rgb: str,
+                            colrank_value: float,
+                            colrank_hike: int,
+                            colrank_global: int,
                             camera3: str,
                             camera3_color_hsv: str,
                             camera3_color_rgb: str,
@@ -281,18 +277,21 @@ class SQLStatements:
                 hike, index_in_hike, altitude, \
                 camera1, camera1_color_hsv, camera1_color_rgb, \
                 camera2, camera2_color_hsv, camera2_color_rgb, \
+                colrank_value, colrank_hike, colrank_global, \
                 camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape) \
             VALUES ({}, \
                     {}, {}, {}, {}, {}, \
                     {}, {}, {}, \
                     "{}", "{}", "{}", \
                     "{}", "{}", "{}", \
+                    {}, {}, {}, \
                     "{}", "{}", "{}", "{}")\
             '.format(time,
                         year, month, day, minute, dayofweek,
                         hike, index_in_hike, altitude,
                         camera1, camera1_color_hsv, camera1_color_rgb,
                         camera2, camera2_color_hsv, camera2_color_rgb,
+                        colrank_value, colrank_hike, colrank_global,
                         camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
         return statement
 
