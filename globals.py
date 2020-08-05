@@ -73,6 +73,9 @@ def init():
     # --------------------------------------------------------------------------
 
     # Projector Pins
+    global PROJ_UART
+    PROJ_UART = 14          # BOARD - 8 (used to be RGB1_BLUE)
+
     global HALL_EFFECT_PIN
     HALL_EFFECT_PIN = 26    # BOARD - 37
     global BUTT_MODE
@@ -83,18 +86,18 @@ def init():
     BUTT_PREV = 6           # BOARD - 31
     global BUTT_NEXT        # Eagle says this is PREV
     BUTT_NEXT = 13          # BOARD - 33
-    global OFF_BUTTON
-    OFF_BUTTON = 4          # BOARD - 7
-    global ON_BUTTON
-    ON_BUTTON = 3           # BOARD - 5
+    global BUTT_OFF
+    BUTT_OFF = 4            # BOARD - 7
+    global BUTT_ON
+    BUTT_ON = 3             # BOARD - 5
 
     global ACCEL_SCL
     ACCEL_SCL = 3           # BOARD - 5
     global ACCEL_SDA
     ACCEL_SDA = 2           # BOARD - 3
 
-    global ENC1_BUTT
-    ENC1_BUTT = 25          # BOARD - 22
+    global BUTT_ENC1
+    BUTT_ENC1 = 25          # BOARD - 22
     global ENC1_A
     ENC1_A = 23             # BOARD - 16
     global ENC1_B
@@ -112,9 +115,7 @@ def init():
     global RGB1_RED
     RGB1_RED = 15           # BOARD - 10
     global RGB1_GREEN
-    RGB1_GREEN = 11         # BOARD - 11
-    global RGB1_BLUE
-    RGB1_BLUE = 14          # BOARD - 8
+    RGB1_GREEN = 17         # BOARD - 11
 
     global RGB2_RED
     RGB2_RED = 7            # BOARD - 26

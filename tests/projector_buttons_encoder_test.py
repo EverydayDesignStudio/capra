@@ -7,16 +7,16 @@ import globals as g
 g.init()
 
 GPIO.setmode(GPIO.BCM)
-# GPIO.setwarnings(False)
+GPIO.setwarnings(False)
 GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_MODE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_PREV, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_NEXT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(g.OFF_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(g.ON_BUTTON, GPIO.IN)
+GPIO.setup(g.BUTT_OFF, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(g.BUTT_ON, GPIO.IN)
 
-GPIO.setup(g.ENC1_BUTT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(g.BUTT_ENC1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.ENC1_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.ENC1_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -57,10 +57,10 @@ def main():
             prev_stat = 'Pressed'
         if GPIO.input(g.BUTT_NEXT) == 0:
             next_stat = 'Pressed'
-        if GPIO.input(g.OFF_BUTTON) == 1:
+        if GPIO.input(g.BUTT_OFF) == 1:
             off_stat = 'Pressed'
-        on_stat = GPIO.input(g.ON_BUTTON)
-        if GPIO.input(g.ENC1_BUTT) == 0:
+        on_stat = GPIO.input(g.BUTT_ON)
+        if GPIO.input(g.BUTT_ENC1) == 0:
             enc1_stat = 'Pressed'
 
         output = """
@@ -82,13 +82,14 @@ Off:        {off}
         time.sleep(0.1)
 
 
+# Example of other ways to test for a button press
+
 # def main():
     # while True:
     #     GPIO.wait_for_edge(g.BUTT_MODE, GPIO.FALLING)
     #     GPIO.wait_for_edge(g.BUTT_PREV, GPIO.FALLING)
 
     #     print('hi there people')
-
 
     # while True:
     #     if mode.is_pressed:
