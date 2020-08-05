@@ -53,6 +53,7 @@ DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
+BLACK_IMAGE = DATAPATH + "black.jpeg"
 
 class readHallEffectThread(threading.Thread):
     def __init__(self):
@@ -443,16 +444,33 @@ def start_transfer():
                             print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
                             logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
 
+                    img = None
+                    img_res = None
                     # resize and rotate for newly added pictures
                     #    1. make a copy of pic2 as pic2'f'
                     if (not os.path.exists(picPathCam2f)):
-                        Image.open(picPathCam2).copy().save(picPathCam2f)
+                        img = Image.open(picPathCam2)
+                        img_res = img.copy()
+                        img_res.save(picPathCam2f)
 
                     #    2. resize to 427x720 and rotate 90 deg
                     if (isNew):
-                        Image.open(picPathCam1).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
-                        Image.open(picPathCam2).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
-                        Image.open(picPathCam3).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        img = Image.open(picPathCam1)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                        img_res.save(picPathCam1)
+
+                        img = Image.open(picPathCam2)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                        img_res.save(picPathCam2)
+
+                        if (os.path.exists(picPathCam3)):
+                            img = Image.open(picPathCam3)
+                            img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                            img_res.save(picPathCam3)
+                        else:
+                            img = Image.open(BLACK_IMAGE)
+                            img_res = img.copy().rotate(90, expand=True)
+                            img_res.save(picPathCam3)
 
                     # concurrently extract the dominant color
                     #    1. calculate dominant HSV/RGB colors
