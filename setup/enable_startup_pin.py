@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-# Add ability for LED to light up immediately during POWER ON
 # Adds a single line to the /boot/config.txt
+# Camera - Add ability for LED to light up immediately during POWER ON
+# Projector - Add control for startup of Aaxa projector
 
 import os  # For calling shell commands
 
