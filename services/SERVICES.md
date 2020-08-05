@@ -16,7 +16,7 @@
 
 
 ## Collector (camera)
-`capra-camera-timelapse.service` - calls the timelapse program to begin on startup
-`capra-camera-turn-off.service` - plays startup and shutdown sounds; manages the `OFF` button
+`capra-camera-collector.service` - calls the timelapse program to begin on startup
+`capra-camera-turn-off.service` - manages the `force OFF` button, in case collector script crashes
 
 ## Explorer (projector)

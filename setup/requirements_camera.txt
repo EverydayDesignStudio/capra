@@ -1,0 +1,10 @@
+adafruit-circuitpython-ds3231==2.3.1
+adafruit-circuitpython-mcp3xxx==1.0.3
+adafruit-circuitpython-mpl3115a2==1.2.1
+gpiozero==1.5.0
+picamera==1.13
+psutil==5.7.0
+pylint==2.3.1
+pytest==5.4.2
+RPi.GPIO==0.7.0
+smbus

@@ -26,6 +26,7 @@
 import RPi.GPIO as GPIO
 import time
 
+
 class PiezoPlayer:
     # --------------------------------------------------------------------------
     # This is all the sound information for different theme songs
@@ -432,6 +433,18 @@ class PiezoPlayer:
         1,
     ]
 
+    crazy_frog_melody_short = [
+        notes['A4'], notes['E5'], notes['A4'], notes['A4'], notes['F5'], notes['E5'], notes['C5'],
+        notes['A4'], notes['E5'], notes['A5'], notes['A4'], notes['G4'], notes['G4'], notes['E4'], notes['B4'], 
+        notes['A4'],0,
+    ]
+
+    crazy_frog_tempo_short = [
+        2,4,4,8,4,4,4,
+        4,4,4,8,4,8,4,4,
+        1,4
+    ]
+
     deck_the_halls_melody = [
         notes['G5'], notes['F5'], notes['E5'], notes['D5'],
         notes['C5'], notes['D5'], notes['E5'], notes['C5'],
@@ -645,7 +658,7 @@ class PiezoPlayer:
         print('BuzzerPlayer object created for GPIO pin: {p}'.format(p=self.buzzer_pin))
         GPIO.setup(pin, GPIO.OUT)
 
-    def playStarWars(self):
+    def play_star_wars(self):
         print("Star Wars Theme")
         self.play(self.star_wars_melody, self.star_wars_tempo, 0.50, 1.00)
 
@@ -657,9 +670,13 @@ class PiezoPlayer:
         print("Crazy Frog (Axel F) Theme")
         self.play(self.crazy_frog_melody, self.crazy_frog_tempo, 0.30, 0.900)
 
+    def play_twinkle_twinkle(self):
+        print("Play Twinkle Twinkle")
+        self.play(self.twinkle_twinkle_melody, self.twinkle_twinkle_tempo, 0.30, 1.00)
+
     # Capra Jingles
     def play_power_on_jingle(self):
-        print("Startup jingle playing")
+        print("Power On jingle playing")
         self.play(self.capra_power_on_melody, self.capra_power_on_tempo, 0.50, 1.00)
 
     def play_start_recording_jingle(self):
@@ -667,13 +684,17 @@ class PiezoPlayer:
         self.play(self.capra_start_melody, self.capra_start_tempo, 0.50, 1.00)
 
     def play_paused_jingle(self):
-        print("Still Recording jingle playing")
+        print("Pause Recording jingle playing")
         self.play(self.capra_still_going_melody, self.capra_still_going_tempo, 0.50, 1.00)
 
-    def play_stop_recording_jingle(self):
-        print("Stop Recording jingle playing")
+    def play_power_off_jingle(self):
+        print("Power Off jingle playing")
         self.play(self.capra_stop_melody, self.capra_stop_tempo, 0.50, 1.00)
-    
+
+    def play_low_battery_storage_jingle(self):
+        print("Low Battery / Low Storage jingle playing - (Crazy Frog (Axel F) Theme)")
+        self.play(self.crazy_frog_melody_short, self.crazy_frog_tempo_short, 0.30, 0.900)
+
 
     # --------------------------------------------------------------------------
     # Logic for playing different sounds

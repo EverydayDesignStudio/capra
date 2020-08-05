@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Moves the services into the correct library directory
+# Then calls a daemon to load them
+
+# Exit the script when any command fails
+set -e
+# keep track of the last executed command
+# trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+# echo an error message before exiting, though this happens whether the script is successful or not
+# trap 'echo "⚠️ The following command failed with exit code $?: \"${last_command}\""' EXIT
+
+# Capra projector startup service
+echo "Enabling capra-projector-startup service..."
+sudo cp services/capra-projector-startup.service /lib/systemd/system/
+echo "✅ Moved capra-projector-startup.service to /lib/systemd/system/"
+sudo chmod 644 /lib/systemd/system/capra-projector-startup.service
+echo "✅ Changed permissions"
+echo "Reloading daemon..."
+sudo systemctl daemon-reload
+echo "Enabling service..."
+sudo systemctl enable /lib/systemd/system/capra-projector-startup.service
+echo "✅ Service has been enabled!"
+
+# Capra projector turn off service
+echo "Enabling capra-projector-turn-off service..."
+sudo cp services/capra-projector-turn-off.service /lib/systemd/system/
+echo "✅ Moved capra-projector-turn-off.service to /lib/systemd/system/"
+sudo chmod 644 /lib/systemd/system/capra-projector-turn-off.service
+echo "✅ Changed permissions"
+echo "Reloading daemon..."
+sudo systemctl daemon-reload
+echo "Enabling service..."
+sudo systemctl enable /lib/systemd/system/capra-projector-turn-off.service
+echo "✅ Service has been enabled!"
+
+exit 0

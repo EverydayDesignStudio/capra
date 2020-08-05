@@ -1,0 +1,10 @@
+[Unit]
+Description=CAPRA PROJECTOR STARTUP SERVICE
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python3 /home/pi/capra/projector_startup.py
+
+[Install]
+WantedBy=multi-user.target

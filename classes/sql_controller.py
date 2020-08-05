@@ -40,6 +40,8 @@ class SQLController:
 
         return picture
 
+    # Helper method for returning expected number
+    # If nothing is returned from db, return 0
     def _get_num_from_statement(self, statement: str):
         cursor = self.connection.cursor()
         cursor.execute(statement)
@@ -296,10 +298,9 @@ class SQLController:
             time_since = current_time - last_time
             return round(time_since, 0)
 
-    def _create_new_hike(self):
+    def _create_new_hike(self, time):
         cursor = self.connection.cursor()
-        t = time.time()
-        cursor.execute(self.statements.insert_new_hike(t))
+        cursor.execute(self.statements.insert_new_hike(time))
         self.connection.commit()
 
     def get_hike_count(self) -> int:
@@ -341,13 +342,13 @@ class SQLController:
         return rowid
 
     # Determine whether to create new hike or continue the last hike
-    def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY) -> bool:
+    def will_create_new_hike(self, NEW_HIKE_TIME, DIRECTORY, time) -> bool:
         time_since_last_hike = self._get_time_since_last_hike()
 
         # Create a new hike; -1 indicates this is the first hike in db
         if time_since_last_hike > NEW_HIKE_TIME or time_since_last_hike == -1:
             print('Creating new hike:')
-            self._create_new_hike()
+            self._create_new_hike(time)
 
             # Create folder in harddrive to save photos
             hike_num = self.get_last_hike_id()
@@ -362,10 +363,9 @@ class SQLController:
             print('Continuing last hike:')
             return False
 
-    def create_new_picture(self, hike_id: int, photo_index: int, photo_time: float):
+    def create_new_picture(self, hike_id: int, photo_index: int, time: float):
         cursor = self.connection.cursor()
-        ts = photo_time
-        cursor.execute(self.statements.insert_new_picture(ts, hike_id, photo_index))
+        cursor.execute(self.statements.insert_new_picture(time, hike_id, photo_index))
         self.connection.commit()
 
     def _set_hike_path(self, hike_id: int, hike_path: str):
@@ -378,21 +378,19 @@ class SQLController:
         cursor.execute(self.statements.update_picture_image_path(cam_num, path, hike_id, photo_index))
         self.connection.commit()
 
-    def set_picture_time_altitude(self, altitude: float, hike_id: int, photo_index: int):
+    def set_picture_altitude(self, altitude: float, hike_id: int, photo_index: int):
         cursor = self.connection.cursor()
-        ts = time.time()
-        cursor.execute(self.statements.update_picture_time_altitude(ts, altitude, hike_id, photo_index))
+        cursor.execute(self.statements.update_picture_altitude(altitude, hike_id, photo_index))
         self.connection.commit()
 
-    def set_hike_endtime_picture_count(self, count: int, hike_id: int):
+    def set_hike_endtime_picture_count(self, time: float, count: int, hike_id: int):
         cursor = self.connection.cursor()
-        ts = time.time()
-        cursor.execute(self.statements.update_hike_endtime_picture_count(ts, count, hike_id))
+        cursor.execute(self.statements.update_hike_endtime_picture_count(time, count, hike_id))
         self.connection.commit()
 
     def set_altitude_for_rowid(self, alt: float, id: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_picture_altitude(alt, id))
+        cursor.execute(self.statements.update_picture_altitude_for_id(alt, id))
         self.connection.commit()
 
     # Transfer

@@ -1,20 +1,26 @@
 define INIT_MESSAGE
-For which device would you like to install dependencies?
 Run one of the following options:
 
 ----------------------------Camera----------------------------
-[make camera_setup1]		installs dependencies and adds line to /boot/config.txt for RTC
-[make camera_setup2] 		sets RTC, creates db, and setups services
+[make camera_setup1]		install dependencies, add RTC and UART to /boot/config.txt, remove fake-hwclock
+[make camera_setup2] 		set RTC, create db, and set up services
 
-[make camera_install]		installs dependencies from pip3 and apt-get
-[make camera_clock1_use_rtc]	only run once; adds line to /boot/config.txt for RTC
-[make camera_clock2_set_rtc]	sets RTC to correct time from NTP
-[make camera_db]		creates a new database along file storage
-[make camera_services]		loads services to be run on startup
+Individual Make commands, if manually needed
+[make camera_install]		install dependencies from pip3 and apt-get
+[make camera_clock1_use_rtc]	*only run once* : add RTC to /boot/config.txt, remove fake-hwclock
+[make camera_clock2_set_rtc]	set RTC to correct time from NTP
+[make camera_startup_pin]	*only run once* : enable UART in /boot/config.txt
+[make camera_db]		create a new database along with file storage
+[make camera_services]		load services to be run on startup
+
 
 ----------------------------Projector----------------------------
-[make projector]		installs dependencies and creates db
-[make projector_db]		creates a new database along file storage
+[make projector]		install dependencies, setup services, create db
+
+[make projector_startup_pin]	*only run once* : enable UART in /boot/config.txt
+[make projector_services]	load services to be run on startup
+[make projector_db]		create a new database along with file storage
+
 
 endef
 
@@ -25,48 +31,55 @@ init:
 
 # -------------- Projector --------------
 define PROJECTOR_INSTALL
-sudo pip3 install -r setup/requirements_explorer.txt
-sudo ./setup/install_apps_explorer.sh
+sudo pip3 install -r setup/requirements_projector.txt
+sudo ./setup/install_apps_projector.sh
 endef
 
 projector:
 	$(call PROJECTOR_INSTALL)
 	./setup/create_db_projector.py
+	sudo ./setup/enable_startup_pin.py
+	./services/init-projector-services
+
+projector_install:
+	$(call PROJECTOR_INSTALL)
 
 projector_db:
 	./setup/create_db_projector.py
 
+projector_services:
+	./services/init-projector-services
+
+projector_startup_pin:
+	sudo ./setup/enable_startup_pin.py
+
+
 # -------------- Camera --------------
 define CAMERA_INSTALL
-sudo pip3 install -r setup/requirements_collector.txt
-sudo ./setup/install_apps_collector.sh
-endef
-
-define CAMERA_USE_RTC
-sudo ./setup/use_rtc.py
-endef
-
-define CAMERA_RTC_DB_SERVICES
-./setup/set_rtc.py
-./setup/create_db_camera.py
-./services/init-camera-services
+sudo pip3 install -r setup/requirements_camera.txt
+sudo ./setup/install_apps_camera.sh
 endef
 
 camera_setup1:
 	$(call CAMERA_INSTALL)
-	$(call CAMERA_USE_RTC)
+	sudo ./setup/use_rtc.py
+	./setup/set_rtc.py
 
 camera_setup2:
-	$(call CAMERA_RTC_DB_SERVICES)
+	./setup/create_db_camera.py
+	./services/init-camera-services
 
 camera_install:
 	$(call CAMERA_INSTALL)
 
 camera_clock1_use_rtc:
-	$(call CAMERA_USE_RTC)
+	sudo ./setup/use_rtc.py
 
 camera_clock2_set_rtc:
 	./setup/set_rtc.py
+
+camera_startup_pin:
+	sudo ./setup/enable_startup_pin.py
 
 camera_db:
 	./setup/create_db_camera.py
