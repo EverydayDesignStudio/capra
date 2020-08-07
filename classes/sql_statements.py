@@ -244,7 +244,7 @@ class SQLStatements:
     # Transfer
     # --------------------------------------------------------------------------
     def select_valid_photos_in_given_hike(self, hike_id: int) -> int:
-        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude >= 0 AND \
+        statement = 'SELECT * FROM pictures WHERE hike == {h} AND altitude < 10000 AND altitude > -400 AND \
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
         return statement
 
