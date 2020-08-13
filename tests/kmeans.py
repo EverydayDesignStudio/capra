@@ -5,10 +5,11 @@ import cv2  # pip install opencv-python : for resizing image
 from pathlib import Path
 import time
 
-DATAPATH = '../../capra-sample-data/CapraKMeans/hike4/'
-CLUSTERS = 4
+DATAPATH = '/Users/myoo/Development/capra_data/_sample/hike0/'
+CLUSTERS = 5
 DIMX = 720
 DIMY = 427
+TOTAL = DIMX * DIMY
 OUTPUTPATH = DATAPATH + "dominantColors_" + str(DIMX) + "x" + str(DIMY) + '_' + str(CLUSTERS) + ".txt"
 
 
@@ -53,7 +54,7 @@ startTime = time.time()
 pathlist = Path(DATAPATH).glob('*.jpg')
 img = ""
 res = []
-count = 0
+count = 1
 for path in pathlist:
     # if (count < 1000):
     #     count += 1
@@ -64,7 +65,8 @@ for path in pathlist:
     try:
         # because path is object not string
         img = str(path)
-        imgName = img.rsplit('\\', 1)[1]
+        imgName = img.rsplit('/', 1)[1]
+        # print("{} - {}".format(count, imgName))
 
         # read in image of interest
         bgr_image = cv2.imread(img)
