@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Slideshow application for the Explorer. 
-# Allows passing through photos with a smooth fading animation.
+# Slideshow application for the Capra Explorer
+# Allows passing through photos with a smooth fading animation
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -14,6 +14,7 @@ import traceback
 
 # Filewide Hardware Status
 rotaryCounter = 0
+
 
 # Threading Infrastructure
 class WorkerSignals(QObject):
@@ -34,6 +35,7 @@ class WorkerSignals(QObject):
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
+
 
 '''
 class Worker(QRunnable):
@@ -66,6 +68,7 @@ class Worker(QRunnable):
             # print(self.count)
 '''
 
+
 # Custom Hardware Controls
 class RotaryEncoder(QRunnable):
     def __init__(self, PIN_A: int, PIN_B: int, *args, **kwargs):
@@ -74,13 +77,12 @@ class RotaryEncoder(QRunnable):
         self.RoAPin = PIN_A
         self.RoBPin = PIN_B
 
-        self.counter = 0
+        GPIO.setup(self.RoAPin, GPIO.IN)
+        GPIO.setup(self.RoBPin, GPIO.IN)
+
         self.flag = 0
         self.Last_RoB_Status = 0
         self.Current_RoB_Status = 0
-
-        GPIO.setup(self.RoAPin, GPIO.IN)
-        GPIO.setup(self.RoBPin, GPIO.IN)
 
     # https://www.sunfounder.com/learn/Super_Kit_V2_for_RaspberryPi/lesson-8-rotary-encoder-super-kit-for-raspberrypi.html
     def rotaryTurn(self):
@@ -93,17 +95,16 @@ class RotaryEncoder(QRunnable):
         if self.flag == 1:
             self.flag = 0
             if (Last_RoB_Status == 0) and (self.Current_RoB_Status == 1):
-                self.counter = self.counter + 1
-                rotaryCounter = self.counter
-                # print('counter = {g}'.format(g=self.counter))
+                rotaryCounter = rotaryCounter + 1
+                print('counter = {g}'.format(g=rotaryCounter))
             if (Last_RoB_Status == 1) and (self.Current_RoB_Status == 0):
-                self.counter = self.counter - 1
-                rotaryCounter = self.counter
-                # print('counter = {g}'.format(g=self.counter))
+                rotaryCounter = rotaryCounter - 1
+                print('counter = {g}'.format(g=rotaryCounter))
 
     def run(self):
         while True:
             self.rotaryTurn()
+
 
 # Uses global status variable to ensure there are no double presses for hardware buttons
 class HardwareButton(QRunnable):
@@ -117,8 +118,8 @@ class HardwareButton(QRunnable):
 
     def run(self):
         while True:
-            if GPIO.input(self.PIN)==False:         # Button press detected
-                if self.status==False:              # Button was just OFF
+            if GPIO.input(self.PIN) == False:         # Button press detected
+                if self.status == False:              # Button was just OFF
                     self.signals.result.emit(True)
                     self.status = True              # Update the status to ON
             else:                                   # Button is not pressed
@@ -142,7 +143,7 @@ class MainWindow(QMainWindow):
         rect = screen.availableGeometry()
         print('Available: %d x %d' % (rect.width(), rect.height()))
         '''
-        
+
         self.index = 1
         self.seconds = 0
 
@@ -175,7 +176,7 @@ class MainWindow(QMainWindow):
         # NeoPixels
 
         # LED indicators
-        
+
     def setupWindowUI(self):
         # Window
         self.setWindowTitle("Capra Slideshow")
@@ -190,7 +191,7 @@ class MainWindow(QMainWindow):
         w = QWidget()
         w.setLayout(self.grid)
         self.setCentralWidget(w)
-        
+
     def setupLandscapeUI(self):
         # Image
         img = QPixmap(self.buildLandscape(2561))
@@ -255,7 +256,6 @@ class MainWindow(QMainWindow):
         buttonNext.signals.result.connect(self.pressed_next)
         self.threadpool.start(buttonNext)
 
-
     # Keyboard presses
     def keyPressEvent(self, event):
         global rotaryCounter
@@ -263,6 +263,7 @@ class MainWindow(QMainWindow):
             self.close()
         elif event.key() == Qt.Key_Left:
             print('left')
+            print(rotaryCounter)
             # self.updatePrev()
         elif event.key() == Qt.Key_Right:
             print('right')
