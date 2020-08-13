@@ -87,8 +87,7 @@ class RotaryEncoder(QRunnable):
         self.Last_Direction = 0         # 0 for backward, 1 for forward
         self.Current_Direction = 0      # 0 for backward, 1 for forward
 
-        self.PERIOD = 500
-        self.MAXQUEUE = 5
+        self.MAXQUEUE = 7
         self.lst = list()
         self.last_time = datetime.now().timestamp()
         self.speedText = ""
@@ -99,7 +98,7 @@ class RotaryEncoder(QRunnable):
     def calculate_speed(self):
         self.dt = round(datetime.now().timestamp() - self.last_time, 5)
         # data sanitation: clean up random stray values that are extremely low
-        if self.dt < .001:
+        if self.dt < .005:
             self.dt = .1
 
         if len(self.lst) > self.MAXQUEUE:
@@ -109,7 +108,8 @@ class RotaryEncoder(QRunnable):
 
         self.last_time = datetime.now().timestamp()
 
-        #   .3   .07   .02
+        #   .3      .07     .02
+        #   .1      .05     .02
         if self.average >= .3:
             self.speedText = "slow"
         elif self.average >= .07 and self.average < .3:
@@ -144,11 +144,10 @@ class RotaryEncoder(QRunnable):
 
             self.average, self.speedText, self.dt = self.calculate_speed()
 
-            speed = 1 / self.dt
-            self.multFactor = int(1 / self.average)
+            speed = 0.5 / self.dt
+            self.multFactor = int(0.5 / self.average)
             if (self.multFactor < 1 or self.Current_Direction != self.Last_Direction):
                 self.multFactor = 1
-            # elif (multFactor):
 
             if (self.Current_Direction == 1):
                 rotaryCounter = rotaryCounter + 1 * self.multFactor
@@ -243,7 +242,7 @@ class MainWindow(QMainWindow):
     def setupWindowUI(self):
         # Window
         self.setWindowTitle("Capra Slideshow")
-        self.setStyleSheet("background-color: blue;")
+        self.setStyleSheet("background-color: gray;")
 
         # Grid - add all elements to the grid
         self.grid = QGridLayout()
@@ -268,14 +267,14 @@ class MainWindow(QMainWindow):
         testLabel.move(1100, 15)
 
         # Icon overlay
-        modeBg = QLabel(self)
-        modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
-        modeBg.setGeometry(0, 0, 1280, 720)
+        # modeBg = QLabel(self)
+        # modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
+        # modeBg.setGeometry(0, 0, 1280, 720)
 
-        modeImg = QPixmap('/home/pi/capra/icons/time.png')
-        modeLabel = QLabel(self)  # need the self to set position absolutely
-        modeLabel.setPixmap(modeImg)
-        modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
+        # modeImg = QPixmap('/home/pi/capra/icons/time.png')
+        # modeLabel = QLabel(self)  # need the self to set position absolutely
+        # modeLabel.setPixmap(modeImg)
+        # modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
 
     def setupVerticalUI(self):
         print('vertical')
