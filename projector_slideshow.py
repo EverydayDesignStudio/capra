@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from RPi import GPIO
+from datetime import datetime
 
 import sys
 import time
@@ -83,23 +84,85 @@ class RotaryEncoder(QRunnable):
         self.flag = 0
         self.Last_RoB_Status = 0
         self.Current_RoB_Status = 0
+        self.Last_Direction = 0         # 0 for backward, 1 for forward
+        self.Current_Direction = 0      # 0 for backward, 1 for forward
 
+        self.PERIOD = 500
+        self.MAXQUEUE = 5
+        self.lst = list()
+        self.last_time = datetime.now().timestamp()
+        self.speedText = ""
+        self.average = 0
+        self.dt = 0
+        self.multFactor = 1
+
+    def calculate_speed(self):
+        self.dt = round(datetime.now().timestamp() - self.last_time, 5)
+        # data sanitation: clean up random stray values that are extremely low
+        if self.dt < .001:
+            self.dt = .1
+
+        if len(self.lst) > self.MAXQUEUE:
+            self.lst.pop()
+        self.lst.insert(0, self.dt)
+        self.average = sum(self.lst) / len(self.lst)
+
+        self.last_time = datetime.now().timestamp()
+
+        #   .3   .07   .02
+        if self.average >= .3:
+            self.speedText = "slow"
+        elif self.average >= .07 and self.average < .3:
+            self.speedText = "medium"
+        elif self.average >= .02 and self.average < .07:
+            self.speedText = "fast"
+        else:
+            self.speedText = "super-duper fast"
+
+        return self.average, self.speedText, self.dt
+
+    # Starting logic comes from the following project:
     # https://www.sunfounder.com/learn/Super_Kit_V2_for_RaspberryPi/lesson-8-rotary-encoder-super-kit-for-raspberrypi.html
     def rotaryTurn(self):
         global rotaryCounter
-        Last_RoB_Status = GPIO.input(self.RoBPin)
+
+        self.Last_RoB_Status = GPIO.input(self.RoBPin)
 
         while(not GPIO.input(self.RoAPin)):
             self.Current_RoB_Status = GPIO.input(self.RoBPin)
             self.flag = 1
         if self.flag == 1:
             self.flag = 0
-            if (Last_RoB_Status == 0) and (self.Current_RoB_Status == 1):
-                rotaryCounter = rotaryCounter + 1
-                print('counter = {g}'.format(g=rotaryCounter))
-            if (Last_RoB_Status == 1) and (self.Current_RoB_Status == 0):
-                rotaryCounter = rotaryCounter - 1
-                print('counter = {g}'.format(g=rotaryCounter))
+
+            if (self.Last_RoB_Status == 0) and (self.Current_RoB_Status == 1):
+                self.Current_Direction = 1
+            if (self.Last_RoB_Status == 1) and (self.Current_RoB_Status == 0):
+                self.Current_Direction = 0
+
+            if (self.Current_Direction != self.Last_Direction):
+                self.lst.clear()
+
+            self.average, self.speedText, self.dt = self.calculate_speed()
+
+            speed = 1 / self.dt
+            self.multFactor = int(1 / self.average)
+            if (self.multFactor < 1 or self.Current_Direction != self.Last_Direction):
+                self.multFactor = 1
+            # elif (multFactor):
+
+            if (self.Current_Direction == 1):
+                rotaryCounter = rotaryCounter + 1 * self.multFactor
+            else:
+                rotaryCounter = rotaryCounter - 1 * self.multFactor
+
+            self.Last_Direction = self.Current_Direction
+            print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
+
+    def clear(self, ev=None):
+        global rotaryCounter
+        rotaryCounter = 0
+        print('rotaryCounter = {g}'.format(g=rotaryCounter))
+        time.sleep(1)
 
     def run(self):
         while True:
