@@ -49,7 +49,7 @@ def get_dominant_color(image, k=4, image_processing_size=None):
     return list(dominant_color)
 
 
-def get_five_dominant_colors(image, k=4, image_processing_size=None):
+def get_multiple_dominant_colors(image, k, image_processing_size=None):
     """
     takes an image as input
     returns two lists
@@ -63,7 +63,7 @@ def get_five_dominant_colors(image, k=4, image_processing_size=None):
     this resizing can be done with the image_processing_size param
     which takes a tuple of image dims as input
 
-    >>> get_five_dominant_colors(my_image, k=4, image_processing_size = (25, 25))
+    >>> get_multiple_dominant_colors(my_image, k, image_processing_size = (25, 25))
     [
         [0, 0, 254],
         [110, 37, 188],
@@ -138,7 +138,7 @@ for path in pathlist:
     # dom_color_hsv_str = ', '.join(map(str, dom_color_hsv))
     # dom_color_rgb_str = ', '.join(map(str, dom_color_rgb))
 
-    dom_colors_hsv, conf_list= get_five_dominant_colors(hsv_image, k=CLUSTERS, image_processing_size=(DIMX, DIMY))
+    dom_colors_hsv, conf_list= get_multiple_dominant_colors(hsv_image, k=CLUSTERS, image_processing_size=(DIMX, DIMY))
 
     res_rgb = []
     res_hsv = []
