@@ -53,6 +53,12 @@ class SQLStatements:
             ORDER BY time ASC LIMIT 1'.format(id=hike_id)
         return statement
 
+    # New Oct 5, 2020
+    def select_by_time_picture_in_hike_with_offset(self, hike_id: int, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} \
+            ORDER BY time ASC LIMIT 1 OFFSET {off}'.format(id=hike_id, off=offset)
+        return statement
+
     def select_by_time_last_picture_in_hike(self, hike_id: float) -> str:
         statement = 'SELECT * FROM pictures WHERE hike={id} \
             ORDER BY time DESC LIMIT 1'.format(id=hike_id)

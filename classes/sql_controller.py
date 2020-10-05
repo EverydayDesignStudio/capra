@@ -18,10 +18,18 @@ class SQLController:
     #------------------------------------------------------------------------
 
     # _underscores signify that they should be treated as private functions to  this class
-    def _build_picture_from_row(self, row: list) -> Picture:
+    #TODO - make a new helper method for this that doesn't mess up all the old functions
+    def _new_build_picture_from_row(self, row: list) -> Picture:
         picture = Picture(picture_id=row[0], time=row[1], altitude=row[9],
                           hike_id=row[7], index_in_hike=row[8],
                           camera1=row[21], camera2=row[15], camera3=row[21], camera_land=row[24])
+
+        return picture
+
+    def _build_picture_from_row(self, row: list) -> Picture:
+        picture = Picture(picture_id=row[0], time=row[1], altitude=row[2],
+                          hike_id=row[9], index_in_hike=row[10],
+                          camera1=row[11], camera2=row[12], camera3=row[13], camera_land=[14])
 
         return picture
 
@@ -32,7 +40,7 @@ class SQLController:
         if not all_rows:
             print("ERROR!!!")
         else:  # there is a next time picture
-            return self._build_picture_from_row(all_rows[0])
+            return self._new_build_picture_from_row(all_rows[0])
 
     # Projector
     # --------------------------------------------------------------------------
@@ -67,8 +75,12 @@ class SQLController:
 
     def _get_picture_from_sql_statement(self, statement: str) -> Picture:
         cursor = self.connection.cursor()
+        print(statement)
         cursor.execute(statement)
         all_rows = cursor.fetchall()
+
+        print(all_rows)
+
         picture = self._build_picture_from_row(all_rows[0])
 
         # picture.print_obj()
@@ -162,14 +174,23 @@ class SQLController:
         sql = self.statements.select_by_time_first_picture_in_hike(hike_id)
         return self._get_picture_from_sql_statement(sql)
 
+    # New in October 5, 2020
+    def get_first_time_picture_in_hike_with_offset(self, hike_id: int, offset: int) -> Picture:
+        sql = self.statements.select_by_time_picture_in_hike_with_offset(hike_id, offset)
+        return self._get_picture_from_sql_statement(sql)
+
     def get_last_time_picture_in_hike(self, hike_id: float) -> Picture:
         sql = self.statements.select_by_time_last_picture_in_hike(hike_id)
         return self._get_picture_from_sql_statement(sql)
 
     def next_time_picture_in_hike(self, current_picture: Picture) -> Picture:
+        print(current_picture)
+
         cursor = self.connection.cursor()
         h = current_picture.hike_id
         t = current_picture.time
+
+        print('HOWDY PARTNER')
 
         cursor.execute(self.statements.select_by_time_next_picture_in_hike(hike_id=h, time=t))
         all_rows = cursor.fetchall()

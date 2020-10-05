@@ -27,9 +27,14 @@ import math
 # Database location
 # DB = '/home/pi/Pictures/capra-projector.db'
 # PATH = '/home/pi/Pictures'
-DB = '/media/pi/capra-hd/capra_projector.db'
-PATH = '/media/pi/capra-hd'
-blank_path = '{p}/blank.png'.format(p=PATH)
+
+# DB = '/media/pi/capra-hd/capra_projector.db'
+# PATH = '/media/pi/capra-hd'
+
+DB = '/media/pi/capra-hd/jordan/capra_projector.db'
+PATH = '/media/pi/capra-hd/jordan'
+
+OFFSET = int(input('Input offset in Hike 10: '))
 
 # GPIO BCM PINS
 ROTARY_ENCODER_CLOCKWISE = 23
@@ -107,6 +112,7 @@ class Slideshow:
 
         # Hardware control events
         self.window.bind(GPIO.add_event_detect(clk, GPIO.BOTH, callback=self.detected_rotary_change))
+        self.window.bind('<Key>', self.keypress)
         self.clkLastState = GPIO.input(clk)
 
         # Using GPIO.BOTH and GPIO input state, however I have noticed glitches. This will need to be ironed out
@@ -128,24 +134,27 @@ class Slideshow:
 
         # Initialization for database implementation
         self.sql_controller = SQLController(database=DB)
-        self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
+        # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
+        self.picture_starter = self.sql_controller.get_first_time_picture_in_hike_with_offset(10, OFFSET)
         self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
 
         # Initialization for images and associated properties
         self.alpha = 0
 
         # Initialize current and next images
-        self.current_raw_top = Image.open(self._build_filename(self.picture_starter.camera1), 'r')
-        self.next_raw_top = Image.open(self._build_filename(self.picture.camera1), 'r')
+        # self.current_raw_top = Image.open(self._build_filename(self.picture_starter.camera1), 'r')
+        # self.next_raw_top = Image.open(self._build_filename(self.picture.camera1), 'r')
         self.current_raw_mid = Image.open(self._build_filename(self.picture_starter.camera2), 'r')
         self.next_raw_mid = Image.open(self._build_filename(self.picture.camera2), 'r')
-        self.current_raw_bot = Image.open(blank_path, 'r')
-        self.next_raw_bot = Image.open(blank_path, 'r')
+        # self.current_raw_bot = Image.open(blank_path, 'r')
+        # self.next_raw_bot = Image.open(blank_path, 'r')
+        # self.current_raw_bot = Image.open(self._build_filename(self.picture_starter.camera3), 'r')
+        # self.next_raw_bot = Image.open(self._build_filename(self.picture.camera3), 'r')
 
         # Display the first 3 images to the screen
-        self.display_photo_image_top = ImageTk.PhotoImage(self.current_raw_top)
-        self.image_label_top = Label(master=self.canvas, image=self.display_photo_image_top, borderwidth=0)
-        self.image_label_top.pack(side='right', fill='both', expand='yes')
+        # self.display_photo_image_top = ImageTk.PhotoImage(self.current_raw_top)
+        # self.image_label_top = Label(master=self.canvas, image=self.display_photo_image_top, borderwidth=0)
+        # self.image_label_top.pack(side='right', fill='both', expand='yes')
         # self.image_label_top.place(x=20, rely=0.0, anchor='nw')
 
         self.display_photo_image_mid = ImageTk.PhotoImage(self.current_raw_mid)
@@ -153,35 +162,36 @@ class Slideshow:
         self.image_label_mid.pack(side='right', fill='both', expand='yes')
         # self.image_label_mid.place(x=20, y=405, anchor='nw')
 
-        self.display_photo_image_bot = ImageTk.PhotoImage(self.current_raw_bot)
-        self.image_label_bot = Label(master=self.canvas, image=self.display_photo_image_bot, borderwidth=0)
-        self.image_label_bot.pack(side='right', fill='both', expand='yes')
+        # self.display_photo_image_bot = ImageTk.PhotoImage(self.current_raw_bot)
+        # self.image_label_bot = Label(master=self.canvas, image=self.display_photo_image_bot, borderwidth=0)
+        # self.image_label_bot.pack(side='right', fill='both', expand='yes')
         # self.image_label_bot.place(x=20, y=810, anchor='nw')
 
         # Hike labels
-        self.label_mode = Label(self.canvas, text='Modes: ')
-        self.label_hike = Label(self.canvas, text='Hike: ')
-        self.label_index = Label(self.canvas, text='Index: ')
-        self.label_alt = Label(self.canvas, text='Altitude: ')
-        self.label_date = Label(self.canvas, text='Date: ')
+        # self.label_mode = Label(self.canvas, text='Modes: ')
+        # self.label_hike = Label(self.canvas, text='Hike: ')
+        # self.label_index = Label(self.canvas, text='Index: ')
+        # self.label_alt = Label(self.canvas, text='Altitude: ')
+        # self.label_date = Label(self.canvas, text='Date: ')
 
-        self.label_mode.place(relx=1.0, y= 0, anchor='ne')
-        self.label_hike.place(relx=1.0, y=22, anchor='ne')
-        self.label_index.place(relx=1.0, y=44, anchor='ne')
-        self.label_alt.place(relx=1.0, y=66, anchor='ne')
-        self.label_date.place(relx=1.0, y=88, anchor='ne')
+        # self.label_mode.place(relx=1.0, y= 0, anchor='ne')
+        # self.label_hike.place(relx=1.0, y=22, anchor='ne')
+        # self.label_index.place(relx=1.0, y=44, anchor='ne')
+        # self.label_alt.place(relx=1.0, y=66, anchor='ne')
+        # self.label_date.place(relx=1.0, y=88, anchor='ne')
 
         # Start background threads which will continue for life of the class
-        root.after(0, func=self.check_accelerometer)
-        root.after(10, func=self.update_text)
+        # root.after(0, func=self.check_accelerometer)
+        # root.after(10, func=self.update_text)
         root.after(15, func=self.fade_image)
         root.after(self.TRANSITION_DELAY, func=self.auto_play_slideshow)
         # root.after(0, func=self.check_mode)
 
     def _build_next_raw_images(self, next_picture: Picture):
         # print('build images')
-        self.next_raw_top = Image.open(self._build_filename(next_picture.camera1), 'r')
+        # self.next_raw_top = Image.open(self._build_filename(next_picture.camera1), 'r')
         self.next_raw_mid = Image.open(self._build_filename(next_picture.camera2), 'r')
+        # self.next_raw_mid = Image.open(self._build_filename(next_picture.camera3), 'r')
         # self.next_raw_bot = Image.open(blank_path, 'r')
 
     def _build_filename(self, end_of_path: str) -> str:
@@ -194,10 +204,10 @@ class Slideshow:
         # print(time.time())
         if self.alpha < 1.0:
             # Top image
-            self.current_raw_top = Image.blend(self.current_raw_top, self.next_raw_top, self.alpha)
+            # self.current_raw_top = Image.blend(self.current_raw_top, self.next_raw_top, self.alpha)
             # self.current_raw_top = self.next_raw_top
-            self.display_photo_image_top = ImageTk.PhotoImage(self.current_raw_top)
-            self.image_label_top.configure(image=self.display_photo_image_top)
+            # self.display_photo_image_top = ImageTk.PhotoImage(self.current_raw_top)
+            # self.image_label_top.configure(image=self.display_photo_image_top)
 
             # Middle image
             self.current_raw_mid = Image.blend(self.current_raw_mid, self.next_raw_mid, self.alpha)
@@ -206,10 +216,10 @@ class Slideshow:
             self.image_label_mid.configure(image=self.display_photo_image_mid)
 
             # Bottom image
-            self.current_raw_bot = Image.blend(self.current_raw_bot, self.next_raw_bot, self.alpha)
+            # self.current_raw_bot = Image.blend(self.current_raw_bot, self.next_raw_bot, self.alpha)
             # self.current_raw_bot = self.next_raw_bot
-            self.display_photo_image_bot = ImageTk.PhotoImage(self.current_raw_bot)
-            self.image_label_bot.configure(image=self.display_photo_image_bot)
+            # self.display_photo_image_bot = ImageTk.PhotoImage(self.current_raw_bot)
+            # self.image_label_bot.configure(image=self.display_photo_image_bot)
 
             self.alpha = self.alpha + 0.0417
             # self.alpha = self.alpha + 0.0209
@@ -348,22 +358,40 @@ class Slideshow:
             print("ERROR")
         # print('MODE: {m}'.format(m=self.MODE))
 
-    # ADC HARDWARE CONTROLS
-    def check_accelerometer(self):
-        ax = AnalogIn(mcp, ACCELEROMETER_X).value
-        ay = AnalogIn(mcp, ACCELEROMETER_Y).value
-        az = AnalogIn(mcp, ACCELEROMETER_Z).value
-
-        pitch = 180 * math.atan(ax/math.sqrt(ay*ay + az*az))/math.pi
-        roll = 180 * math.atan(ay/math.sqrt(ax*ax + az*az))/math.pi
-
-        if pitch > 35 and roll < 34:
-            orientation = 'correct vertical'
-        elif pitch < 31 and roll > 34:
-            orientation = 'upside down vertical'
+    def keypress(self, event):
+        if event.keycode == 114:  # Right / Next
+            # print('right')
+            self.picture = self.sql_controller.get_next_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
+            self._build_next_raw_images(self.picture)
+            self.alpha = .2                     # Resets amount of fade between pictures
+            self.picture.print_obj()            # This is a print()
+        elif event.keycode == 113:  # Left / Previous
+            # print('left')
+            self.picture = self.sql_controller.get_previous_picture(
+                    current_picture=self.picture, mode=self.MODE, is_across_hikes=self.IS_ACROSS_HIKES)
+            self._build_next_raw_images(self.picture)
+            self.alpha = .2                     # Resets amount of fade between pictures
+            self.picture.print_obj()            # This is a print()
         else:
-            orientation = 'horizontal'
-        # print(orientation)
+            print(event)
+
+    # ADC HARDWARE CONTROLS
+    # def check_accelerometer(self):
+    #     ax = AnalogIn(mcp, ACCELEROMETER_X).value
+    #     ay = AnalogIn(mcp, ACCELEROMETER_Y).value
+    #     az = AnalogIn(mcp, ACCELEROMETER_Z).value
+
+    #     pitch = 180 * math.atan(ax/math.sqrt(ay*ay + az*az))/math.pi
+    #     roll = 180 * math.atan(ay/math.sqrt(ax*ax + az*az))/math.pi
+
+    #     if pitch > 35 and roll < 34:
+    #         orientation = 'correct vertical'
+    #     elif pitch < 31 and roll > 34:
+    #         orientation = 'upside down vertical'
+    #     else:
+    #         orientation = 'horizontal'
+    #     # print(orientation)
 
         # TODO - calculate pitch and roll correctly
         # if roll > -45 and roll < 45:
@@ -371,7 +399,7 @@ class Slideshow:
         # elif roll >= 45 or roll <= -45:
         #    orientation = 'vertical'
 
-        root.after(500, self.check_accelerometer)
+        # root.after(500, self.check_accelerometer)
 
     # last_value = 65472
     # def check_mode(self):
