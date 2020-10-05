@@ -13,45 +13,26 @@ class SQLController:
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.statements = SQLStatements()
 
-    # Helper methods
+    #------------------------------------------------------------------------
+    # New Functions 2020
+    #------------------------------------------------------------------------
+
     # _underscores signify that they should be treated as private functions to  this class
     def _build_picture_from_row(self, row: list) -> Picture:
-        picture = Picture(picture_id=row[0], time=row[1], altitude=row[2],
-                          brightness=row[3], b_rank=row[4], hue=row[5], h_rank=row[6],
-                          hue_lumosity=row[7], hl_rank=row[8], hike_id=row[9], index_in_hike=row[10],
-                          camera1=row[11], camera2=row[12], camera3=row[13], camera_land=row[14])
+        picture = Picture(picture_id=row[0], time=row[1], altitude=row[9],
+                          hike_id=row[7], index_in_hike=row[8],
+                          camera1=row[21], camera2=row[15], camera3=row[21], camera_land=row[24])
 
         return picture
 
-    def _build_hike_from_row(self, row: list) -> Hike:
-        hike = Hike(hike_id=row[0], avg_altitude=row[1],
-                    avg_brightness=row[2], avg_hue=row[3], avg_hue_lumosity=row[4],
-                    start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
-
-        return hike
-
-    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
+    def get_next_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
         cursor = self.connection.cursor()
-        cursor.execute(statement)
+        cursor.execute(self.statements.select_next_time_in_hikes(current_picture.time, offset))
         all_rows = cursor.fetchall()
-        picture = self._build_picture_from_row(all_rows[0])
-
-        picture.print_obj()
-
-        return picture
-
-    # Helper method for returning expected number
-    # If nothing is returned from db, return 0
-    def _get_num_from_statement(self, statement: str):
-        cursor = self.connection.cursor()
-        cursor.execute(statement)
-        row = cursor.fetchone()
-
-        # Error safety check
-        if row is None:
-            return 0
-        else:
-            return row[0]
+        if not all_rows:
+            print("ERROR!!!")
+        else:  # there is a next time picture
+            return self._build_picture_from_row(all_rows[0])
 
     # Projector
     # --------------------------------------------------------------------------
@@ -74,6 +55,60 @@ class SQLController:
                 # TODO return self.next_altitude_picture_in_hike(current_picture)
                 print('Color in hikes is not implemented yet')
                 return current_picture
+
+
+    # Helper methods
+    def _build_hike_from_row(self, row: list) -> Hike:
+        hike = Hike(hike_id=row[0], avg_altitude=row[1],
+                    avg_brightness=row[2], avg_hue=row[3], avg_hue_lumosity=row[4],
+                    start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
+
+        return hike
+
+    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
+        cursor = self.connection.cursor()
+        cursor.execute(statement)
+        all_rows = cursor.fetchall()
+        picture = self._build_picture_from_row(all_rows[0])
+
+        # picture.print_obj()
+
+        return picture
+
+    # Helper method for returning expected number
+    # If nothing is returned from db, return 0
+    def _get_num_from_statement(self, statement: str):
+        cursor = self.connection.cursor()
+        cursor.execute(statement)
+        row = cursor.fetchone()
+
+        # Error safety check
+        if row is None:
+            return 0
+        else:
+            return row[0]
+
+    # Projector
+    # --------------------------------------------------------------------------
+    # def get_next_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
+    #     if is_across_hikes:     # Across all hikes: rotary encoder is pressed
+    #         if mode == 0:       # Time
+    #             return self.next_time_picture_across_hikes(current_picture)
+    #         elif mode == 1:     # Altitude
+    #             return self.next_altitude_picture_across_hikes(current_picture)
+    #         elif mode == 2:     # Color
+    #             # TODO return self.next_color_picture_across_hikes(current_picture)
+    #             print('Color across hikes not implemented yet')
+    #             return current_picture
+    #     else:                   # In current hike: rotary encoder not pressed
+    #         if mode == 0:       # Time
+    #             return self.next_time_picture_in_hike(current_picture)
+    #         elif mode == 1:     # Altitude
+    #             return self.next_altitude_picture_in_hike(current_picture)
+    #         elif mode == 2:     # Color
+    #             # TODO return self.next_altitude_picture_in_hike(current_picture)
+    #             print('Color in hikes is not implemented yet')
+    #             return current_picture
 
     def get_previous_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
         if is_across_hikes:     # Across all hikes: rotary encoder is pressed

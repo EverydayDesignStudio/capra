@@ -10,6 +10,18 @@ class SQLStatements:
             index_in_hike={index}'.format(id=hike_id, index=index_in_hike)
         return statement
 
+    #------------------------------------------------------------------------
+    # New Functions 2020
+    #------------------------------------------------------------------------
+    def select_next_time_in_hikes(self, time: int, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+            SELECT \
+        CASE WHEN (SELECT count(*) FROM pictures WHERE time > {t}) > ({off}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE time > {t} ORDER BY time ASC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY time ASC LIMIT 1 OFFSET ( {off}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE time > {t}) - 1 )) \
+        END);'.format(t=time, off=offset)
+        return statement
+
     # Projector
     # --------------------------------------------------------------------------
 
