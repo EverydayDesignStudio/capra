@@ -14,7 +14,6 @@ MAXQUEUE = 5
 # RoBPin = 18    # BCM 24
 RoAPin = 18    # BCM 24
 RoBPin = 16    # BCM 23
-
 RoSPin = 22    # BCM 25
 
 globalCounter = 0
@@ -110,6 +109,7 @@ def rotaryDeal():
 
 
 def clear(ev=None):
+    global globalCounter
     globalCounter = 0
     print('globalCounter = {g}'.format(g=globalCounter))
     time.sleep(1)
