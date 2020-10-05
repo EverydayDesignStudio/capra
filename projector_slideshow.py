@@ -3,18 +3,36 @@
 # Slideshow application for the Capra Explorer
 # Allows passing through photos with a smooth fading animation
 
+# Imports
+from classes.capra_data_types import Picture, Hike
+from classes.sql_controller import SQLController
+from classes.sql_statements import SQLStatements
+
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from RPi import GPIO
 from datetime import datetime
 
+import math
 import sys
 import time
 import traceback
 
+# Database Location
+# DB = '/home/pi/Pictures/capra-projector.db'
+# PATH = '/home/pi/Pictures'
+# DB = '/media/pi/capra-hd/capra_projector.db'
+# PATH = '/media/pi/capra-hd'
+DB = '/home/pi/capra-storage-demo/capra_projector.db'
+PATH = 'home/pi/capra-storage/demo'
+# blank_path = '{p}/blank.png'.format(p=PATH)
+
 # Filewide Hardware Status
 rotaryCounter = 0
+mode = 0            # (0)time (1)altitude (2)color
+orientation = 0     # (0)landscape (1)portrait
+isReadyForNewPicture = True
 
 
 # Threading Infrastructure
@@ -80,6 +98,8 @@ class RotaryEncoder(QRunnable):
 
         GPIO.setup(self.RoAPin, GPIO.IN)
         GPIO.setup(self.RoBPin, GPIO.IN)
+
+        self.signals = WorkerSignals()
 
         self.flag = 0
         self.Last_RoB_Status = 0
@@ -156,6 +176,11 @@ class RotaryEncoder(QRunnable):
 
             self.Last_Direction = self.Current_Direction
             print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
+            
+            # TODO -- remove both of these lines
+            # Resetting counter will happen in Main UI Thread
+            self.signals.result.emit(rotaryCounter)
+            rotaryCounter = 0
 
     def clear(self, ev=None):
         global rotaryCounter
@@ -211,8 +236,11 @@ class MainWindow(QMainWindow):
 
         self.setupGPIO()
 
+        self.setupDB()
+
         self.setupWindowUI()
         self.setupLandscapeUI()
+        # self.setupVerticalUI()
 
         self.setupThreads()
 
@@ -239,6 +267,14 @@ class MainWindow(QMainWindow):
 
         # LED indicators
 
+    def setupDB(self):
+        print('yo')
+        self.sql_controller = SQLController(database=DB)
+        self.picture = self.sql_controller.get_first_time_picture_in_hike(9)
+
+        # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
+        # self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
+
     def setupWindowUI(self):
         # Window
         self.setWindowTitle("Capra Slideshow")
@@ -256,15 +292,15 @@ class MainWindow(QMainWindow):
 
     def setupLandscapeUI(self):
         # Image
-        img = QPixmap(self.buildLandscape(2561))
-        # self.img = self.img.scaled(640, 300)
         self.imgLabel = QLabel()
+
+        img = QPixmap(self.buildLandscape(2561))
         self.imgLabel.setPixmap(img)
         self.grid.addWidget(self.imgLabel)
 
         # Label overlay
         testLabel = QLabel('Time Mode', self)
-        testLabel.move(1100, 15)
+        testLabel.move(1150, 10)
 
         # Icon overlay
         # modeBg = QLabel(self)
@@ -276,16 +312,25 @@ class MainWindow(QMainWindow):
         # modeLabel.setPixmap(modeImg)
         # modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
 
-    def setupVerticalUI(self):
-        print('vertical')
-        # img = QPixmap(self.buildFile(2561))
+    def changeLandscapeUI(self, picture: Picture):
+        # Image
+        landscape = picture.camera_landscape
+        temp = [x.strip() for x in landscape.split('/')]
+        path = '/home/pi/capra-storage-demo/{h}/{jpg}'.format(h=temp[4], jpg=temp[5])
+        print(path)
 
-        # self.grid.addWidget(self.indexLabel, 3, 1)
-        # self.grid.addWidget(self.button, 4, 1)
-        # self.grid.addWidget(self.timerLabel, 2, 1)
-        # self.grid.addWidget(self.workerThreadLabel, 5, 1)
+        self.img = QPixmap(path)
+        self.imgLabel.setPixmap(self.img)
 
-        # self.addWidget(self.modeLabel)
+    # def setupVerticalUI(self):
+    #     self.img = QPixmap(self.buildFile(2561))
+
+    #     self.grid.addWidget(self.indexLabel, 3, 1)
+    #     self.grid.addWidget(self.button, 4, 1)
+    #     self.grid.addWidget(self.timerLabel, 2, 1)
+    #     self.grid.addWidget(self.workerThreadLabel, 5, 1)
+
+    #     self.addWidget(self.modeLabel)
 
     # Setup threads that check for changes to the hardware
     def setupThreads(self):
@@ -295,6 +340,7 @@ class MainWindow(QMainWindow):
 
         # Rotary Encoder
         rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
+        rotaryEncoder.signals.result.connect(self.rotary_changed)
         self.threadpool.start(rotaryEncoder)
 
         buttonEncoder = HardwareButton(self.PIN_ROTARY_BUTT)
@@ -331,26 +377,57 @@ class MainWindow(QMainWindow):
             print('right')
             print(rotaryCounter)
             # self.updateNext()
+
         elif event.key() == Qt.Key_Space:
             print('space bar')
         else:
             print('other key pressed')
 
     # Hardware Button Presses
+    def rotary_changed(self, result):
+        # print(result)
+
+        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+        # self.picture.print_obj()
+
+        self.changeLandscapeUI(self.picture)
+
+
+        # if isReadyForNewPicture:
+        #     print('ready for new picture')
+
+        # if result > 0:
+        #     print('Next: %d' % result)
+        # elif result < 0:
+        #     print('Previous: %d' % result)
+
+        # change = rotaryCounter - rotaryCounterLast
+        # print(change)
+        # print('\n')
+
     def pressed_encoder(self, result):
         print('Encoder button was pressed: %d' % result)
 
     def pressed_mode(self, result):
         print('Mode button was pressed: %d' % result)
 
-    def pressed_prev(self, result):
-        print('Previous button was pressed: %d' % result)
-
-    def pressed_play_pause(self, result):
-        print('Play Pause button was pressed: %d' % result)
-
     def pressed_next(self, result):
         print('Next button was pressed: %d' % result)
+        self.changeLandscapeUI(11)
+
+    def pressed_prev(self, result):
+        print('Previous button was pressed: %d' % result)
+        self.changeLandscapeUI(2561)
+
+    def pressed_play_pause(self, result):
+        # print('Play Pause button was pressed: %d' % result)
+        global orientation
+        orientation = ((orientation + 1) % 2)
+        if orientation:
+            print('Portrait')  # 1
+        else:
+            print('Landscape')  # 0
+
 
     # def thread_result(self, result):
     #     print('From MainLoop: %d' % result)
@@ -370,7 +447,9 @@ class MainWindow(QMainWindow):
 
     # Helper Methods
     def buildLandscape(self, num) -> str:
-        return '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
+        path = '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
+        print(path)
+        return path
 
     def buildFile(self, num) -> str:
         # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
