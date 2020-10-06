@@ -7,26 +7,33 @@
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+from classes.ui_components import *
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from RPi import GPIO
+# from RPi import GPIO
 from datetime import datetime
 
 import math
+import os
+import platform
 import sys
 import time
 import traceback
 
 # Database Location
-# DB = '/home/pi/Pictures/capra-projector.db'
-# PATH = '/home/pi/Pictures'
-# DB = '/media/pi/capra-hd/capra_projector.db'
-# PATH = '/media/pi/capra-hd'
-DB = '/home/pi/capra-storage-demo/capra_projector.db'
-PATH = 'home/pi/capra-storage/demo'
-# blank_path = '{p}/blank.png'.format(p=PATH)
+if platform.system() == 'Darwin' or platform.system() == 'Windows':
+    print('We on a Mac or PC!')
+    # DB = '/home/pi/Pictures/capra-projector.db'
+    # PATH = '/home/pi/Pictures'
+
+elif platform.system() == 'Linux':
+    print('We are on a Raspberry Pi!')
+    # DB = '/media/pi/capra-hd/capra_projector.db'
+    # PATH = '/media/pi/capra-hd'
+    DB = '/home/pi/capra-storage-demo/capra_projector.db'
+    PATH = 'home/pi/capra-storage/demo'
 
 # Filewide Hardware Status
 rotaryCounter = 0
@@ -54,7 +61,6 @@ class WorkerSignals(QObject):
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
-
 
 '''
 class Worker(QRunnable):
@@ -86,7 +92,6 @@ class Worker(QRunnable):
             self.clkLastState = self.clkState
             # print(self.count)
 '''
-
 
 # Custom Hardware Controls
 class RotaryEncoder(QRunnable):
@@ -234,18 +239,21 @@ class MainWindow(QMainWindow):
         self.index = 1
         self.seconds = 0
 
-        self.setupGPIO()
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            print('---')
+        elif platform.system() == 'Linux':
+            self.setupGPIO()
+            self.setupThreads()
 
-        self.setupDB()
-
-        self.setupWindowUI()
-        self.setupLandscapeUI()
+        self.setupWindowLayout()
+        # self.setupLandscapeUI()
         # self.setupVerticalUI()
 
-        self.setupThreads()
+        # TODO - implement with the new Db structure
+        # self.setupDB()
 
-        self.show()
-        # self.showFullScreen()
+        # self.show()
+        self.showFullScreen()
 
     def setupGPIO(self):
         # Set the GPIO mode, alternative is GPIO.BOARD
@@ -275,20 +283,37 @@ class MainWindow(QMainWindow):
         # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
         # self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
 
-    def setupWindowUI(self):
-        # Window
+    # UI Setup
+    def setupWindowLayout(self):
         self.setWindowTitle("Capra Slideshow")
-        self.setStyleSheet("background-color: gray;")
+        self.setGeometry(0, 0, 1280, 720)
+        # self.setStyleSheet("background-color: gray;")
 
-        # Grid - add all elements to the grid
-        self.grid = QGridLayout()
-        self.grid.setSpacing(0)
-        self.grid.setContentsMargins(0, 0, 0, 0)
+        pagelayout = QVBoxLayout()
+        pagelayout.setContentsMargins(0, 0, 0, 0)
 
-        # Widget
-        w = QWidget()
-        w.setLayout(self.grid)
-        self.setCentralWidget(w)
+        self.stacklayout = QStackedLayout()
+        pagelayout.addLayout(self.stacklayout)
+
+        # Landscape view
+        self.stacklayout.addWidget(Color('green'))
+
+        # Vertical view
+        verticallayout = QHBoxLayout()
+        verticallayout.setContentsMargins(0, 0, 0, 0)
+        verticallayout.setSpacing(0)
+        verticallayout.addWidget(Color('blue'))
+        verticallayout.addWidget(Color('green'))
+        verticallayout.addWidget(Color('brown'))
+
+        verticalWidget = QWidget()
+        verticalWidget.setLayout(verticallayout)
+        self.stacklayout.addWidget(verticalWidget)
+
+        # Add central widget
+        centralWidget = QWidget()
+        centralWidget.setLayout(pagelayout)
+        self.setCentralWidget(centralWidget)
 
     def setupLandscapeUI(self):
         # Image
@@ -329,10 +354,18 @@ class MainWindow(QMainWindow):
     #     self.grid.addWidget(self.button, 4, 1)
     #     self.grid.addWidget(self.timerLabel, 2, 1)
     #     self.grid.addWidget(self.workerThreadLabel, 5, 1)
-
     #     self.addWidget(self.modeLabel)
 
-    # Setup threads that check for changes to the hardware
+    # UI Interactions
+    def setLandscape(self):
+        print('land')
+        self.stacklayout.setCurrentIndex(0)
+
+    def setVertical(self):
+        print('vertical')
+        self.stacklayout.setCurrentIndex(1)
+
+    # Setup threads to check for hardware changes
     def setupThreads(self):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(7)  # TODO - change if more threads are needed
@@ -364,25 +397,6 @@ class MainWindow(QMainWindow):
         buttonNext.signals.result.connect(self.pressed_next)
         self.threadpool.start(buttonNext)
 
-    # Keyboard presses
-    def keyPressEvent(self, event):
-        global rotaryCounter
-        if event.key() == Qt.Key_Escape:
-            self.close()
-        elif event.key() == Qt.Key_Left:
-            print('left')
-            print(rotaryCounter)
-            # self.updatePrev()
-        elif event.key() == Qt.Key_Right:
-            print('right')
-            print(rotaryCounter)
-            # self.updateNext()
-
-        elif event.key() == Qt.Key_Space:
-            print('space bar')
-        else:
-            print('other key pressed')
-
     # Hardware Button Presses
     def rotary_changed(self, result):
         # print(result)
@@ -391,7 +405,6 @@ class MainWindow(QMainWindow):
         # self.picture.print_obj()
 
         self.changeLandscapeUI(self.picture)
-
 
         # if isReadyForNewPicture:
         #     print('ready for new picture')
@@ -428,6 +441,29 @@ class MainWindow(QMainWindow):
         else:
             print('Landscape')  # 0
 
+    # Keyboard Presses
+    def keyPressEvent(self, event):
+        global rotaryCounter
+        if event.key() == Qt.Key_Escape:
+            self.close()
+        elif event.key() == Qt.Key_Left:
+            print('left')
+            print(rotaryCounter)
+            # self.updatePrev()
+        elif event.key() == Qt.Key_Right:
+            print('right')
+            print(rotaryCounter)
+            # self.updateNext()
+        elif event.key() == Qt.Key_Space:
+            print('space bar')
+        elif event.key() == Qt.Key_H:
+            print('rotate horizontal')
+            self.setLandscape()
+        elif event.key() == Qt.Key_V:
+            print('rotate vertical')
+            self.setVertical()
+        else:
+            print('other key pressed')
 
     # def thread_result(self, result):
     #     print('From MainLoop: %d' % result)
@@ -454,34 +490,6 @@ class MainWindow(QMainWindow):
     def buildFile(self, num) -> str:
         # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
-
-    # def oh_no(self):
-    #     # Pass in the function
-    #     worker = Worker(self.execute_this_fn)  # Any other args, kwargs are passed to the run function
-    #     worker.signals.result.connect(self.print_output)
-    #     worker.signals.finished.connect(self.thread_complete)
-    #     worker.signals.progress.connect(self.progress_fn)
-
-    #     # Execute
-    #     self.threadpool.start(worker)
-
-    #     # Thread count
-    #     print('Active threads: {ct}/{mx}'.format(mx=self.threadpool.maxThreadCount(), ct=self.threadpool.activeThreadCount()))
-
-    # def progress_fn(self, n):
-    #     print('%d%% done' % n)
-
-    # def execute_this_fn(self, progress_callback):
-    #     for n in range(0, 5):
-    #         time.sleep(1)
-    #         progress_callback.emit(n*100/4)
-    #     return "Done"
-
-    # def print_output(self, s):
-    #     print(s)
-
-    # def thread_complete(self):
-    #    print("THREAD COMPLETE!")
 
 
 app = QApplication([])
