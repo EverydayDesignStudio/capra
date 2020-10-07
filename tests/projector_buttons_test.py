@@ -40,15 +40,16 @@ def main():
     while True:
         hall_effect_stat = ""
         mode_stat = ""
-        play_pause_stat = ""
         prev_stat = ""
+        play_pause_stat = ""
         next_stat = ""
+        enc1_stat = ""
         off_stat = ""
         on_stat = ""
-        enc1_stat = ""
 
-        if GPIO.input(g.HALL_EFFECT_PIN) == 0:
-            hall_effect_stat = 'Magnet Near'
+        # if GPIO.input(g.HALL_EFFECT_PIN) == 0:
+        #     hall_effect_stat = 'Magnet Near'
+        hall_effect_stat = GPIO.input(g.HALL_EFFECT_PIN)
         if GPIO.input(g.BUTT_MODE) == 0:
             mode_stat = 'Pressed'
         if GPIO.input(g.BUTT_PLAY_PAUSE) == 0:
@@ -57,11 +58,13 @@ def main():
             prev_stat = 'Pressed'
         if GPIO.input(g.BUTT_NEXT) == 0:
             next_stat = 'Pressed'
-        if GPIO.input(g.BUTT_OFF) == 1:
-            off_stat = 'Pressed'
-        on_stat = GPIO.input(g.BUTT_ON)
         if GPIO.input(g.BUTT_ENC1) == 0:
             enc1_stat = 'Pressed'
+        if GPIO.input(g.BUTT_ON) == 0:
+            on_stat = 'Pressed'
+        off_stat = GPIO.input(g.BUTT_OFF)
+        # if GPIO.input(g.BUTT_OFF) == 1:
+        #     off_stat = 'Pressed'
 
         output = """
 Hall Effect:{he}
