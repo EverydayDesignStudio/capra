@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 # from RPi import GPIO
 from datetime import datetime
+from enum import Enum, unique, auto
 
 import math
 import os
@@ -35,11 +36,36 @@ elif platform.system() == 'Linux':
     DB = '/home/pi/capra-storage-demo/capra_projector.db'
     PATH = 'home/pi/capra-storage/demo'
 
-# Filewide Hardware Status
+# Filewide Statuses
+# --- Hardware
 rotaryCounter = 0
-mode = 0            # (0)time (1)altitude (2)color
-orientation = 0     # (0)landscape (1)portrait
+# --- UI
+status_orientation = 0      # (0)landscape (1)portrait
+status_setting = 0          # (0)hike (1)global
+status_mode = 0             # (0)time (1)altitude (2)color
 isReadyForNewPicture = True
+
+
+class StatusOrientation(Enum):
+    LANDSCAPE = 0
+    PORTRAIT = 1
+
+
+class StatusSetting(Enum):
+    HIKE = 0
+    GLOBAL = 1
+
+
+class StatusMode(Enum):
+    __order__ = 'TIME ALTITUDE COLOR'
+    TIME = 0
+    ALTITUDE = 1
+    COLOR = 2
+
+
+orientation = StatusOrientation.LANDSCAPE
+setting = StatusSetting.HIKE
+mode = StatusMode.TIME
 
 
 # Threading Infrastructure
@@ -61,6 +87,7 @@ class WorkerSignals(QObject):
     error = pyqtSignal(tuple)
     result = pyqtSignal(object)
     progress = pyqtSignal(int)
+
 
 '''
 class Worker(QRunnable):
@@ -92,6 +119,7 @@ class Worker(QRunnable):
             self.clkLastState = self.clkState
             # print(self.count)
 '''
+
 
 # Custom Hardware Controls
 class RotaryEncoder(QRunnable):
@@ -236,12 +264,11 @@ class MainWindow(QMainWindow):
         print('Available: %d x %d' % (rect.width(), rect.height()))
         '''
 
-        self.index = 1
-        self.seconds = 0
-
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
             print('---')
         elif platform.system() == 'Linux':
+            self.index = 1
+            self.seconds = 0
             self.setupGPIO()
             self.setupThreads()
 
@@ -249,11 +276,16 @@ class MainWindow(QMainWindow):
         # self.setupLandscapeUI()
         # self.setupVerticalUI()
 
+        self.modeOverlay = ModeOverlay(self, 'assets/Time@1x.png', mode)
+
         # TODO - implement with the new Db structure
         # self.setupDB()
 
-        # self.show()
-        self.showFullScreen()
+        # Show the MainWindow
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            self.show()
+        elif platform.system() == 'Linux':
+            self.showFullScreen()
 
     def setupGPIO(self):
         # Set the GPIO mode, alternative is GPIO.BOARD
@@ -296,15 +328,16 @@ class MainWindow(QMainWindow):
         pagelayout.addLayout(self.stacklayout)
 
         # Landscape view
-        self.stacklayout.addWidget(Color('green'))
+        self.pictureLandscape = Image('assets/cam2f.jpg')
+        self.stacklayout.addWidget(self.pictureLandscape)
 
         # Vertical view
         verticallayout = QHBoxLayout()
         verticallayout.setContentsMargins(0, 0, 0, 0)
         verticallayout.setSpacing(0)
-        verticallayout.addWidget(Color('blue'))
-        verticallayout.addWidget(Color('green'))
-        verticallayout.addWidget(Color('brown'))
+        verticallayout.addWidget(Image('assets/cam1.jpg'))
+        verticallayout.addWidget(Image('assets/cam2.jpg'))
+        verticallayout.addWidget(Image('assets/cam3.jpg'))
 
         verticalWidget = QWidget()
         verticalWidget.setLayout(verticallayout)
@@ -358,12 +391,35 @@ class MainWindow(QMainWindow):
 
     # UI Interactions
     def setLandscape(self):
-        print('land')
+        print('Landscape')
+        orientation = 0 
         self.stacklayout.setCurrentIndex(0)
 
     def setVertical(self):
-        print('vertical')
+        print('Vertical')
+        orientation = 1
         self.stacklayout.setCurrentIndex(1)
+
+    def changeMode(self):
+        # global status_mode
+        # status_mode = (status_mode + 1) % 3
+        # print('New status: %d' % status_mode)
+
+        global mode
+        mode = StatusMode((mode.value + 1) % 3)
+        # print(mode.value)
+        # newval = mode.value + 1
+        # print(newval)
+
+        if mode == StatusMode.TIME:
+            print(mode)
+            self.modeOverlay.setTime()
+        elif mode == StatusMode.ALTITUDE:
+            print(mode)
+            self.modeOverlay.setAltitude()
+        elif mode == StatusMode.COLOR:
+            print(mode)
+            self.modeOverlay.setColor()
 
     # Setup threads to check for hardware changes
     def setupThreads(self):
@@ -457,11 +513,11 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Space:
             print('space bar')
         elif event.key() == Qt.Key_H:
-            print('rotate horizontal')
             self.setLandscape()
         elif event.key() == Qt.Key_V:
-            print('rotate vertical')
             self.setVertical()
+        elif event.key() == Qt.Key_M:
+            self.changeMode()
         else:
             print('other key pressed')
 
@@ -492,6 +548,6 @@ class MainWindow(QMainWindow):
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
 
 
-app = QApplication([])
+app = QApplication(sys.argv)
 window = MainWindow()
 app.exec_()
