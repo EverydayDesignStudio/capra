@@ -13,12 +13,10 @@ GPIO.setup(g.BUTT_MODE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_PLAY_PAUSE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_PREV, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(g.BUTT_NEXT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(g.BUTT_OFF, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(g.BUTT_ON, GPIO.IN)
-
 GPIO.setup(g.BUTT_ENC1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(g.ENC1_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(g.ENC1_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+GPIO.setup(g.BUTT_OFF, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(g.BUTT_ON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 
 def write(line):
@@ -47,9 +45,8 @@ def main():
         off_stat = ""
         on_stat = ""
 
-        # if GPIO.input(g.HALL_EFFECT_PIN) == 0:
-        #     hall_effect_stat = 'Magnet Near'
-        hall_effect_stat = GPIO.input(g.HALL_EFFECT_PIN)
+        if GPIO.input(g.HALL_EFFECT_PIN) == 0:
+            hall_effect_stat = 'Magnet Near'
         if GPIO.input(g.BUTT_MODE) == 0:
             mode_stat = 'Pressed'
         if GPIO.input(g.BUTT_PLAY_PAUSE) == 0:
@@ -62,9 +59,8 @@ def main():
             enc1_stat = 'Pressed'
         if GPIO.input(g.BUTT_ON) == 0:
             on_stat = 'Pressed'
-        off_stat = GPIO.input(g.BUTT_OFF)
-        # if GPIO.input(g.BUTT_OFF) == 1:
-        #     off_stat = 'Pressed'
+        if GPIO.input(g.BUTT_OFF) == 1:
+            off_stat = 'Pressed'
 
         output = """
 Hall Effect:{he}

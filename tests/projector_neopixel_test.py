@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Simple test for NeoPixels on Raspberry Pi
 import time
 import board
