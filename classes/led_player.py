@@ -26,6 +26,10 @@ class RGB_LED:
         GPIO.output(self.LED_GREEN, False)
         GPIO.output(self.LED_BLUE, False)
 
+    def sleep_off(self):
+        time.sleep(2)
+        self.turn_off()
+
     def turn_red(self):
         GPIO.output(self.LED_RED, True)
 
