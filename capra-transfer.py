@@ -19,6 +19,7 @@ from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
+from classes.kmeans import hsvToRgb
 import logging
 g.init()
 
@@ -200,15 +201,9 @@ def compute_checksum(currHike):
     checkSum_total = checkSum_transferred + checkSum_rotated
 
 
-def validate_color(hikeColor):
-    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
-
-
 def check_hike_postprocessing(currHike):
-    hikeColor1 = pDBController.get_hike_average_color(currHike, 1)
-    hikeColor2 = pDBController.get_hike_average_color(currHike, 2)
-    hikeColor3 = pDBController.get_hike_average_color(currHike, 3)
-    return validate_color(hikeColor1) and validate_color(hikeColor2) and validate_color(hikeColor3)
+    hikeColor = pDBController.get_hike_average_color(currHike)
+    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
 
 
 def roundToHundredth(lst):
@@ -223,73 +218,83 @@ def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCount
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
     picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
-    color1 = None
-    color2 = None
-    color3 = None
+    colorR = None
+    colorG = None
+    colorB = None
+    colors_hsv_str = ""
+    colors_rgb_str = ""
+    domColor_hsv_str = ""
+    domColor_rgb_str = ""
+    conf_str = ""
 
 #    print("{}: {}".format(index_in_hike, row))
 
+    # TODO: perform duplicate check on
     if (pDBController.get_picture_at_timestamp(row[0]) > 0):
-        color1 = pDBController.get_picture_dominant_color(row[0], 1)
-        color2 = pDBController.get_picture_dominant_color(row[0], 2)
-        color3 = pDBController.get_picture_dominant_color(row[0], 3)
-    else:
-        try:
-            # round color values to the nearest hundredth
-            if (color1 is None):
-                color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
-                color1 = color_res1.split(", ")
+        color_hsv = pDBController.get_picture_dominant_color(row[0], 'hsv')
+        color_rgb = pDBController.get_picture_dominant_color(row[0], 'rgb')
+        # TODO: get 'colors' and check this value as well
 
+    try:
+        # round color values to the nearest hundredth
+        # TODO: fix the color processing function
+        if (color_hsv is None or color_rgb is None):
+            color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(picPathCam1, picPathCam2, picPathCam3)
+            # color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
 
-            if (color2 is None):
-                color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
-                color2 = color_res2.split(", ")
+            for i in range(color_size):
+                add = ","
+                if (i == color_size-1):
+                    add = ""
+                colors_hsv_str += str(colors_hsv[i][0]) + "," + str(colors_hsv[i][1]) + "," + str(colors_hsv[i][2]) + add
+                colors_rgb_str += str(colors_rgb[i][0]) + "," + str(colors_rgb[i][1]) + "," + str(colors_rgb[i][2]) + add
+                conf_str += str(conf_list[i]) + add
 
-
-            if (color3 is None):
-                color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
-                color3 = color_res3.split(", ")
-
-        # TODO: check if invalid files are handled correctly
-        # TODO: how do we redo failed rows?
-        except:
-            print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
-            print(traceback.format_exc())
-            logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
-            logger.info(traceback.format_exc())
-
-    roundToHundredth(color1)
-    roundToHundredth(color2)
-    roundToHundredth(color3)
+    # TODO: check if invalid files are handled correctly
+    # TODO: how do we redo failed rows?
+    except:
+        print("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
+        print(traceback.format_exc())
+        logger.info("[{}]     Exception at Hike {}, row {} while extracting dominant color".format(timenow(), currHike, str(row[3])))
+        logger.info(traceback.format_exc())
 
     picDatetime = datetime.datetime.fromtimestamp(row[0])
 
-    # (time, year, month, day, minute, dayofweek,
-    #   hike, index_in_hike, altitude, altrank_hike, altrank_global,
-    #   camera1, camera1_color_hsv, camera1_color_rgb,
-    #   camera2, camera2_color_hsv, camera2_color_rgb,
-    #   colrank_value, colrank_hike, colrank_global,
-    #   camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
+    if (colrankHikeCounter % 100 == 0):
+        print("[{}]\t## Hike {} checkpoint at {}".format(timenow(), currHike, colrankHikeCounter))
+        logger.info("[{}]\t## Hike {} checkpoint at {}".format(timenow(), currHike, colrankHikeCounter))
+
+    domColor_hsv_str = "{},{},{}".format(colors_hsv[0][0], colors_hsv[0][1], colors_hsv[0][2])
+    domColor_rgb_str = "{},{},{}".format(colors_rgb[0][0], colors_rgb[0][1], colors_rgb[0][2])
+
+    #     time,
+    #     year, month, day, minute, dayofweek,
+    #     hike, index_in_hike, altitude, altrank_hike, altrank_global,      # TODO: implement altitude rank
+    #     color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,
+    #     colors_count, colors_rgb, colors_conf,
+    #     camera1, camera2, camera3, camera_landscape
 
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2 pic
-    commit = (row[0], picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
+    commit = (row[0],
+                picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, index_in_hike, row[1], colrankHikeCounter, colrankGlobalCounter,
-                picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
-                picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
-                -1, colrankHikeCounter, colrankGlobalCounter,
-                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2f)
+                domColor_hsv_str, domColor_rgb_str, -1, colrankHikeCounter, colrankGlobalCounter,
+                color_size, colors_hsv_str, colors_rgb_str,
+                picPathCam1, picPathCam2, picPathCam3, picPathCam2f)
+
+    # *** Could create a secondary DB to save transactions if Capra fails too often during transfer
 
     # TODO: pass information needed for the transfer animation as a JSON file
 
-    return color1, color2, color3, commit
+    return [colors_hsv[0][0], colors_hsv[0][1], colors_hsv[0][2]], commit
 
 
 def start_transfer():
     global cDBController, pDBController, rsync_status, retry, hall_effect
     global checkSum_transferred, checkSum_rotated, checkSum_total, colrankHikeCounter, colrankGlobalCounter
     global logger
-    global domColors, commits, threads, threadPool
+    global domColors, commits, threads, threadPool, STOP
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
@@ -367,17 +372,13 @@ def start_transfer():
 
                 print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
                 logger.info("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
-                # TRANSFER
 
-                # POST-PROCESSING
                 avgAlt = 0
                 startTime = 9999999999
                 endTime = -1
 
                 # for colors
-                domColorsCam1 = []
-                domColorsCam2 = []
-                domColorsCam3 = []
+                domColorsHike_hsv_hsv = []
 
                 threads = []
                 threadPool = ThreadPoolExecutor(max_workers=5)
@@ -481,10 +482,8 @@ def start_transfer():
 
                 # wait for threads to finish
                 for thread in futures.as_completed(threads):
-                    color1, color2, color3, commit = thread.result()
-                    domColorsCam1.append([color1[0], color1[1], color1[2]])
-                    domColorsCam2.append([color2[0], color2[1], color2[2]])
-                    domColorsCam3.append([color3[0], color3[1], color3[2]])
+                    color_hsv, commit = thread.result()
+                    domColorsHike_hsv.append(color_hsv)
                     commits.append(commit)
                 threadPool.shutdown(wait=True)
 
@@ -497,16 +496,10 @@ def start_transfer():
                 # make a row for the hike table with postprocessed values
                 compute_checksum(currHike)
                 avgAlt /= numValidRows
-                hikeDomCol1 = []
-                hikeDomCol2 = []
-                hikeDomCol3 = []
+                domColorHike_hsv = []
                 if (checkSum_total / 4 > g.COLOR_CLUSTER):
-                    hikeDomCol1 = get_dominant_color_1D(domColorsCam1, g.COLOR_CLUSTER)
-                    hikeDomCol2 = get_dominant_color_1D(domColorsCam2, g.COLOR_CLUSTER)
-                    hikeDomCol3 = get_dominant_color_1D(domColorsCam3, g.COLOR_CLUSTER)
-                    roundToHundredth(hikeDomCol1)
-                    roundToHundredth(hikeDomCol2)
-                    roundToHundredth(hikeDomCol3)
+                    domColorHike_hsv = get_dominant_color_1D(domColorsHike_hsv, g.COLOR_CLUSTER)
+                    roundToHundredth(domColorHike_hsv)
 
                 # TODO: color ranking
                 # https://github.com/EverydayDesignStudio/capra-color/blob/master/generate_colors.py
@@ -516,19 +509,23 @@ def start_transfer():
                 hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
                 hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
 
-                # (hike_id, avg_altitude, \
-                #     avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv, \
-                #     start_time, start_year, start_month, start_day, start_minute, start_dayofweek \
-                #     end_time, end_year, end_month, end_day, end_minute, end_dayofweek \
-                #     pictures, path)
+                domColorHike_rgb = hsvToRgb(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
+                domColorHike_hsv_str = "{},{},{}".format(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
+                domColorHike_rgb_str = "{},{},{}".format(domColorHike_rgb[0], domColorHike_rgb[1], domColorHike_rgb[2])
+
+
+                #     hike_id, avg_altitude,
+                #     start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
+                #     end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                #     color_hsv, color_rgb, color_rank_value, color_rank,               # TODO: calculate color rank
+                #     pictures, path
+
                 print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
                 logger.info("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
                 pDBController.upsert_hike(currHike, avgAlt,
-                                            "({},{},{})".format(hikeDomCol1[0], hikeDomCol1[1], hikeDomCol1[2]),
-                                            "({},{},{})".format(hikeDomCol2[0], hikeDomCol2[1], hikeDomCol2[2]),
-                                            "({},{},{})".format(hikeDomCol3[0], hikeDomCol3[1], hikeDomCol3[2]),
                                             startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
                                             endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
+                                            domColorHike_hsv_str, domColorHike_rgb_str, -1, currHike,
                                             numValidRows, dest)
 
                 # suppose hike is finished, now do the resizing

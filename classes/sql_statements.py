@@ -260,56 +260,42 @@ class SQLStatements:
                             altitude: float,
                             altrank_hike: int,
                             altrank_global: int,
+                            color_hsv: str,         # most dominant color in hsv
+                            color_rgb: str,         # most dominant color in rgb
+                            color_rank_value: str,
+                            color_rank_hike: int,
+                            color_rank_global: int,
+                            colors_count: int,
+                            colors_rgb: text,       # at most 10 dominant colors in rgb
+                            colors_conf: text,
                             camera1: str,
-                            camera1_color_hsv: str,
-                            camera1_color_rgb: str,
                             camera2: str,
-                            camera2_color_hsv: str,
-                            camera2_color_rgb: str,
-                            colrank_value: float,
-                            colrank_hike: int,
-                            colrank_global: int,
                             camera3: str,
-                            camera3_color_hsv: str,
-                            camera3_color_rgb: str,
                             camera_landscape: str) -> int:
         statement = 'INSERT OR REPLACE INTO pictures \
             (time, \
                 year, month, day, minute, dayofweek, \
                 hike, index_in_hike, altitude, altrank_hike, altrank_global, \
-                camera1, camera1_color_hsv, camera1_color_rgb, \
-                camera2, camera2_color_hsv, camera2_color_rgb, \
-                colrank_value, colrank_hike, colrank_global, \
-                camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape) \
+                color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, \
+                colors_count, colors_rgb, colors_conf, \
+                camera1, camera2, camera3, camera_landscape) \
             VALUES ({}, \
                     {}, {}, {}, {}, {}, \
                     {}, {}, {}, {}, {}, \
-                    "{}", "{}", "{}", \
-                    "{}", "{}", "{}", \
-                    {}, {}, {}, \
+                    "{}", "{}", {}, {}, {}, \
+                    {}, "{}", "{}", \
                     "{}", "{}", "{}", "{}")\
             '.format(time,
                         year, month, day, minute, dayofweek,
                         hike, index_in_hike, altitude, altrank_hike, altrank_global,
-                        camera1, camera1_color_hsv, camera1_color_rgb,
-                        camera2, camera2_color_hsv, camera2_color_rgb,
-                        colrank_value, colrank_hike, colrank_global,
-                        camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
+                        color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,
+                        colors_count, colors_rgb, colors_conf, 
+                        camera1, camera2, camera3, camera_landscape)
         return statement
-
-    # def upsert_hike_row(self, hike_id: int, avg_altitude: float, avg_hue: float, avg_saturation: float, avg_value: float, start_time: float, end_time: float, pictures: int, path: str) -> str:
-    #     statement = 'INSERT OR REPLACE INTO hikes \
-    #         (hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path) \
-    #         VALUES ({}, {}, {}, {}, {}, {}, {}, {}, "{}")\
-    #         '.format(hike_id, avg_altitude, avg_hue, avg_saturation, avg_value, start_time, end_time, pictures, path)
-    #     return statement
 
     def upsert_hike_row(self,
                         hike_id: int,
                         avg_altitude: float,
-                        avg_color_camera1_hsv: str,
-                        avg_color_camera2_hsv: str,
-                        avg_color_camera3_hsv: str,
                         start_time: float,
                         start_year: int,
                         start_month: int,
@@ -322,39 +308,32 @@ class SQLStatements:
                         end_day: int,
                         end_minute: int,
                         end_dayofweek: int,
+                        color_hsv: str,
+                        color_rgb: str,
+                        color_rank_value: str,
+                        color_rank: int,
                         pictures: int,
                         path: str) -> str:
         statement = 'INSERT OR REPLACE INTO hikes \
             (hike_id, avg_altitude, \
-                avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv, \
                 start_time, start_year, start_month, start_day, start_minute, start_dayofweek, \
                 end_time, end_year, end_month, end_day, end_minute, end_dayofweek, \
+                color_hsv, color_rgb, color_rank_value, color_rank, \
                 pictures, path) \
             VALUES ({}, {}, \
-                    "{}", "{}", "{}", \
                     {}, {}, {}, {}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, \
+                    "{}", "{}", "{}", {}, \
                     {}, "{}")\
             '.format(hike_id, avg_altitude,
-                        avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv,
                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
                         end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                        color_hsv, color_rgb, color_rank_value, color_rank,
                         pictures, path)
         return statement
 
-    # def get_hike_average_color(self, hike_id: int):
-    #     statement = 'SELECT avg_hue, avg_saturation, avg_value FROM hikes WHERE hike_id == {}'.format(hike_id)
-    #     return statement
-
-    def get_hike_average_color(self, hike_id: int, camNum : int = 0):
-        statement = ""
-
-        # for default color, return cam2's color (the middle one)
-        if (camNum == 0):
-            statement = 'SELECT avg_color_camera2_hsv FROM hikes WHERE hike_id == {}'.format(hike_id)
-        else:
-            statement = 'SELECT avg_color_camera{}_hsv FROM hikes WHERE hike_id == {}'.format(camNum, hike_id)
-
+    def get_hike_average_color(self, hike_id: int):
+        statement = 'SELECT color_rgb FROM hikes WHERE hike_id == {}'.format(hike_id)
         return statement
 
 
@@ -366,18 +345,17 @@ class SQLStatements:
         statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 
-    # def get_dominant_color_for_picture_of_given_timestamp(self, time: float):
-    #     statement = 'SELECT hue, saturation, value FROM pictures WHERE time == {}'.format(time)
-    #     return statement
-
-    def get_dominant_color_for_picture_of_given_timestamp(self, time: float, camNum : int = 0):
+    # format = ('hsv'|'HSV') or ('rgb'|'RGB')
+    def get_dominant_color_for_picture_of_given_timestamp(self, time: float, format: str):
         statement = ""
 
         # for default color, return cam2's color (the middle one)
-        if (camNum == 0):
-            statement = 'SELECT camera2_color_hsv, camera2_color_rgb FROM pictures WHERE time == {}'.format(time)
-        else:
-            statement = 'SELECT camera{}_color_hsv, camera{}_color_rgb FROM pictures WHERE time == {}'.format(camNum, camNum, time)
+        if (format == 'hsv' or format == 'HSV'):
+            statement = 'SELECT color_hsv FROM pictures WHERE time == {}'.format(time)
+        elif (format == 'rgb' or format == 'RGB'):
+            statement = 'SELECT color_rgb FROM pictures WHERE time == {}'.format(time)
+        else
+            return -1
 
         return statement
 

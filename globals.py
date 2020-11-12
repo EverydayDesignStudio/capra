@@ -77,7 +77,7 @@ def init():
 
     # Color detection
     global COLOR_CLUSTER
-    COLOR_CLUSTER = 5
+    COLOR_CLUSTER = 10
 
     global COLOR_DIMX
     COLOR_DIMX = 160
