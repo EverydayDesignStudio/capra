@@ -33,6 +33,7 @@ logger = None
 rsync_status = None
 cDBController = None
 pDBController = None
+p2DBController = None
 retry = 0
 RETRY_MAX = 5
 
@@ -55,6 +56,7 @@ CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
 DUMMY_IMAGE = DATAPATH + "dummy.jpg"
+PROJECTOR_BAK_DB = DATAPATH + g.DBNAME_MASTER_BAK
 
 class readHallEffectThread(threading.Thread):
     def __init__(self):
@@ -158,6 +160,11 @@ def copy_remote_db():
     return
 
 
+def copy_master_db():
+    subprocess.Popen(['cp', PROJECTOR_DB, PROJECTOR_BAK_DB], stdout=subprocess.PIPE)
+    return
+
+
 def make_backup_remote_db():
     subprocess.Popen(['cp', CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
     return
@@ -165,13 +172,14 @@ def make_backup_remote_db():
 
 # 1. make db connections
 def getDBControllers():
-    global cDBController, pDBController
+    global cDBController, pDBController, p2DBController
 
     # this will be a local db, copied from camera
     cDBController = SQLController(database=CAMERA_DB)
     # master projector db
     pDBController = SQLController(database=PROJECTOR_DB)
-
+    # a copy of aster projector db
+    p2DBController = SQLController(database=PROJECTOR_BAK_DB)
 
 def count_files_in_directory(path, pattern):
     if (not os.path.exists(path)):
@@ -291,7 +299,7 @@ def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCount
 
 
 def start_transfer():
-    global cDBController, pDBController, rsync_status, retry, hall_effect
+    global cDBController, pDBController, p2DBController, rsync_status, retry, hall_effect
     global checkSum_transferred, checkSum_rotated, checkSum_total, colrankHikeCounter, colrankGlobalCounter
     global logger
     global domColors, commits, threads, threadPool, STOP
@@ -606,6 +614,9 @@ while True:
                 g.flag_start_transfer = False
                 HALL_EFFECT_ON.clear()
                 continue
+
+            # copy the current snapshot of master DB for checking references
+            copy_master_db()
 
             start_transfer()
             # if transfer is successfully finished pause running until camera is dismounted and re-mounted

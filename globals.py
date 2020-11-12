@@ -18,6 +18,8 @@ def init():
     # Databases
     global DBNAME_MASTER
     DBNAME_MASTER = "capra_projector.db"
+    global DBNAME_MASTER_BAK
+    DBNAME_MASTER_BAK = "capra_projector_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
