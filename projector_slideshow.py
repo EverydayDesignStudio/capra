@@ -3,6 +3,12 @@
 # Slideshow application for the Capra Explorer
 # Allows passing through photos with a smooth fading animation
 
+# FIXME
+# HACK
+# TODO
+# REVIEW
+# REFACTOR
+
 # Imports
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
@@ -12,9 +18,12 @@ from classes.ui_components import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+import PIL
+from PIL import ImageTk, Image, ImageQt
+# from PIL.ImageQt import ImageQt
 # from RPi import GPIO
 from datetime import datetime
-from enum import Enum, unique, auto
+from enum import Enum, IntEnum, unique, auto
 
 import math
 import os
@@ -30,7 +39,7 @@ if platform.system() == 'Darwin' or platform.system() == 'Windows':
     # PATH = '/home/pi/Pictures'
 
 elif platform.system() == 'Linux':
-    print('We are on a Raspberry Pi!')
+    print('We on a Raspberry Pi!')
     # DB = '/media/pi/capra-hd/capra_projector.db'
     # PATH = '/media/pi/capra-hd'
     DB = '/home/pi/capra-storage-demo/capra_projector.db'
@@ -40,31 +49,32 @@ elif platform.system() == 'Linux':
 # --- Hardware
 rotaryCounter = 0
 # --- UI
-status_orientation = 0      # (0)landscape (1)portrait
-status_setting = 0          # (0)hike (1)global
-status_mode = 0             # (0)time (1)altitude (2)color
+# status_orientation = 0      # (0)landscape (1)portrait
+# status_setting = 0          # (0)hike (1)global
+# status_mode = 0             # (0)time (1)altitude (2)color
 isReadyForNewPicture = True
 
 
-class StatusOrientation(Enum):
+class StatusOrientation(IntEnum):
     LANDSCAPE = 0
     PORTRAIT = 1
 
 
-class StatusSetting(Enum):
+class StatusScope(IntEnum):
     HIKE = 0
     GLOBAL = 1
 
 
-class StatusMode(Enum):
+class StatusMode(IntEnum):
     __order__ = 'TIME ALTITUDE COLOR'
     TIME = 0
     ALTITUDE = 1
     COLOR = 2
 
 
+# Global status values -- they need to have global file scope due to the modification by the hardware
 orientation = StatusOrientation.LANDSCAPE
-setting = StatusSetting.HIKE
+setting = StatusScope.HIKE
 mode = StatusMode.TIME
 
 
@@ -209,7 +219,7 @@ class RotaryEncoder(QRunnable):
 
             self.Last_Direction = self.Current_Direction
             print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
-            
+
             # TODO -- remove both of these lines
             # Resetting counter will happen in Main UI Thread
             self.signals.result.emit(rotaryCounter)
@@ -264,8 +274,14 @@ class MainWindow(QMainWindow):
         print('Available: %d x %d' % (rect.width(), rect.height()))
         '''
 
+        # TODO - make sure this actually works
+        # Images from Pillow
+        self.alpha = 0
+        self.current_raw = Image.open('assets/5.jpg', 'r')
+        self.next_raw = Image.open('assets/7.jpg', 'r')
+
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            print('---')
+            print('---- No GPIO setup needed ----')
         elif platform.system() == 'Linux':
             self.index = 1
             self.seconds = 0
@@ -273,10 +289,12 @@ class MainWindow(QMainWindow):
             self.setupThreads()
 
         self.setupWindowLayout()
+
+        # REMOVE - as they aren't needed anymore (I think)
         # self.setupLandscapeUI()
         # self.setupVerticalUI()
 
-        self.modeOverlay = ModeOverlay(self, 'assets/Time@1x.png', mode)
+        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
 
         # TODO - implement with the new Db structure
         # self.setupDB()
@@ -328,16 +346,16 @@ class MainWindow(QMainWindow):
         pagelayout.addLayout(self.stacklayout)
 
         # Landscape view
-        self.pictureLandscape = Image('assets/cam2f.jpg')
+        self.pictureLandscape = UIImage('assets/cam2f.jpg')
         self.stacklayout.addWidget(self.pictureLandscape)
 
         # Vertical view
         verticallayout = QHBoxLayout()
         verticallayout.setContentsMargins(0, 0, 0, 0)
         verticallayout.setSpacing(0)
-        verticallayout.addWidget(Image('assets/cam1.jpg'))
-        verticallayout.addWidget(Image('assets/cam2.jpg'))
-        verticallayout.addWidget(Image('assets/cam3.jpg'))
+        verticallayout.addWidget(UIImage('assets/cam1.jpg'))
+        verticallayout.addWidget(UIImage('assets/cam2.jpg'))
+        verticallayout.addWidget(UIImage('assets/cam3.jpg'))
 
         verticalWidget = QWidget()
         verticalWidget.setLayout(verticallayout)
@@ -392,13 +410,17 @@ class MainWindow(QMainWindow):
     # UI Interactions
     def setLandscape(self):
         print('Landscape')
-        orientation = 0 
-        self.stacklayout.setCurrentIndex(0)
+        global orientation
+        orientation = StatusOrientation.LANDSCAPE
+        print(orientation.value)
+        self.stacklayout.setCurrentIndex(orientation)
 
     def setVertical(self):
         print('Vertical')
-        orientation = 1
-        self.stacklayout.setCurrentIndex(1)
+        global orientation
+        orientation = StatusOrientation.PORTRAIT
+        print(orientation.value)
+        self.stacklayout.setCurrentIndex(orientation)
 
     def changeMode(self):
         # global status_mode
@@ -504,15 +526,34 @@ class MainWindow(QMainWindow):
             self.close()
         elif event.key() == Qt.Key_Left:
             print('left')
-            print(rotaryCounter)
+            self.pictureLandscape.update_image('assets/cam2f2.jpg')
+
+            # self.fade_image()
+
+            # print(rotaryCounter)
             # self.updatePrev()
         elif event.key() == Qt.Key_Right:
             print('right')
-            print(rotaryCounter)
+            # print(rotaryCounter)
+            # self.pictureLandscape = Image('assets/cam2f3.jpg')
+            # self.alpha = 0.1  # Resets amount of fade between pictures
+            # self.pictureLandscape.update_image('assets/cam2f3.jpg')
+
+            # self.alpha = 0.5  # Resets amount of fade between pictures
+            self.fade_image()
+
+            # TODO - trying to pigeon in the fading program from the other
+            # self.alpha = 0.1  # Resets amount of fade between pictures
+            # if self.index + 1 >= len(self.fileList):
+            #     self.index = 0
+            # else:
+            #     self.index += 1
+            # self.next_raw_mid = Image.open(self.fileList[self.index], 'r')
+
             # self.updateNext()
         elif event.key() == Qt.Key_Space:
             print('space bar')
-        elif event.key() == Qt.Key_H:
+        elif event.key() == Qt.Key_L:
             self.setLandscape()
         elif event.key() == Qt.Key_V:
             self.setVertical()
@@ -537,6 +578,7 @@ class MainWindow(QMainWindow):
     #     self.seconds += 1
     #     self.timerLabel.setText('Timer: %d' % self.seconds)
 
+    '''
     # Helper Methods
     def buildLandscape(self, num) -> str:
         path = '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
@@ -546,6 +588,29 @@ class MainWindow(QMainWindow):
     def buildFile(self, num) -> str:
         # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
+    '''
+
+    # Fades between the current image and the NEXT image
+    def fade_image(self):
+        # print('Fading the image at alpha of: ', self.alpha)
+        if self.alpha < 1.0:
+            self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
+
+            # self.current_raw.save("assets/blended.jpg")
+            # self.pictureLandscape.update_image('assets/blended.jpg')
+            self.pictureLandscape.update_pixmap(self.current_raw)
+
+            # TODO - how long the last image hangs around
+            #   Lower - the longer a piece stays on screen
+            #   Higher - the faster the bit of an image leaves
+            # self.alpha = self.alpha + 0.0417
+            # self.alpha = self.alpha + 0.0209
+            self.alpha = self.alpha + 0.1
+
+        # TODO - Change this value to affect the spee of the fade
+        #   Lower the number the quicker the fade
+        #   Higher the number the slower the fade
+        # root.after(40, self.fade_image)
 
 
 app = QApplication(sys.argv)

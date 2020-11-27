@@ -8,13 +8,15 @@
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PIL import Image, ImageQt  # Pillow image functions
+# from PIL.ImageQt import ImageQt
 
 import sys
 import time
 
 
 # Add a single color widget, great for testing purposes
-class Color(QWidget):
+class UIColor(QWidget):
     def __init__(self, color, *args, **kwargs):
         super(Color, self).__init__(*args, **kwargs)
         self.setAutoFillBackground(True)
@@ -25,15 +27,58 @@ class Color(QWidget):
 
 
 # Simple wrapper of QLabel, for easier image loading
-class Image(QLabel):
+class UIImage(QLabel):
     def __init__(self, path: str, *args, **kwargs):
         super(QLabel, self).__init__(*args, **kwargs)
         # QLabel.__init__(self)
         pixmap = QPixmap(path)
         self.setPixmap(pixmap)
 
+    def update_image(self, path: str):
+        self.pixmap = QPixmap(path)
+        print('Is this a Pixmap?: {t}'.format(t=type(self.pixmap)))
+        self.setPixmap(self.pixmap)
 
-class ImageOverlay(QLabel):
+    def update_pixmap(self, im):
+        im = im.convert("RGB")
+        data = im.tobytes("raw", "RGB")
+        # qim = QImage(data, im.size[0], im.size[1], QImage.Format_ARGB32)  # give weird color distortion
+        qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGB888)
+        self.pixmap = QPixmap.fromImage(qim)
+        self.setPixmap(self.pixmap)
+
+        # Collection of things that didn't work but it is helpful to remember
+        '''
+        qim = ImageQt(im)
+        pix = QPixmap.fromImage(qim)
+        # pix = QPixmap.fromImage(qim, flags=Qt.AutoColor)
+        self.setPixmap(pix)
+        '''
+
+        '''
+        # fromImage() doesn't seem to be working; the other function just builds it from path
+        qim = ImageQt(image)
+        qim2 = QImage(qim)
+        pix = QPixmap.fromImage(qim2)
+        self.setPixmap(pix)
+        '''
+
+        '''
+        # self.pixmap = QPixmap(ImageQt.ImageQt(image))
+        print('update_pixmpa()')
+        print('Parameter input is: {t}'.format(t=type(image)))
+
+        qtimg = ImageQt.ImageQt(image)
+        print('Is this a QT Image?: {t}'.format(t=type(qtimg)))
+
+        self.pixmap = QPixmap.fromImage(qtimg)
+        print('Is this a Pixmap?: {t}'.format(t=type(self.pixmap)))
+
+        self.setPixmap(QPixmap(self.pixmap))
+        '''
+
+
+class UIImageOverlay(QLabel):
     def __init__(self, window, path: str, *args, **kwargs):
         super(QLabel, self).__init__(window, *args, **kwargs)
         # QLabel.__init__(self, window)
@@ -44,7 +89,7 @@ class ImageOverlay(QLabel):
         self.setPixmap(pixmap)
 
 
-class ModeOverlay(QLabel):
+class UIModeOverlay(QLabel):
     def __init__(self, window, path: str, mode, *args, **kwargs):
         super(QLabel, self).__init__(window, *args, **kwargs)
         # QLabel.__init__(self, window)
