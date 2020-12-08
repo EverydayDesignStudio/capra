@@ -15,15 +15,58 @@ import sys
 import time
 
 
-# Add a single color widget, great for testing purposes
-class UIColor(QWidget):
-    def __init__(self, color, *args, **kwargs):
-        super(Color, self).__init__(*args, **kwargs)
-        self.setAutoFillBackground(True)
+# UI Components
+# -----------------------------------------------------------------------------
 
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
+class UILabelTop(QLabel):
+    def __init__(self, window, text: str, alignment, *args, **kwargs):
+        super(QLabel, self).__init__(window, *args, **kwargs)
+
+        self.setText(text)
+
+        self.resize(1280, 200)
+        # self.setAlignment(Qt.AlignLeft)
+        self.setAlignment(alignment)
+        self.setMargin(65)
+        # self.setIndent(100)
+
+        self.setFont(QFont('Atlas Grotesk', 28, 400))
+        self.setStyleSheet("color: rgba(255,255,255,255)")
+        self.setGraphicsEffect(UIEffectTextDropShadow())
+
+
+class UILabelTopCenter(QWidget):
+    def __init__(self, window, primaryText: str, secondaryText: str, *args, **kwargs):
+        super(QWidget, self).__init__(window, *args, **kwargs)
+
+        self.resize(1280, 150)
+        layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignHCenter)
+        # layout.setAlignment(Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
+        label1 = QLabel(primaryText)
+        label1.setFont(QFont('Atlas Grotesk', 48, 500))
+        label1.setStyleSheet("color: rgba(255,255,255,255)")
+        label1.setGraphicsEffect(UIEffectTextDropShadow())
+
+        label2 = QLabel(secondaryText)
+        label2.setFont(QFont('Atlas Grotesk', 30, 400))
+        label2.setStyleSheet("color: rgba(255,255,255,225)")
+        label2.setGraphicsEffect(UIEffectTextDropShadow())
+
+        # TESTING
+        # palette = self.palette()
+        # palette.setColor(QPalette.Window, QColor('gray'))
+        # label1.setAutoFillBackground(True)
+        # label1.setPalette(palette)
+        # label2.setAutoFillBackground(True)
+        # label2.setPalette(palette)
+
+        layout.addWidget(label1)
+        layout.addWidget(label2)
+        self.setLayout(layout)
 
 
 # Simple wrapper of QLabel, for easier image loading
@@ -161,3 +204,30 @@ class UIModeOverlay(QLabel):
         # self.anim.setStartValue(QRect(0, 720, 1280, 110))
         # self.anim.setEndValue(QRect(0, 610, 1280, 110))
         # self.anim.start()
+
+
+# UI Effects
+# -----------------------------------------------------------------------------
+
+# Text effect used for the text at the top of the interface
+class UIEffectTextDropShadow(QGraphicsDropShadowEffect):
+    def __init__(self):
+        super(QGraphicsDropShadowEffect, self).__init__()
+        self.setBlurRadius(20)
+        color = QColor(0, 0, 0, 50)  # r,g,b,a | opaque = 255
+        self.setColor(color)
+        self.setOffset(0, 2)
+
+
+# UI Testing
+# -----------------------------------------------------------------------------
+
+# Add a single color widget, great for testing purposes
+class UIColor(QWidget):
+    def __init__(self, color, *args, **kwargs):
+        super(Color, self).__init__(*args, **kwargs)
+
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.Window, QColor(color))
+        self.setPalette(palette)

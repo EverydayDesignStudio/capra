@@ -294,7 +294,17 @@ class MainWindow(QMainWindow):
         # self.setupLandscapeUI()
         # self.setupVerticalUI()
 
+        self.topUnderlay = QLabel(self)
+        topUnderlayImg = QPixmap("assets/TopUnderlay.png")
+        self.topUnderlay.setPixmap(topUnderlayImg)
+        self.topUnderlay.setAlignment(Qt.AlignCenter)
+        self.topUnderlay.setGeometry(0, 0, 1280, 187)
+
         self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
+        self.altitudeLabel = UILabelTop(self, 'HIKE 11', Qt.AlignLeft)
+        self.altitudeLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
+        self.comboLabel = UILabelTopCenter(self, '2,234', 'M')
+        # self.comboLabel = UILabelTopCenter(self, '16:12', ':21')
 
         # TODO - implement with the new Db structure
         # self.setupDB()
