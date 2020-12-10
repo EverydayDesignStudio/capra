@@ -5,6 +5,9 @@
 #SQL
 *.db
 
+# Visual Studio Code
+.vscode
+
 # Finder
 .DS_Store
 

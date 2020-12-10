@@ -77,11 +77,14 @@ class UIImage(QLabel):
         pixmap = QPixmap(path)
         self.setPixmap(pixmap)
 
+    # Utilizes local storage
     def update_image(self, path: str):
         self.pixmap = QPixmap(path)
         print('Is this a Pixmap?: {t}'.format(t=type(self.pixmap)))
         self.setPixmap(self.pixmap)
 
+    # Utilizes image conversion
+    # TODO - see how this compares to saving locally
     def update_pixmap(self, im):
         im = im.convert("RGB")
         data = im.tobytes("raw", "RGB")

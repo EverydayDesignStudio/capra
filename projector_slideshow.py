@@ -28,6 +28,7 @@ from enum import Enum, IntEnum, unique, auto
 import math
 import os
 import platform
+import psutil
 import sys
 import time
 import traceback
@@ -95,7 +96,8 @@ class WorkerSignals(QObject):
     '''
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
+    result = pyqtSignal(object, object)
+    # results = pyqtSignal(object, int)
     progress = pyqtSignal(int)
 
 
@@ -257,6 +259,84 @@ class HardwareButton(QRunnable):
             time.sleep(0.05)
 
 
+# Continually tries fading the next image into the current image
+class ImageFader(QRunnable):
+    def __init__(self, *args, **kwargs):
+        super(ImageFader, self).__init__()
+
+        # Needed setup
+        self.alpha = 0
+        self.signals = WorkerSignals()
+        self.current_raw = Image.open('assets/6.jpg', 'r')
+        self.next_raw = Image.open('assets/7.jpg', 'r')
+
+        # Testing
+        self.text_current = 'currently'
+        self.text_next = 'nextly'
+        self.next_value = 0
+        self.inside_data = 'shhhh, it is a secret'
+
+    '''
+    def run(self):
+        while True:
+            print(self.text_current)
+            time.sleep(0.5)
+            # print(self.text_next)
+            print(self.next_value)
+            time.sleep(3)
+            self.signals.result.emit(self.inside_data)
+    '''
+
+    def increment_next(self):
+        self.next_value += 1
+
+    def set_next_image(self, path):
+        self.next_raw = Image.open(path, 'r')
+        self.alpha = 0.25
+
+    def run(self):
+        while True:
+            if self.alpha < 0.75:
+                self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
+                # self.alpha = self.alpha + 0.02  # Rougly 20 frames until the old picture is blurred out
+                self.alpha += 0.04
+
+                self.signals.result.emit(self.current_raw, self.alpha)
+            time.sleep(0.1)  # 1/20frames = 0.05
+
+    '''
+    def run(self):
+        if self.alpha < 1.0:
+            self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
+
+            # self.current_raw.save("assets/blended.jpg")
+            # self.pictureLandscape.update_image('assets/blended.jpg')
+            self.pictureLandscape.update_pixmap(self.current_raw)
+
+            # TODO - how long the last image hangs around
+            #   Lower - the longer a piece stays on screen
+            #   Higher - the faster the bit of an image leaves
+            # self.alpha = self.alpha + 0.0417
+            # self.alpha = self.alpha + 0.0209
+            self.alpha = self.alpha + 0.1
+
+        # TODO - Change this value to affect the speed of the fade
+        #   Lower the number the quicker the fade
+        #   Higher the number the slower the fade
+        # root.after(40, self.fade_image)
+        time.sleep(0.05)
+
+        while True:
+            if GPIO.input(self.PIN) == False:         # Button press detected
+                if self.status == False:              # Button was just OFF
+                    self.signals.result.emit(True)
+                    self.status = True              # Update the status to ON
+            else:                                   # Button is not pressed
+                self.status = False
+            time.sleep(0.05)
+    '''
+
+
 # Custom Widgets & UI Elements
 # TODO - add rotatable widget container
 
@@ -264,29 +344,22 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        '''
-        app = QtWidgets.QApplication(sys.argv)
-        screen = app.primaryScreen()
-        print('Screen: %s' % screen.name())
-        size = screen.size()
-        print('Size: %d x %d' % (size.width(), size.height()))
-        rect = screen.availableGeometry()
-        print('Available: %d x %d' % (rect.width(), rect.height()))
-        '''
-
         # TODO - make sure this actually works
         # Images from Pillow
         self.alpha = 0
-        self.current_raw = Image.open('assets/5.jpg', 'r')
-        self.next_raw = Image.open('assets/7.jpg', 'r')
+        # self.current_raw = Image.open('assets/5.jpg', 'r')
+        # self.next_raw = Image.open('assets/7.jpg', 'r')
+        self.index = 1486
 
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
             print('---- No GPIO setup needed ----')
+            self.setupSoftwareThreads()
         elif platform.system() == 'Linux':
-            self.index = 1
-            self.seconds = 0
+            # self.index = 1
+            # self.seconds = 0
             self.setupGPIO()
             self.setupThreads()
+            self.setupSoftwareThreads()
 
         self.setupWindowLayout()
 
@@ -343,6 +416,20 @@ class MainWindow(QMainWindow):
         # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
         # self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
 
+    def increaseIndex(self):
+        self.index += 1
+        if self.index > 1799:
+            self.index = 1486
+
+        return self.index
+
+    def decreaseIndex(self):
+        self.index -= 1
+        if self.index < 1486:
+            self.index = 1799
+
+        return self.index
+
     # UI Setup
     def setupWindowLayout(self):
         self.setWindowTitle("Capra Slideshow")
@@ -375,6 +462,16 @@ class MainWindow(QMainWindow):
         centralWidget = QWidget()
         centralWidget.setLayout(pagelayout)
         self.setCentralWidget(centralWidget)
+
+        '''
+        app = QtWidgets.QApplication(sys.argv)
+        screen = app.primaryScreen()
+        print('Screen: %s' % screen.name())
+        size = screen.size()
+        print('Size: %d x %d' % (size.width(), size.height()))
+        rect = screen.availableGeometry()
+        print('Available: %d x %d' % (rect.width(), rect.height()))
+        '''
 
     def setupLandscapeUI(self):
         # Image
@@ -485,6 +582,17 @@ class MainWindow(QMainWindow):
         buttonNext.signals.result.connect(self.pressed_next)
         self.threadpool.start(buttonNext)
 
+    def setupSoftwareThreads(self):
+        self.threadpoolSoftware = QThreadPool()
+        self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
+        print(self.threadpoolSoftware.maxThreadCount())
+
+        # Software Threads
+        self.imageFader = ImageFader()
+        self.imageFader.signals.result.connect(self.load_new_image)
+        self.threadpoolSoftware.start(self.imageFader)
+
+
     # Hardware Button Presses
     def rotary_changed(self, result):
         # print(result)
@@ -535,22 +643,38 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
         elif event.key() == Qt.Key_Left:
-            print('left')
-            self.pictureLandscape.update_image('assets/cam2f2.jpg')
+            # print('left')
+            index = self.decreaseIndex()
+            path = 'hike10/' + str(index) + '_cam2.jpg'
+            # print(path)
+            # self.pictureLandscape.update_image('assets/cam2f2.jpg')
+            self.imageFader.set_next_image(path)
+            print(self.getCurrentMemoryUsage())
 
             # self.fade_image()
 
             # print(rotaryCounter)
             # self.updatePrev()
         elif event.key() == Qt.Key_Right:
-            print('right')
+            # print('right')
+            index = self.increaseIndex()
+            path = 'hike10/' + str(index) + '_cam2.jpg'
+            self.imageFader.set_next_image(path)
+            print(self.getCurrentMemoryUsage())
+
+            # self.fade_image()
+
+            # self.imageFader.text_next = '+1'
+            # self.imageFader.set_next_image('assets/7.jpg')
+            # self.imageFader.increment_next()
+
             # print(rotaryCounter)
             # self.pictureLandscape = Image('assets/cam2f3.jpg')
             # self.alpha = 0.1  # Resets amount of fade between pictures
             # self.pictureLandscape.update_image('assets/cam2f3.jpg')
 
             # self.alpha = 0.5  # Resets amount of fade between pictures
-            self.fade_image()
+            # self.fade_image()
 
             # TODO - trying to pigeon in the fading program from the other
             # self.alpha = 0.1  # Resets amount of fade between pictures
@@ -580,6 +704,12 @@ class MainWindow(QMainWindow):
     #     self.imgLabel.setPixmap(img)
 
     # UI Work
+    def load_new_image(self, result, value):
+        # print('new image')
+        # print(value)
+        # self.pictureLandscape.update_pixmap(self.current_raw)
+        self.pictureLandscape.update_pixmap(result)
+
     def increment_label(self):
         self.index += 1
         self.indexLabel.setText('Count: %d' % self.index)
@@ -599,6 +729,13 @@ class MainWindow(QMainWindow):
         # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
     '''
+
+    # Testing
+
+    # Memory usage in kB
+    def getCurrentMemoryUsage(self):
+        process = psutil.Process(os.getpid())
+        print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
     # Fades between the current image and the NEXT image
     def fade_image(self):
