@@ -11,20 +11,20 @@ CREATE TABLE "pictures" (
 	"year"							INTEGER,
 	"month"							INTEGER,
 	"day"								INTEGER,
-	"minute"						INTEGER,
+	"minute"						INTEGER,		  	-- "[0,1440)" (minute of day)
 	"dayofweek"					INTEGER,
 	"hike"							INTEGER,
 	"index_in_hike"			INTEGER,
 	"altitude"					REAL,
 	"altrank_hike"			INTEGER,
 	"altrank_global"		INTEGER UNIQUE,
-	"color_hsv"					TEXT,
-	"color_rgb"					TEXT,
-	"color_rank_value"	TEXT,
+	"color_hsv"					TEXT,						-- "H,S,V" (decimal)
+	"color_rgb"					TEXT,						-- "R,G,B" (int)
+	"color_rank_value"	TEXT,						-- possible intermediate value used to sort colors
 	"color_rank_hike"		INTEGER,
 	"color_rank_global"	INTEGER UNIQUE,
-	"colors_count"			INTEGER,
-	"colors_rgb"				TEXT,
+	"colors_count"			INTEGER,				-- # of dominant colors			>> for transfer animation only
+	"colors_rgb"				TEXT,						-- "R1,G1,B1|R2,G2,B2|..."	>> for transfer animation only
 	"camera1"						TEXT,
 	"camera2"						TEXT,
 	"camera3"						TEXT,
