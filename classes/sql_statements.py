@@ -266,8 +266,8 @@ class SQLStatements:
                             color_rank_hike: int,
                             color_rank_global: int,
                             colors_count: int,
-                            colors_rgb: text,       # at most 10 dominant colors in rgb
-                            colors_conf: text,
+                            colors_rgb: str,       # at most 10 dominant colors in rgb
+                            colors_conf: str,
                             camera1: str,
                             camera2: str,
                             camera3: str,
@@ -289,7 +289,7 @@ class SQLStatements:
                         year, month, day, minute, dayofweek,
                         hike, index_in_hike, altitude, altrank_hike, altrank_global,
                         color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,
-                        colors_count, colors_rgb, colors_conf, 
+                        colors_count, colors_rgb, colors_conf,
                         camera1, camera2, camera3, camera_landscape)
         return statement
 
@@ -354,7 +354,7 @@ class SQLStatements:
             statement = 'SELECT color_hsv FROM pictures WHERE time == {}'.format(time)
         elif (format == 'rgb' or format == 'RGB'):
             statement = 'SELECT color_rgb FROM pictures WHERE time == {}'.format(time)
-        else
+        else:
             return -1
 
         return statement
