@@ -25,6 +25,7 @@ CREATE TABLE "pictures" (
 	"color_rank_global"	INTEGER UNIQUE,
 	"colors_count"			INTEGER,				-- # of dominant colors			>> for transfer animation only
 	"colors_rgb"				TEXT,						-- "R1,G1,B1|R2,G2,B2|..."	>> for transfer animation only
+	"colors_conf"				TEXT,						-- confidence value for each dominant color
 	"camera1"						TEXT,
 	"camera2"						TEXT,
 	"camera3"						TEXT,
