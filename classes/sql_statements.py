@@ -288,7 +288,7 @@ class SQLStatements:
             '.format(time,
                         year, month, day, minute, dayofweek,
                         hike, index_in_hike, altitude, altrank_hike, altrank_global,
-                        color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,
+                        color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global,
                         colors_count, colors_rgb, colors_conf,
                         camera1, camera2, camera3, camera_landscape)
         return statement
