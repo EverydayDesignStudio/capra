@@ -517,6 +517,12 @@ class SQLController:
         res = cursor.fetchone()
         return res[0]
 
+    def get_hikerow_by_index(self, hike_id: int, index_in_hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_hikerow_by_index(hike_id=hike_id, index_in_hike=index_in_hike))
+        res = cursor.fetchone()
+        return res
+
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_path(hike_id))

@@ -248,6 +248,10 @@ class SQLStatements:
             camera1 IS NOT NULL AND camera2 IS NOT NULL AND camera3 IS NOT NULL'.format(h=hike_id)
         return statement
 
+    def select_hikerow_by_index(self, hike_id: int, index_in_hike: int) -> int:
+        statement = 'SELECT * FROM pictures WHERE hike == {h} AND index_in_hike == {i}'.format(h=hike_id, i=index_in_hike)
+        return statement
+
     def upsert_picture_row(self,
                             time: float,
                             year: int,
