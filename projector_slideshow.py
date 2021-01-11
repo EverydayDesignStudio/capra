@@ -36,6 +36,8 @@ import traceback
 # Database Location
 if platform.system() == 'Darwin' or platform.system() == 'Windows':
     print('We on a Mac or PC!')
+    # DB = '~/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
+    DB = '/Users/Jordan/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
     # DB = '/home/pi/Pictures/capra-projector.db'
     # PATH = '/home/pi/Pictures'
 
@@ -61,6 +63,11 @@ class StatusOrientation(IntEnum):
     PORTRAIT = 1
 
 
+class StatusPlayPause(IntEnum):
+    PAUSE = 0
+    PLAY = 1
+
+
 class StatusScope(IntEnum):
     HIKE = 0
     GLOBAL = 1
@@ -75,8 +82,9 @@ class StatusMode(IntEnum):
 
 # Global status values -- they need to have global file scope due to the modification by the hardware
 orientation = StatusOrientation.LANDSCAPE
-setting = StatusScope.HIKE
+scope = StatusScope.HIKE
 mode = StatusMode.TIME
+playpause = StatusPlayPause.PLAY
 
 
 # Threading Infrastructure
@@ -374,13 +382,13 @@ class MainWindow(QMainWindow):
         self.topUnderlay.setGeometry(0, 0, 1280, 187)
 
         self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
-        self.altitudeLabel = UILabelTop(self, 'HIKE 11', Qt.AlignLeft)
-        self.altitudeLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
+        self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
+        self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
         self.comboLabel = UILabelTopCenter(self, '2,234', 'M')
         # self.comboLabel = UILabelTopCenter(self, '16:12', ':21')
 
         # TODO - implement with the new Db structure
-        # self.setupDB()
+        self.setupDB()
 
         # Show the MainWindow
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -409,26 +417,13 @@ class MainWindow(QMainWindow):
         # LED indicators
 
     def setupDB(self):
-        print('yo')
         self.sql_controller = SQLController(database=DB)
-        self.picture = self.sql_controller.get_first_time_picture_in_hike(9)
+        self.picture = self.sql_controller.get_first_time_picture()
+        self.picture.print_obj_mvp()
+        # print(self.picture)
 
         # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
         # self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
-
-    def increaseIndex(self):
-        self.index += 1
-        if self.index > 1799:
-            self.index = 1486
-
-        return self.index
-
-    def decreaseIndex(self):
-        self.index -= 1
-        if self.index < 1486:
-            self.index = 1799
-
-        return self.index
 
     # UI Setup
     def setupWindowLayout(self):
@@ -500,7 +495,7 @@ class MainWindow(QMainWindow):
         landscape = picture.camera_landscape
         temp = [x.strip() for x in landscape.split('/')]
         path = '/home/pi/capra-storage-demo/{h}/{jpg}'.format(h=temp[4], jpg=temp[5])
-        print(path)
+        # print(path)
 
         self.img = QPixmap(path)
         self.imgLabel.setPixmap(self.img)
@@ -516,14 +511,14 @@ class MainWindow(QMainWindow):
 
     # UI Interactions
     def setLandscape(self):
-        print('Landscape')
+        print('setLandscape()')
         global orientation
         orientation = StatusOrientation.LANDSCAPE
         print(orientation.value)
         self.stacklayout.setCurrentIndex(orientation)
 
     def setVertical(self):
-        print('Vertical')
+        print('setVertical()')
         global orientation
         orientation = StatusOrientation.PORTRAIT
         print(orientation.value)
@@ -550,11 +545,63 @@ class MainWindow(QMainWindow):
             print(mode)
             self.modeOverlay.setColor()
 
+    def updateUIPicture(self):
+        self.imageFader.set_next_image(self.picture.camera2)
+        self.comboLabel.setPrimaryText(self.picture.altitude)
+        self.rightLabel.setPrimaryText(self.picture.time)
+
+
+        # timeText = self.picture.
+        # self.rightLabel.setPrimaryText(self.picture.altitude)
+        # self.comboLabel.setPrimaryText(timeText)
+
+        # self.rightLabel
+
+
+        self.printCurrentMemoryUsage()
+
+
+        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
+        # self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
+        # self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
+        # self.comboLabel = UILabelTopCenter(self, '2,234', 'M')
+
+
+
+    def increaseIndex(self):
+        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
+        self.picture.print_obj_mvp()
+
+        self.imageFader.set_next_image(self.picture.camera2)
+        self.printCurrentMemoryUsage()
+
+        # self.index += 1
+        # if self.index > 1799:
+        #     self.index = 1486
+
+        # self.rightLabel.setText(str(self.index))
+
+        # return self.index
+
+    def decreaseIndex(self):
+        self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
+        self.picture.print_obj_mvp()
+
+        self.imageFader.set_next_image(self.picture.camera2)
+        self.printCurrentMemoryUsage()
+
+        # self.index -= 1
+        # if self.index < 1486:
+        #     self.index = 1799
+
+        # self.rightLabel.setText(str(self.index))
+
+        # return self.index
+
     # Setup threads to check for hardware changes
     def setupThreads(self):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(7)  # TODO - change if more threads are needed
-        print(self.threadpool.maxThreadCount())
 
         # Rotary Encoder
         rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
@@ -585,7 +632,6 @@ class MainWindow(QMainWindow):
     def setupSoftwareThreads(self):
         self.threadpoolSoftware = QThreadPool()
         self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
-        print(self.threadpoolSoftware.maxThreadCount())
 
         # Software Threads
         self.imageFader = ImageFader()
@@ -642,14 +688,20 @@ class MainWindow(QMainWindow):
         global rotaryCounter
         if event.key() == Qt.Key_Escape:
             self.close()
+        
+        # Scroll Wheel
         elif event.key() == Qt.Key_Left:
             # print('left')
-            index = self.decreaseIndex()
-            path = 'hike10/' + str(index) + '_cam2.jpg'
+            self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
+            self.updateUIPicture()
+            # index = self.decreaseIndex()
+
+            # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
             # print(path)
             # self.pictureLandscape.update_image('assets/cam2f2.jpg')
-            self.imageFader.set_next_image(path)
-            print(self.getCurrentMemoryUsage())
+            # self.imageFader.set_next_image(path)
+            # self.printCurrentMemoryUsage()
+
 
             # self.fade_image()
 
@@ -657,10 +709,13 @@ class MainWindow(QMainWindow):
             # self.updatePrev()
         elif event.key() == Qt.Key_Right:
             # print('right')
-            index = self.increaseIndex()
-            path = 'hike10/' + str(index) + '_cam2.jpg'
-            self.imageFader.set_next_image(path)
-            print(self.getCurrentMemoryUsage())
+            self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
+            self.updateUIPicture()
+            # index = self.increaseIndex()
+            # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
+            # self.imageFader.set_next_image(path)
+            # self.printCurrentMemoryUsage()
+
 
             # self.fade_image()
 
@@ -685,16 +740,30 @@ class MainWindow(QMainWindow):
             # self.next_raw_mid = Image.open(self.fileList[self.index], 'r')
 
             # self.updateNext()
+
+        # Next Previous Hike / Global
+        elif event.key() == Qt.Key_Up:
+            print('up arrow')
+        elif event.key() == Qt.Key_Down:
+            print('down arrow')
+
+        # Pressing Scroll Wheel
+        elif event.key() == Qt.Key_Shift:
+            print('Shift - change global / hike')
+
+        # Mode (Time, Altitude, Color)
+        elif event.key() == Qt.Key_M:
+            self.changeMode()
+
+        # Play Pause
         elif event.key() == Qt.Key_Space:
-            print('space bar')
+            print('Space - Play/Pause')
         elif event.key() == Qt.Key_L:
             self.setLandscape()
         elif event.key() == Qt.Key_V:
             self.setVertical()
-        elif event.key() == Qt.Key_M:
-            self.changeMode()
         else:
-            print('other key pressed')
+            print(event)
 
     # def thread_result(self, result):
     #     print('From MainLoop: %d' % result)
@@ -733,7 +802,7 @@ class MainWindow(QMainWindow):
     # Testing
 
     # Memory usage in kB
-    def getCurrentMemoryUsage(self):
+    def printCurrentMemoryUsage(self):
         process = psutil.Process(os.getpid())
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 

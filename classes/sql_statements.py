@@ -13,13 +13,37 @@ class SQLStatements:
     #------------------------------------------------------------------------
     # New Functions 2020
     #------------------------------------------------------------------------
+
+    # Hikes
+    # --------------------------------------------------------------------------
+
+    # Time
     def select_next_time_in_hikes(self, time: int, offset: int) -> str:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
             SELECT \
-        CASE WHEN (SELECT count(*) FROM pictures WHERE time > {t}) > ({off}%(SELECT count(*) FROM pictures)) \
-            THEN (SELECT picture_id FROM pictures WHERE time > {t} ORDER BY time ASC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures))) \
-            ELSE (SELECT picture_id FROM pictures ORDER BY time ASC LIMIT 1 OFFSET ( {off}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE time > {t}) - 1 )) \
+        CASE WHEN (SELECT count(*) FROM pictures WHERE time > {t}) >= ({off}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE time >= {t} ORDER BY time ASC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY time ASC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE time > {t}) - 1)) \
         END);'.format(t=time, off=offset)
+        return statement
+
+    def select_previous_time_in_hikes(self, time: int, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+            SELECT \
+        CASE WHEN (SELECT count(*) FROM pictures WHERE time < {t}) >= ({off}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE time <= {t} ORDER BY time DESC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY time DESC LIMIT 1 OFFSET ({off}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE time < {t}) - 1)) \
+        END);'.format(t=time, off=offset)
+        return statement
+
+    # Altitude
+    def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
+        statement = ''
+        # SELECT picture_id, time, altitude, hike, index_in_hike, avg_altitude, camera2 FROM pictures INNER JOIN hikes on hike=hike_id WHERE avg_altitude >= 1505.2 ORDER BY avg_altitude ASC, altitude ASC --LIMIT 20 OFFSET 5;
+        return statement
+
+    def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
+        statement = ''
         return statement
 
     # Projector

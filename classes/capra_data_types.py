@@ -23,18 +23,42 @@ class Picture:
     #     self.camera3 = camera3
     #     self.camera_landscape = camera_land
 
-    def __init__(self, picture_id, time, altitude,
-                 hike_id, index_in_hike, camera1, camera2, camera3, camera_land):
+    def __init__(self, picture_id, time, year, month, day, minute, dayofweek,
+                 hike_id, index_in_hike, altitude, altrank_global,
+                 color_hsv, color_rgb, color_rank_hike, color_rank_global,
+                 camera1, camera2, camera3, camera_land):
         self.picture_id = picture_id
         self.time = time
-        self.altitude = altitude
+        self.year = year
+        self.month = month
+        self.day = day
+        self.minute = minute
+        self.dayofweek = dayofweek
 
         self.hike_id = hike_id
         self.index_in_hike = index_in_hike
-        self.camera1 = camera1
-        self.camera2 = camera2
-        self.camera3 = camera3
-        self.camera_landscape = camera_land
+
+        self.altitude = altitude
+        self.altrank_global = altrank_global
+
+        self.color_hsv = color_hsv
+        self.color_rgb = color_rgb
+        self.color_rank_hike = color_rank_hike
+        self.color_rank_global = color_rank_global
+
+        self.camera2 = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam2.jpg'
+
+        # self.camera1 = camera1
+        # self.camera2 = camera2
+        # self.camera3 = camera3
+        # self.camera_landscape = camera_land
+
+    def print_obj_mvp(self):
+        print('({id}, {t}, {yr}, {mth}, {day}, {min}, {dow}, {hike_id}, {index}, {alt}, {altr}, {hsv}, {rgb}, {crh}, {crg}, {c2})\
+            '.format(id=self.picture_id, t=self.time, yr=self.year, mth=self.month, day=self.day,
+                     min=self.minute, dow=self.dayofweek, hike_id=self.hike_id, index=self.index_in_hike,
+                     alt=self.altitude, altr=self.altrank_global, hsv=self.color_hsv, rgb=self.color_rgb,
+                     crh=self.color_rank_hike, crg=self.color_rank_global, c2=self.camera2))
 
     def print_obj(self):
         print('({id}, {t}, {alt}, {hike_id}, {index}, {c1}, {c2}, {c3}, {cl})\

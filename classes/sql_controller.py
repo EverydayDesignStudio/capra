@@ -19,12 +19,29 @@ class SQLController:
 
     # _underscores signify that they should be treated as private functions to  this class
     def _build_picture_from_row(self, row: list) -> Picture:
-        picture = Picture(picture_id=row[0], time=row[1], altitude=row[9],
-                          hike_id=row[7], index_in_hike=row[8],
-                          camera1=row[21], camera2=row[15], camera3=row[21], camera_land=row[24])
+        picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
+                          minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
+                          altitude=row[9], altrank_global=row[11],
+                          color_hsv=row[12], color_rgb=row[13], color_rank_hike=row[15], color_rank_global=row[16],
+                          camera1=row[20], camera2=row[21], camera3=row[22], camera_land=row[23])
 
         return picture
 
+    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
+        cursor = self.connection.cursor()
+        cursor.execute(statement)
+        all_rows = cursor.fetchall()
+        picture = self._build_picture_from_row(all_rows[0])
+        # picture.print_obj()
+
+        return picture
+
+    # Initial queries
+    def get_first_time_picture(self) -> Picture:
+        sql = self.statements.select_by_time_first_picture()
+        return self._get_picture_from_sql_statement(sql)
+
+    # The 24 queries
     def get_next_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_next_time_in_hikes(current_picture.time, offset))
@@ -33,6 +50,16 @@ class SQLController:
             print("ERROR!!!")
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
+
+    def get_previous_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_previous_time_in_hikes(current_picture.time, offset))
+        all_rows = cursor.fetchall()
+        if not all_rows:
+            print("ERROR!!!")
+        else:  # there is a next time picture
+            return self._build_picture_from_row(all_rows[0])
+
 
     # Projector
     # --------------------------------------------------------------------------
@@ -65,15 +92,6 @@ class SQLController:
 
         return hike
 
-    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
-        cursor = self.connection.cursor()
-        cursor.execute(statement)
-        all_rows = cursor.fetchall()
-        picture = self._build_picture_from_row(all_rows[0])
-
-        # picture.print_obj()
-
-        return picture
 
     # Helper method for returning expected number
     # If nothing is returned from db, return 0
@@ -131,10 +149,6 @@ class SQLController:
                 return current_picture
 
     # Time - across hikes
-    def get_first_time_picture(self) -> Picture:
-        sql = self.statements.select_by_time_first_picture()
-        return self._get_picture_from_sql_statement(sql)
-
     def get_last_time_picture(self) -> Picture:
         sql = self.statements.select_by_time_last_picture()
         return self._get_picture_from_sql_statement(sql)

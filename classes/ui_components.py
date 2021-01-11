@@ -34,6 +34,9 @@ class UILabelTop(QLabel):
         self.setStyleSheet("color: rgba(255,255,255,255)")
         self.setGraphicsEffect(UIEffectTextDropShadow())
 
+    def setPrimaryText(self, text):
+        self.setText(str(text))
+
 
 class UILabelTopCenter(QWidget):
     def __init__(self, window, primaryText: str, secondaryText: str, *args, **kwargs):
@@ -46,15 +49,15 @@ class UILabelTopCenter(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        label1 = QLabel(primaryText)
-        label1.setFont(QFont('Atlas Grotesk', 48, 500))
-        label1.setStyleSheet("color: rgba(255,255,255,255)")
-        label1.setGraphicsEffect(UIEffectTextDropShadow())
+        self.label1 = QLabel(primaryText)
+        self.label1.setFont(QFont('Atlas Grotesk', 48, 500))
+        self.label1.setStyleSheet("color: rgba(255,255,255,255)")
+        self.label1.setGraphicsEffect(UIEffectTextDropShadow())
 
-        label2 = QLabel(secondaryText)
-        label2.setFont(QFont('Atlas Grotesk', 30, 400))
-        label2.setStyleSheet("color: rgba(255,255,255,225)")
-        label2.setGraphicsEffect(UIEffectTextDropShadow())
+        self.label2 = QLabel(secondaryText)
+        self.label2.setFont(QFont('Atlas Grotesk', 30, 400))
+        self.label2.setStyleSheet("color: rgba(255,255,255,225)")
+        self.label2.setGraphicsEffect(UIEffectTextDropShadow())
 
         # TESTING
         # palette = self.palette()
@@ -64,9 +67,15 @@ class UILabelTopCenter(QWidget):
         # label2.setAutoFillBackground(True)
         # label2.setPalette(palette)
 
-        layout.addWidget(label1)
-        layout.addWidget(label2)
+        layout.addWidget(self.label1)
+        layout.addWidget(self.label2)
         self.setLayout(layout)
+
+    def setPrimaryText(self, text):
+        self.label1.setText(str(text))
+
+    def setSecondaryText(self, text):
+        self.label2.setText(text)
 
 
 # Simple wrapper of QLabel, for easier image loading
