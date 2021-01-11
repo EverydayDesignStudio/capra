@@ -10,4 +10,6 @@
 
 # Finder
 .DS_Store
+/capra-storage
+/hike10-partial
 
