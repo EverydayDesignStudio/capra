@@ -264,11 +264,13 @@ class SQLStatements:
                             altitude: float,
                             altrank_hike: int,
                             altrank_global: int,
+                            altrank_global_h: int,
                             color_hsv: str,         # most dominant color in hsv
                             color_rgb: str,         # most dominant color in rgb
                             color_rank_value: str,
                             color_rank_hike: int,
                             color_rank_global: int,
+                            color_rank_global_h: int,
                             colors_count: int,
                             colors_rgb: str,       # at most 10 dominant colors in rgb
                             colors_conf: str,
@@ -279,20 +281,20 @@ class SQLStatements:
         statement = 'INSERT OR REPLACE INTO pictures \
             (time, \
                 year, month, day, minute, dayofweek, \
-                hike, index_in_hike, altitude, altrank_hike, altrank_global, \
-                color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, \
+                hike, index_in_hike, altitude, altrank_hike, altrank_global, altrank_global_h, \
+                color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h, \
                 colors_count, colors_rgb, colors_conf, \
                 camera1, camera2, camera3, camera_landscape) \
             VALUES ({}, \
                     {}, {}, {}, {}, {}, \
-                    {}, {}, {}, {}, {}, \
-                    "{}", "{}", {}, {}, {}, \
+                    {}, {}, {}, {}, {}, {}, \
+                    "{}", "{}", {}, {}, {}, {}, \
                     {}, "{}", "{}", \
                     "{}", "{}", "{}", "{}")\
             '.format(time,
                         year, month, day, minute, dayofweek,
-                        hike, index_in_hike, altitude, altrank_hike, altrank_global,
-                        color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global,
+                        hike, index_in_hike, altitude, altrank_hike, altrank_global, altrank_global_h,
+                        color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h,
                         colors_count, colors_rgb, colors_conf,
                         camera1, camera2, camera3, camera_landscape)
         return statement
@@ -300,6 +302,7 @@ class SQLStatements:
     def upsert_hike_row(self,
                         hike_id: int,
                         avg_altitude: float,
+                        avg_altitude_rank: int,
                         start_time: float,
                         start_year: int,
                         start_month: int,
@@ -319,17 +322,17 @@ class SQLStatements:
                         pictures: int,
                         path: str) -> str:
         statement = 'INSERT OR REPLACE INTO hikes \
-            (hike_id, avg_altitude, \
+            (hike_id, avg_altitude, avg_altitude_rank, \
                 start_time, start_year, start_month, start_day, start_minute, start_dayofweek, \
                 end_time, end_year, end_month, end_day, end_minute, end_dayofweek, \
                 color_hsv, color_rgb, color_rank_value, color_rank, \
                 pictures, path) \
-            VALUES ({}, {}, \
+            VALUES ({}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, \
                     "{}", "{}", "{}", {}, \
                     {}, "{}")\
-            '.format(hike_id, avg_altitude,
+            '.format(hike_id, avg_altitude, avg_altitude_rank,
                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
                         end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
                         color_hsv, color_rgb, color_rank_value, color_rank,

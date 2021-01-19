@@ -235,8 +235,8 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
 
     #     time,
     #     year, month, day, minute, dayofweek,
-    #     hike, index_in_hike, altitude, altrank_hike, altrank_global,          # TODO: implement altitude rank, index 9, 10
-    #     color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,    # TODO: implement color rank, index 14, 15
+    #     hike, index_in_hike, altitude, altrank_hike, altrank_global, altrank_global_h,             # TODO: implement altitude ranks, index 9, 10, 11
+    #     color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global, color_rank_global_h,    # TODO: implement color ranks, index 15, 16, 17
     #     colors_count, colors_rgb, colors_conf,
     #     camera1, camera2, camera3, camera_landscape
 
@@ -245,10 +245,10 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
     ### TODO: change this index to row[0] and row[1] if cameraDB is used
     commit = [row[1],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, row[9], -1, -1,
-                ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1,
+                currHike, index_in_hike, row[9], -1, -1, -1,
+                ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, -1,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
-                row[20], row[21], row[22], row[21][:-4] + "f" + row[21][-4:]]
+                row[22], row[23], row[24], row[23][:-4] + "f" + row[23][-4:]]
 
     # print(commit)
 
@@ -549,7 +549,7 @@ def main():
         hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
         domColorHike_rgb = hsvToRgb(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
 
-        #     hike_id, avg_altitude,
+        #     hike_id, avg_altitude, avg_altitude_rank
         #     start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
         #     end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
         #     color_hsv, color_rgb, color_rank_value, color_rank,               # TODO: calculate color rank
@@ -557,7 +557,7 @@ def main():
 
         # TODO: determine global hike color rank
 
-        dbDESTController.upsert_hike(currHike, avgAlt,
+        dbDESTController.upsert_hike(currHike, avgAlt, -currHike,
                                         startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
                                         endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
                                         ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
