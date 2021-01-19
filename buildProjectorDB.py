@@ -40,6 +40,7 @@ currHike = 29
 
 dummyGlobalColorRank = -1
 dummyGlobalAltRank = -1
+dummyGlobalCounter = 0
 
 ####################################################
 
@@ -158,17 +159,10 @@ def sort_by_alts(commits):
 
     tmpList.sort(key=lambda x: x[1])
 
-    rankList = ROWCOUNT*[None]
-    count = 1
+    rankList = {}
     for i in range(len(tmpList)):
         tmp = tmpList[i]
-        rankList[tmp[0]-INDEX_START] = count
-        count += 1
-
-    # print("<tmpList>")
-    # print(tmpList)
-    # print("<altList>")
-    # print(rankList)
+        rankList[tmp[0]] = i+1
 
     return rankList
 
@@ -185,20 +179,10 @@ def sort_by_colors(dic):
     tmpList.sort(key=lambda rgb: sortby_hue_luminosity(rgb[1], rgb[2], rgb[3], repetition))
 
     # Generates the image
-    rankList = ROWCOUNT*[None]
-    count = 1
+    rankList = {}
     for i in range(len(tmpList)):
         tmp = tmpList[i]
-        rankList[tmp[4]-INDEX_START] = count
-        count += 1
-
-    # print("\n<COLOR RANK> - {}".format(len(rankList)))
-    # for i in range(len(rankList)):
-    #     res = "{} - {}".format(i, rankList[i])
-    #     if (rankList[i] == None):
-    #         continue
-    #     print(rankList[i])
-
+        rankList[tmp[4]] = i+1
 
     ## TEST - generate color spectrum based on the color rank
     colorCount = 1
@@ -216,6 +200,8 @@ def sort_by_colors(dic):
 
 
 def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_processing_size=None):
+    global dummyGlobalCounter
+
     ### TODO: change this index to row[3] if cameraDB is used
     index_in_hike = row[8]
 
@@ -245,8 +231,8 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
     ### TODO: change this index to row[0] and row[1] if cameraDB is used
     commit = [row[1],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, row[9], -1, -1, -1,
-                ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, -1,
+                currHike, index_in_hike, row[9], -1, -1, dummyGlobalCounter,
+                ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 row[22], row[23], row[24], row[23][:-4] + "f" + row[23][-4:]]
 
@@ -383,7 +369,7 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
 
 
 def main():
-    global dbSRCController, dbDESTController, res_red, res_green, res_blue, dummyGlobalColorRank, dummyGlobalAltRank
+    global dbSRCController, dbDESTController, res_red, res_green, res_blue, dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter
 
     getDBControllers()
 
@@ -509,12 +495,7 @@ def main():
             domColorsHike_hsv.append(domCol_hsv)
 
             count += 1
-
-        # print("<R,G,B>")
-        # for i in range(len(res_red)):
-        #     ret = "{},{},{}".format(res_red[i], res_green[i], res_blue[i])
-        #     print(ret)
-
+            dummyGlobalCounter += 1
 
         # attach color ranking within the current hike
         # then, upsert rows
@@ -524,10 +505,13 @@ def main():
         for index_in_hike in range(INDEX_START, INDEX_END+1, 1):
             fileName = "{}_camN".format(index_in_hike)
 
-            commits[fileName][9] = altRankList[index_in_hike-INDEX_START]
-            commits[fileName][14] = colRankList[index_in_hike-INDEX_START]
+            if index_in_hike not in altRankList or index_in_hike not in colRankList:
+                continue
+
+            commits[fileName][9] = altRankList[index_in_hike]
+            commits[fileName][15] = colRankList[index_in_hike]
             commits[fileName][10] = dummyGlobalAltRank
-            commits[fileName][15] = dummyGlobalColorRank
+            commits[fileName][16] = dummyGlobalColorRank
 
             # TODO: assign better dummy values
             dummyGlobalColorRank -= 1
