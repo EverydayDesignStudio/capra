@@ -11,6 +11,7 @@ import glob
 import sys
 import sqlite3
 import datetime
+from PIL import ImageTk, Image                      # Pillow image functions
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_color_1D
@@ -45,18 +46,21 @@ dummyGlobalCounter = 0
 ####################################################
 
 DROPBOX = "/Users/myoo/Dropbox/"
-BASEPATH = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
+
+BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
+BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
 
 # DATAPATH = '/Users/myoo/Development/capra_data/_sample/hike00/'
-DATAPATH = DROPBOX + BASEPATH + "hike10/"
-# DB_SOURCE = DROPBOX + BASEPATH + "capra_projector_dec2020_min_hike10_src.db"
-DB_SOURCE = DROPBOX + BASEPATH + "capra_projector_dec2020_min_AllHikes.db"
-DB_DEST = DROPBOX + BASEPATH + "capra_projector_dec2020_min_hike29_dest.db"
+DATAPATH = DROPBOX + BASEPATH_SRC + "hike29/"
+FINALPATH = DROPBOX + BASEPATH_DEST + "hike29/"
+
+DB_SOURCE = DROPBOX + BASEPATH_SRC + "capra_projector_jan2021_min_AllHikes.db"
+DB_DEST = DROPBOX + BASEPATH_DEST + "capra_projector_jan2021_min_hike29_dest.db"
 
 ####################################################
 
 BASEHIKEPATH = "/media/pi/capra-hd/hike" + str(currHike) + "/"
-
+WHITE_IMAGE = DROPBOX + BASEPATH_DEST + "white.jpg"
 
 dbSRCController = None
 dbDESTController = None
@@ -80,6 +84,8 @@ res_blue = []
 # make db connections
 def getDBControllers():
     global dbSRCController, dbDESTController
+
+    # TODO: create DB if not exist
 
     dbSRCController = SQLController(database=DB_SOURCE)
 
@@ -368,6 +374,12 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
     return len(confidences), dominant_colors_hsv, dominant_colors_rgb, confidences
 
 
+def build_hike_path(path, hikeID, makeNew=False):
+    res = path + 'hike' + str(hikeID) + '/'
+    if makeNew and not os.path.exists(res):
+        os.makedirs(res, mode=0o755)
+    return res
+
 def main():
     global dbSRCController, dbDESTController, res_red, res_green, res_blue, dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter
 
@@ -377,6 +389,9 @@ def main():
     # orig_stdout = sys.stdout
     # f = open(DATAPATH + "{}-{}x{}".format(FOLDERNAME, DIMX, DIMY) + '_output_list_RGB.txt', 'w')
     # sys.stdout = f
+
+    src = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
+    dest = build_hike_path(DROPBOX + BASEPATH_DEST, currHike, True)
 
     validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
     numValidRows = len(validRows)
@@ -414,14 +429,28 @@ def main():
             # row = validRows[i]
             row = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
+            picPathCam1_src = src + "{}_cam1.jpg".format(index_in_hike)
+            picPathCam2_src = src + "{}_cam2.jpg".format(index_in_hike)
+            picPathCam2f_src = src + "{}_cam2f.jpg".format(index_in_hike)
+            picPathCam3_src = src + "{}_cam3.jpg".format(index_in_hike)
+
+            picPathCam1_dest = dest + "{}_cam1.jpg".format(index_in_hike)
+            picPathCam2_dest = dest + "{}_cam2.jpg".format(index_in_hike)
+            picPathCam2f_dest = dest + "{}_cam2f.jpg".format(index_in_hike)
+            picPathCam3_dest = dest + "{}_cam3.jpg".format(index_in_hike)
+
             if (row is None):
                 count += 1
                 continue
 
+            # if (not os.path.exists(picPathCam1) or not os.path.exists(picPathCam2) or not os.path.exists(picPathCam3)):
+            if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
+                continue
+
             if (count % 200 == 0):
                 print("### Checkpoint at {}".format(count))
-            print(count)
-            print(row)
+            # print(count)
+            # print(row)
 
             ### TODO: change this index to row[0] if cameraDB is used
             # update timestamps
@@ -433,51 +462,47 @@ def main():
             ### TODO: change this index to row[1] if cameraDB is used
             avgAlt += int(row[9])
 
-            filePath1 = DATAPATH + "{}_cam1.jpg".format(index_in_hike)
-            filePath2 = DATAPATH + "{}_cam2.jpg".format(index_in_hike)
-            filePath3 = DATAPATH + "{}_cam3.jpg".format(index_in_hike)
-            # if (not os.path.exists(filePath1) or not os.path.exists(filePath2) or not os.path.exists(filePath3)):
-            if (not os.path.exists(filePath1) or not os.path.exists(filePath2)):
-                continue
+            # rotate and resize, copy those to the dest folder
+            img = None
+            img_res = None
+            # resize and rotate for newly added pictures
+            #    1. make a copy of pic2 as pic2f
+            if (not os.path.exists(picPathCam2f_src)):
+                img = Image.open(picPathCam2_src)
+                img_res = img.copy()
+                img_res.save(picPathCam2f_dest)
 
+            #    2. resize to 427x720 and rotate 90 deg
+            ## TODO: refine color - saturation --> talk with Sam
+            if (not os.path.exists(picPathCam1_dest) or
+                not os.path.exists(picPathCam2_dest) or
+                not os.path.exists(picPathCam2f_dest) or
+                not os.path.exists(picPathCam3_dest)):
 
-            # TODO: rotate and resize, copy those to the dest folder
-            # img = None
-            # img_res = None
-            # # resize and rotate for newly added pictures
-            # #    1. make a copy of pic2 as pic2'f'
-            # if (not os.path.exists(picPathCam2f)):
-            #     img = Image.open(picPathCam2)
-            #     img_res = img.copy()
-            #     img_res.save(picPathCam2f)
-            #
-            # #    2. resize to 427x720 and rotate 90 deg
-            # ## TODO: refine color - saturation --> talk with Sam
-            # if (isNew):
-            #     img = Image.open(picPathCam1)
-            #     img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            #     img_res.save(picPathCam1)
-            #
-            #     img = Image.open(picPathCam2)
-            #     img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            #     img_res.save(picPathCam2)
-            #
-            #     if (os.path.exists(picPathCam3)):
-            #         img = Image.open(picPathCam3)
-            #         img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            #         img_res.save(picPathCam3)
-            #     else:
-            #         img = Image.open(WHITE_IMAGE)
-            #         img_res = img.copy().rotate(90, expand=True)
-            #         img_res.save(picPathCam3)
+                img = Image.open(picPathCam1_src)
+                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                img_res.save(picPathCam1_dest)
+
+                img = Image.open(picPathCam2_src)
+                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                img_res.save(picPathCam2_dest)
+
+                if (os.path.exists(picPathCam3_src)):
+                    img = Image.open(picPathCam3_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam3_dest)
+                else:
+                    img = Image.open(WHITE_IMAGE)
+                    img_res = img.copy().rotate(90, expand=True)
+                    img_res.save(picPathCam3_dest)
 
 
             fileName = "{}_camN".format(index_in_hike)
 
-            if (not os.path.exists(filePath3)):
-                filePath3 = None
-            # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=filePath1, image2=filePath2, image3=filePath3, image_processing_size=(DIMX, DIMY))
-            pic, commit, domCol_hsv = dominantColorWrapper(currHike, row, filePath1, filePath2, image3=filePath3, image_processing_size=(DIMX, DIMY))
+            if (not os.path.exists(picPathCam3_src)):
+                picPathCam3_dest = None
+            # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=picPathCam1_dest, image2=picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+            pic, commit, domCol_hsv = dominantColorWrapper(currHike, row, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
 
             # pic = {
             #     "picture_name": fileName,
