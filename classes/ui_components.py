@@ -5,6 +5,7 @@
 # Imports
 # from projector_slideshow import *
 
+from sqlite3.dbapi2 import Error
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -18,11 +19,191 @@ import time
 # UI Components
 # -----------------------------------------------------------------------------
 
-class UILabelTop(QLabel):
-    def __init__(self, window, text: str, alignment, *args, **kwargs):
-        super(QLabel, self).__init__(window, *args, **kwargs)
+# Super classes for universal animations
+class UILabel(QLabel):
+    def __init__(self, window):
+        # super(QLabel, self).__init__(window)  # original
+        # QLabel.__init__(self, window)  # also works
+        super().__init__(window)  # works
+        # self.fadeEffect = QGraphicsOpacityEffect()
+        # self.setGraphicsEffect(self.fadeEffect)
+        # print(self.fadeEffect.opacity())
 
-        self.setText(text)
+        # self._setupAnimation()
+
+        print('UILabel was initialized ')
+
+        self.anim = QPropertyAnimation()
+
+        self.myTimer = QTimer()
+        self.myTimer.setInterval(1000)
+        self.myTimer.setSingleShot(True)
+        self.myTimer.timeout.connect(self._doAnimation)
+
+        self.fadeEffect = QGraphicsOpacityEffect()
+
+        # m_myLongTimer->setInterval(360000);
+        # m_myLongTimer->setSingleShot(true);
+        # connect(m_myLongTimer, SIGNAL(timeout()), SLOT(myslot()));
+        # m_myLongTimer->start();
+
+        # self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+
+
+        # QLabel.__init__(self, mainWindow)
+
+        # UILabel.__init__(self, window)  # works
+        # super().__init__(window)  # works
+
+        # print('UILabel superclass was called')
+        # print(dir(self))
+
+        # self.opacityEffect = QGraphicsOpacityEffect()
+        # self.opacityEffect.setOpacity(1.0)
+        # self.setGraphicsEffect(self.opacityEffect)
+        # self.anim = QPropertyAnimation(self.opacityEffect, b"opacity")
+        # self.anim.setStartValue(1)
+        # self.anim.setEndValue(0)
+        # self.anim.setDuration(1000)
+
+    # def _setupAnimation(self):
+    #     self.fadeEffect = QGraphicsOpacityEffect()
+    #     self.setGraphicsEffect(self.fadeEffect)
+    #     self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+    #     self.anim.setStartValue(1)
+    #     self.anim.setEndValue(0)
+    #     self.anim.setDuration(1000)
+
+    # This works, but I need to move this stuff into the main function
+    def doAnimation(self):
+        # QTimer.singleShot(1000, self._doAnimation)
+        self.myTimer.start(1000)
+
+    def _doAnimation(self):
+        # print('do animation')
+        # print(self.fadeEffect.opacity())
+
+        self.setGraphicsEffect(self.fadeEffect)
+        self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(1000)
+        self.anim.start()
+        self.update()
+
+    def show2(self):
+        self.myTimer.stop()
+        self.anim.stop()
+        self.fadeEffect.setOpacity(1.0)
+        # try:
+        #     print('gonna try')
+        #     self.fadeEffect.setOpacity(1.0)
+        # except Error:
+        #     print('NO FADE EFFECT')
+
+        # print(self.fadeEffect)
+
+
+    '''
+    def _setupHideAnimation(self):
+        anim1 = QPropertyAnimation(self._label1_opacity, b"opacity")
+        # anim1 = QPropertyAnimation(fadeEffect, b"opacity")
+        anim1.setStartValue(1)
+        anim1.setEndValue(0)  # transparent
+        anim1.setDuration(1000)
+
+        # fadeEffect2 = QGraphicsOpacityEffect()
+        # self.label2.setGraphicsEffect(fadeEffect2)
+        anim2 = QPropertyAnimation(self._label2_opacity, b"opacity")
+        anim2.setStartValue(1)
+        anim2.setEndValue(0)  # transparent
+        anim2.setDuration(1000)
+
+        # group = QSequentialAnimationGroup(self)
+        self.animGroup.addAnimation(anim1)
+        self.animGroup.addAnimation(anim2)
+
+    def _hideAnimation(self):
+        self.animGroup.start()
+    '''
+
+
+    def show(self):
+        self.anim.stop()
+        self.opacityEffect.setOpacity(1.0)
+
+    def fadeIn(self):
+        self.anim.start()
+        # self._showAnimation()
+
+    def fadeOut(self):
+        QTimer.singleShot(1000, self._hideAnimation)
+
+    # def _setupHideAnimation(self):
+        # self.opacityEffect.setOpacity(1.0)
+        # self.anim = QPropertyAnimation(self.opacityEffect, b"opacity")
+
+        # Transparent (0) to Opaque (1)
+        # self.anim.setStartValue(1)
+        # self.anim.setEndValue(0)
+        # self.anim.setDuration(1000)
+
+    def _showAnimation(self):
+        self.anim.start()
+
+        # fadeEffect = QGraphicsOpacityEffect()
+        # self.setGraphicsEffect(fadeEffect)
+        # self.anim = QPropertyAnimation(fadeEffect, b"opacity")
+        # # self.anim = QPropertyAnimation(self.label, b"windowOpacity")
+
+        # # Transparent (0) to Opaque (1)
+        # self.anim.setStartValue(0)
+        # self.anim.setEndValue(1)
+        # self.anim.setDuration(1000)
+        # self.anim.start()
+
+        # self.update()
+
+    def _hideAnimation(self):
+        # fadeEffect = QGraphicsOpacityEffect()
+        # self.setGraphicsEffect(self.opacityEffect)  # NOTE was commented out
+        # self.anim = QPropertyAnimation(self.opacityEffect, b"opacity")  # NOTE was commented out
+        # self.anim = QPropertyAnimation(self.label, b"windowOpacity")
+
+        # Opaque (1) to Transparent (0)
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(1000)
+        self.anim.start()
+
+        # self.anim.update()
+
+
+# Labels for the information at the top of the screen
+class UILabelTop(UILabel):
+    def __init__(self, window, text: str, alignment):
+        UILabel.__init__(self, window)  # works
+        # super().__init__(window)  # works
+
+        
+
+        # super(QLabel, self).__init__(*args, **kwargs)
+        # super().__init__(window)
+        # QLabel.__init__(self, window)
+
+        
+        # class B(A):
+        #     def __init__(self):
+        #         A.__init__(self)
+        #         # super(B, self).__init__() you can use this line as well
+        #         print 'B'
+
+
+
+        print('UILabelTop being initialized')
+
+        self._text = text
+        self.setText(self._text)
 
         self.resize(1280, 200)
         # self.setAlignment(Qt.AlignLeft)
@@ -40,7 +221,8 @@ class UILabelTop(QLabel):
 
 class UILabelTopCenter(QWidget):
     def __init__(self, window, primaryText: str, secondaryText: str, *args, **kwargs):
-        super(QWidget, self).__init__(window, *args, **kwargs)
+        # super(QWidget, self).__init__(window, *args, **kwargs)
+        super().__init__(window, *args, **kwargs)
 
         self.resize(1280, 150)
         layout = QHBoxLayout()
@@ -53,11 +235,20 @@ class UILabelTopCenter(QWidget):
         self.label1.setFont(QFont('Atlas Grotesk', 48, 500))
         self.label1.setStyleSheet("color: rgba(255,255,255,255)")
         self.label1.setGraphicsEffect(UIEffectTextDropShadow())
+        self._label1_opacity = QGraphicsOpacityEffect()
+        self._label1_opacity.setOpacity(1.0)
+        self.label1.setGraphicsEffect(self._label1_opacity)
 
         self.label2 = QLabel(secondaryText)
         self.label2.setFont(QFont('Atlas Grotesk', 30, 400))
         self.label2.setStyleSheet("color: rgba(255,255,255,225)")
         self.label2.setGraphicsEffect(UIEffectTextDropShadow())
+        self._label2_opacity = QGraphicsOpacityEffect()
+        self._label2_opacity.setOpacity(1.0)
+        self.label2.setGraphicsEffect(self._label2_opacity)
+
+        self.animGroup = QParallelAnimationGroup(self)
+        self._setupHideAnimation()
 
         # TESTING
         # palette = self.palette()
@@ -77,9 +268,53 @@ class UILabelTopCenter(QWidget):
     def setSecondaryText(self, text):
         self.label2.setText(text)
 
+    def show(self):
+        # print('show')
+        # print(self.animGroup.children())
+        self.animGroup.stop()
+        self._label1_opacity.setOpacity(1.0)
+        self._label2_opacity.setOpacity(1.0)
+
+        # self.opacity_effect = QGraphicsOpacityEffect() 
+        # self.opacity_effect.setOpacity(0.3) 
+        # label.setGraphicsEffect(self.opacity_effect)
+
+    def fadeIn(self):
+        print('UILabelTopCenter.fadeIn() -- NO YET IMPLEMENTED')
+
+    def fadeOut(self):
+        QTimer.singleShot(1000, self._hideAnimation)
+
+    def _setupHideAnimation(self):
+        anim1 = QPropertyAnimation(self._label1_opacity, b"opacity")
+        # anim1 = QPropertyAnimation(fadeEffect, b"opacity")
+        anim1.setStartValue(1)
+        anim1.setEndValue(0)  # transparent
+        anim1.setDuration(1000)
+
+        # fadeEffect2 = QGraphicsOpacityEffect()
+        # self.label2.setGraphicsEffect(fadeEffect2)
+        anim2 = QPropertyAnimation(self._label2_opacity, b"opacity")
+        anim2.setStartValue(1)
+        anim2.setEndValue(0)  # transparent
+        anim2.setDuration(1000)
+
+        # group = QSequentialAnimationGroup(self)
+        self.animGroup.addAnimation(anim1)
+        self.animGroup.addAnimation(anim2)
+
+    def _hideAnimation(self):
+        self.animGroup.start()
+
 
 # Simple wrapper of QLabel, for easier image loading
 class UIImage(QLabel):
+
+    # def __init__(self, *args, **kwargs):
+    #     super(QLabel, self).__init__(*args, **kwargs)
+    #     # QLabel.__init__(self)
+    #     pixmap = QPixmap()
+
     def __init__(self, path: str, *args, **kwargs):
         super(QLabel, self).__init__(*args, **kwargs)
         # QLabel.__init__(self)
@@ -93,7 +328,7 @@ class UIImage(QLabel):
         self.setPixmap(self.pixmap)
 
     # Utilizes image conversion
-    # TODO - see how this compares to saving locally
+    # TODO - see how processing consumption for this, compares to saving locally
     def update_pixmap(self, im):
         im = im.convert("RGB")
         data = im.tobytes("raw", "RGB")
@@ -133,15 +368,51 @@ class UIImage(QLabel):
         '''
 
 
-class UIImageOverlay(QLabel):
-    def __init__(self, window, path: str, *args, **kwargs):
-        super(QLabel, self).__init__(window, *args, **kwargs)
-        # QLabel.__init__(self, window)
-        self.resize(1280, 720)
+class UIUnderlay(UILabel):
+    def __init__(self, window):
+        super(UILabel, self).__init__(window)
+        # self.resize(1280, 720)
         # self.move(0, 0)
         self.setAlignment(Qt.AlignCenter)
-        pixmap = QPixmap(path)
+        self.setGeometry(0, 0, 1280, 187)
+        pixmap = QPixmap('assets/underlay.png')
         self.setPixmap(pixmap)
+
+    '''
+    def show(self):
+        self._showAnimation()
+
+    def hide(self):
+        QTimer.singleShot(1000, self._hideAnimation)
+
+    def _showAnimation(self):
+        fadeEffect = QGraphicsOpacityEffect()
+        self.setGraphicsEffect(fadeEffect)
+        self.anim = QPropertyAnimation(fadeEffect, b"opacity")
+        # self.anim = QPropertyAnimation(self.label, b"windowOpacity")
+
+        # Transparent (0) to Opaque (1)
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
+        self.anim.setDuration(1000)
+        self.anim.start()
+
+        self.update()
+
+    def _hideAnimation(self):
+        fadeEffect = QGraphicsOpacityEffect()
+        self.setGraphicsEffect(fadeEffect)
+        self.anim = QPropertyAnimation(fadeEffect, b"opacity")
+        # self.anim = QPropertyAnimation(self.label, b"windowOpacity")
+
+        # Opaque (1) to Transparent (0)
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(1000)
+        self.anim.start()
+
+        self.update()
+    '''
 
 
 class UIModeOverlay(QLabel):

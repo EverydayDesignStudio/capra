@@ -36,7 +36,10 @@ import traceback
 # Database Location
 if platform.system() == 'Darwin' or platform.system() == 'Windows':
     print('We on a Mac or PC!')
+    # Multiple hikes, but no color data
     # DB = '~/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
+
+    # Color data, but only hike 10
     DB = '/Users/Jordan/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
     # DB = '/home/pi/Pictures/capra-projector.db'
     # PATH = '/home/pi/Pictures'
@@ -269,14 +272,14 @@ class HardwareButton(QRunnable):
 
 # Continually tries fading the next image into the current image
 class ImageFader(QRunnable):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, current_path, *args, **kwargs):
         super(ImageFader, self).__init__()
 
         # Needed setup
         self.alpha = 0
         self.signals = WorkerSignals()
-        self.current_raw = Image.open('assets/6.jpg', 'r')
-        self.next_raw = Image.open('assets/7.jpg', 'r')
+        self.current_raw = Image.open(current_path, 'r')
+        self.next_raw = Image.open(current_path, 'r')
 
         # Testing
         self.text_current = 'currently'
@@ -298,10 +301,14 @@ class ImageFader(QRunnable):
     def increment_next(self):
         self.next_value += 1
 
+    # Receives a new "next image" which is consequently faded into the current
+    # image. If this process happens in the middle of a fade, then the new image
+    # will be faded into this already faded together photo
     def set_next_image(self, path):
         self.next_raw = Image.open(path, 'r')
         self.alpha = 0.25
 
+    # Continually runs blending together
     def run(self):
         while True:
             if self.alpha < 0.75:
@@ -310,6 +317,8 @@ class ImageFader(QRunnable):
                 self.alpha += 0.04
 
                 self.signals.result.emit(self.current_raw, self.alpha)
+                if self.alpha >= 0.75:
+                    self.signals.finished.emit()
             time.sleep(0.1)  # 1/20frames = 0.05
 
     '''
@@ -357,7 +366,15 @@ class MainWindow(QMainWindow):
         self.alpha = 0
         # self.current_raw = Image.open('assets/5.jpg', 'r')
         # self.next_raw = Image.open('assets/7.jpg', 'r')
-        self.index = 1486
+        # self.index = 1486
+
+        # TODO - implement with the new Db structure
+        self.setupDB()
+        self.setupWindowLayout()
+        self.setupUI()
+        # REMOVE - as they aren't needed anymore (I think)
+        # self.setupLandscapeUI()
+        # self.setupVerticalUI()
 
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
             print('---- No GPIO setup needed ----')
@@ -369,26 +386,9 @@ class MainWindow(QMainWindow):
             self.setupThreads()
             self.setupSoftwareThreads()
 
-        self.setupWindowLayout()
-
-        # REMOVE - as they aren't needed anymore (I think)
-        # self.setupLandscapeUI()
-        # self.setupVerticalUI()
-
-        self.topUnderlay = QLabel(self)
-        topUnderlayImg = QPixmap("assets/TopUnderlay.png")
-        self.topUnderlay.setPixmap(topUnderlayImg)
-        self.topUnderlay.setAlignment(Qt.AlignCenter)
-        self.topUnderlay.setGeometry(0, 0, 1280, 187)
-
-        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
-        self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
-        self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
-        self.comboLabel = UILabelTopCenter(self, '2,234', 'M')
-        # self.comboLabel = UILabelTopCenter(self, '16:12', ':21')
-
-        # TODO - implement with the new Db structure
-        self.setupDB()
+        # TODO - decide if this is needed
+        # Updates the UI's picture for the first time
+        self.updateUIPicture()
 
         # Show the MainWindow
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -396,39 +396,17 @@ class MainWindow(QMainWindow):
         elif platform.system() == 'Linux':
             self.showFullScreen()
 
-    def setupGPIO(self):
-        # Set the GPIO mode, alternative is GPIO.BOARD
-        GPIO.setmode(GPIO.BCM)
-
-        # Hardware Pins
-        self.PIN_ROTARY_A = 23
-        self.PIN_ROTARY_B = 24
-        self.PIN_ROTARY_BUTT = 25
-
-        self.PIN_MODE = 20
-        self.PIN_PREV = 6
-        self.PIN_PLAY_PAUSE = 5
-        self.PIN_NEXT = 13
-
-        # Accelerometer
-
-        # NeoPixels
-
-        # LED indicators
-
     def setupDB(self):
         self.sql_controller = SQLController(database=DB)
         self.picture = self.sql_controller.get_first_time_picture()
         self.picture.print_obj_mvp()
-        # print(self.picture)
 
         # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
-        # self.picture = self.sql_controller.next_time_picture_in_hike(self.picture_starter)
 
     # UI Setup
     def setupWindowLayout(self):
-        self.setWindowTitle("Capra Slideshow")
-        self.setGeometry(0, 0, 1280, 720)
+        self.setWindowTitle("Capra Explorer Slideshow")
+        self.setGeometry(0, 300, 1280, 720)
         # self.setStyleSheet("background-color: gray;")
 
         pagelayout = QVBoxLayout()
@@ -438,7 +416,8 @@ class MainWindow(QMainWindow):
         pagelayout.addLayout(self.stacklayout)
 
         # Landscape view
-        self.pictureLandscape = UIImage('assets/cam2f.jpg')
+        # Sets the initial picture to the first selected image from the DB
+        self.pictureLandscape = UIImage(self.picture.camera2)
         self.stacklayout.addWidget(self.pictureLandscape)
 
         # Vertical view
@@ -447,6 +426,9 @@ class MainWindow(QMainWindow):
         verticallayout.setSpacing(0)
         verticallayout.addWidget(UIImage('assets/cam1.jpg'))
         verticallayout.addWidget(UIImage('assets/cam2.jpg'))
+        # TODO - this will eventually be images from DB, but they need to be
+        # the proper size or else it'll mess up the size of the window
+        # verticallayout.addWidget(UIImage(self.picture.camera2))
         verticallayout.addWidget(UIImage('assets/cam3.jpg'))
 
         verticalWidget = QWidget()
@@ -468,135 +450,44 @@ class MainWindow(QMainWindow):
         print('Available: %d x %d' % (rect.width(), rect.height()))
         '''
 
-    def setupLandscapeUI(self):
-        # Image
-        self.imgLabel = QLabel()
+    def setupUI(self):
+        # self.topUnderlay = QLabel(self)
+        # topUnderlayImg = QPixmap("assets/TopUnderlay.png")
+        # self.topUnderlay.setPixmap(topUnderlayImg)
+        # self.topUnderlay.setAlignment(Qt.AlignCenter)
+        # self.topUnderlay.setGeometry(0, 0, 1280, 187)
 
-        img = QPixmap(self.buildLandscape(2561))
-        self.imgLabel.setPixmap(img)
-        self.grid.addWidget(self.imgLabel)
+        # self.topUnderlay = UIImageOverlay(self, 'assets/TopUnderlay.png')
+        # self.topUnderlay = UIImageOverlay(self, 'assets/bottom.png')
+        self.topUnderlay = UIUnderlay(self)
 
-        # Label overlay
-        testLabel = QLabel('Time Mode', self)
-        testLabel.move(1150, 10)
+        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
+        self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
+        
+        # print(self.leftLabel.__class__.__bases__)
+        self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
+        # print(dir(self.rightLabel))
+        self.centerLabel = UILabelTopCenter(self, '', '')
 
-        # Icon overlay
-        # modeBg = QLabel(self)
-        # modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
-        # modeBg.setGeometry(0, 0, 1280, 720)
+    def setupGPIO(self):
+        # Set the GPIO mode, alternative is GPIO.BOARD
+        GPIO.setmode(GPIO.BCM)
 
-        # modeImg = QPixmap('/home/pi/capra/icons/time.png')
-        # modeLabel = QLabel(self)  # need the self to set position absolutely
-        # modeLabel.setPixmap(modeImg)
-        # modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
+        # Hardware Pins
+        self.PIN_ROTARY_A = 23
+        self.PIN_ROTARY_B = 24
+        self.PIN_ROTARY_BUTT = 25
 
-    def changeLandscapeUI(self, picture: Picture):
-        # Image
-        landscape = picture.camera_landscape
-        temp = [x.strip() for x in landscape.split('/')]
-        path = '/home/pi/capra-storage-demo/{h}/{jpg}'.format(h=temp[4], jpg=temp[5])
-        # print(path)
+        self.PIN_MODE = 20
+        self.PIN_PREV = 6
+        self.PIN_PLAY_PAUSE = 5
+        self.PIN_NEXT = 13
 
-        self.img = QPixmap(path)
-        self.imgLabel.setPixmap(self.img)
+        # Accelerometer
 
-    # def setupVerticalUI(self):
-    #     self.img = QPixmap(self.buildFile(2561))
+        # NeoPixels
 
-    #     self.grid.addWidget(self.indexLabel, 3, 1)
-    #     self.grid.addWidget(self.button, 4, 1)
-    #     self.grid.addWidget(self.timerLabel, 2, 1)
-    #     self.grid.addWidget(self.workerThreadLabel, 5, 1)
-    #     self.addWidget(self.modeLabel)
-
-    # UI Interactions
-    def setLandscape(self):
-        print('setLandscape()')
-        global orientation
-        orientation = StatusOrientation.LANDSCAPE
-        print(orientation.value)
-        self.stacklayout.setCurrentIndex(orientation)
-
-    def setVertical(self):
-        print('setVertical()')
-        global orientation
-        orientation = StatusOrientation.PORTRAIT
-        print(orientation.value)
-        self.stacklayout.setCurrentIndex(orientation)
-
-    def changeMode(self):
-        # global status_mode
-        # status_mode = (status_mode + 1) % 3
-        # print('New status: %d' % status_mode)
-
-        global mode
-        mode = StatusMode((mode.value + 1) % 3)
-        # print(mode.value)
-        # newval = mode.value + 1
-        # print(newval)
-
-        if mode == StatusMode.TIME:
-            print(mode)
-            self.modeOverlay.setTime()
-        elif mode == StatusMode.ALTITUDE:
-            print(mode)
-            self.modeOverlay.setAltitude()
-        elif mode == StatusMode.COLOR:
-            print(mode)
-            self.modeOverlay.setColor()
-
-    def updateUIPicture(self):
-        self.imageFader.set_next_image(self.picture.camera2)
-        self.comboLabel.setPrimaryText(self.picture.altitude)
-        self.rightLabel.setPrimaryText(self.picture.time)
-
-
-        # timeText = self.picture.
-        # self.rightLabel.setPrimaryText(self.picture.altitude)
-        # self.comboLabel.setPrimaryText(timeText)
-
-        # self.rightLabel
-
-
-        self.printCurrentMemoryUsage()
-
-
-        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
-        # self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
-        # self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
-        # self.comboLabel = UILabelTopCenter(self, '2,234', 'M')
-
-
-
-    def increaseIndex(self):
-        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
-        self.picture.print_obj_mvp()
-
-        self.imageFader.set_next_image(self.picture.camera2)
-        self.printCurrentMemoryUsage()
-
-        # self.index += 1
-        # if self.index > 1799:
-        #     self.index = 1486
-
-        # self.rightLabel.setText(str(self.index))
-
-        # return self.index
-
-    def decreaseIndex(self):
-        self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
-        self.picture.print_obj_mvp()
-
-        self.imageFader.set_next_image(self.picture.camera2)
-        self.printCurrentMemoryUsage()
-
-        # self.index -= 1
-        # if self.index < 1486:
-        #     self.index = 1799
-
-        # self.rightLabel.setText(str(self.index))
-
-        # return self.index
+        # LED indicators
 
     # Setup threads to check for hardware changes
     def setupThreads(self):
@@ -634,10 +525,217 @@ class MainWindow(QMainWindow):
         self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
 
         # Software Threads
-        self.imageFader = ImageFader()
+        self.imageFader = ImageFader(self.picture.camera2)
         self.imageFader.signals.result.connect(self.load_new_image)
+        self.imageFader.signals.finished.connect(self.finished_image_fade)
         self.threadpoolSoftware.start(self.imageFader)
 
+    # UI Callbacks from bg threads
+    # Loads the newly faded image from the background thread into the image container
+    def load_new_image(self, result, value):
+        # print(value)
+        # self.pictureLandscape.update_pixmap(self.current_raw)
+        self.pictureLandscape.update_pixmap(result)
+
+    # The new image has been faded onto the screen, now fade out all the UI components
+    def finished_image_fade(self):
+        print('\nfinished fading, result finish emit')
+        # QTimer.singleShot(1000, self._animationHelper)  # switch out
+
+
+        # Hide the following UI
+        # self.topUnderlay.fadeOut()
+        # TODO - add back in
+        # self.leftLabel.fadeOut()
+        self.rightLabel.doAnimation()  # works - add back in
+        self.centerLabel.fadeOut()  # works - add back in
+
+        # = UILabelTop(self, '', Qt.AlignLeft)
+        # self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
+        # self.centerLabel
+
+    def _animationHelper(self):
+        self.rightLabel.doAnimation()
+        self.centerLabel.fadeOut()
+
+    '''
+    # Animations
+    def doAnimation(self):
+        self.anim = QPropertyAnimation(self.topUnderlay, b"geometry")
+        self.anim.setDuration(400)
+        self.anim.setStartValue(QRect(0, 0, 1280, 110))
+        self.anim.setEndValue(QRect(0, 600, 1280, 110))
+        self.anim.start()
+
+        fadeEffect = QGraphicsOpacityEffect()
+        self.topUnderlay.setGraphicsEffect(fadeEffect)
+        self.anim2 = QPropertyAnimation(fadeEffect, b"opacity")
+        # self.anim2 = QPropertyAnimation(self.label, b"windowOpacity")
+        self.anim2.setStartValue(0)
+        self.anim2.setEndValue(1)
+        self.anim2.setDuration(400)
+        self.anim2.start()
+
+        self.update()
+    '''
+
+    '''
+    def setupLandscapeUI(self):
+        # Image
+        self.imgLabel = QLabel()
+
+        img = QPixmap(self.buildLandscape(2561))
+        self.imgLabel.setPixmap(img)
+        self.grid.addWidget(self.imgLabel)
+
+        # Label overlay
+        testLabel = QLabel('Time Mode', self)
+        testLabel.move(1150, 10)
+
+        # Icon overlay
+        # modeBg = QLabel(self)
+        # modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
+        # modeBg.setGeometry(0, 0, 1280, 720)
+
+        # modeImg = QPixmap('/home/pi/capra/icons/time.png')
+        # modeLabel = QLabel(self)  # need the self to set position absolutely
+        # modeLabel.setPixmap(modeImg)
+        # modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
+    '''
+
+    '''
+    def changeLandscapeUI(self, picture: Picture):
+        # Image
+        landscape = picture.camera_landscape
+        temp = [x.strip() for x in landscape.split('/')]
+        path = '/home/pi/capra-storage-demo/{h}/{jpg}'.format(h=temp[4], jpg=temp[5])
+        # print(path)
+
+        self.img = QPixmap(path)
+        self.imgLabel.setPixmap(self.img)
+    '''
+
+    # def setupVerticalUI(self):
+    #     self.img = QPixmap(self.buildFile(2561))
+
+    #     self.grid.addWidget(self.indexLabel, 3, 1)
+    #     self.grid.addWidget(self.button, 4, 1)
+    #     self.grid.addWidget(self.timerLabel, 2, 1)
+    #     self.grid.addWidget(self.workerThreadLabel, 5, 1)
+    #     self.addWidget(self.modeLabel)
+
+    # UI Interactions
+    def changeMode(self):
+        # global status_mode
+        # status_mode = (status_mode + 1) % 3
+        # print('New status: %d' % status_mode)
+
+        global mode
+        mode = StatusMode((mode.value + 1) % 3)
+        # print(mode.value)
+        # newval = mode.value + 1
+        # print(newval)
+
+        if mode == StatusMode.TIME:
+            print(mode)
+            self.modeOverlay.setTime()
+        elif mode == StatusMode.ALTITUDE:
+            print(mode)
+            self.modeOverlay.setAltitude()
+        elif mode == StatusMode.COLOR:
+            print(mode)
+            self.modeOverlay.setColor()
+
+    def setLandscape(self):
+        print('setLandscape()')
+        global orientation
+        orientation = StatusOrientation.LANDSCAPE
+        print(orientation.value)
+        self.stacklayout.setCurrentIndex(orientation)
+
+    def setVertical(self):
+        print('setVertical()')
+        global orientation
+        orientation = StatusOrientation.PORTRAIT
+        print(orientation.value)
+        self.stacklayout.setCurrentIndex(orientation)
+
+    def updateUIPicture(self):
+        # Sending to the bg thread - this begins another fading process
+        # self.topUnderlay.fadeIn()
+        # self.topUnderlay.show()
+
+        self.imageFader.set_next_image(self.picture.camera2)
+
+        # TODO - add back in
+        # self.rightLabel.show2()
+        # self.leftLabel.show()
+
+
+        # self.printCurrentMemoryUsage()
+
+
+        # timeText = self.picture.
+        # self.rightLabel.setPrimaryText(self.picture.altitude)
+        # self.centerLabel.setPrimaryText(timeText)
+
+        # self.rightLabel
+
+        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
+        # self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
+        # self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
+        # self.centerLabel = UILabelTopCenter(self, '2,234', 'M')
+
+    # TODO -- Might be more resource efficient to have all the objects faded out
+    # in 1 method, instead of having the fade attached to each individual class
+    # Animations
+
+    def updateUITop(self):
+        self.centerLabel.setPrimaryText(self.picture.altitude)
+        self.centerLabel.setSecondaryText('M')
+        self.centerLabel.show()
+
+        self.rightLabel.setPrimaryText(self.picture.time)
+        self.rightLabel.show2()
+        hikeText = 'Hike {h}'.format(h=self.picture.hike_id)
+        self.leftLabel.setPrimaryText(hikeText)
+
+    def updateUIBottom(self):
+        pass
+
+
+    # REMOVE
+    '''
+    def increaseIndex(self):
+        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
+        self.picture.print_obj_mvp()
+
+        self.imageFader.set_next_image(self.picture.camera2)
+        self.printCurrentMemoryUsage()
+
+        # self.index += 1
+        # if self.index > 1799:
+        #     self.index = 1486
+
+        # self.rightLabel.setText(str(self.index))
+
+        # return self.index
+
+    def decreaseIndex(self):
+        self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
+        self.picture.print_obj_mvp()
+
+        self.imageFader.set_next_image(self.picture.camera2)
+        self.printCurrentMemoryUsage()
+
+        # self.index -= 1
+        # if self.index < 1486:
+        #     self.index = 1799
+
+        # self.rightLabel.setText(str(self.index))
+
+        # return self.index
+    '''
 
     # Hardware Button Presses
     def rotary_changed(self, result):
@@ -688,12 +786,13 @@ class MainWindow(QMainWindow):
         global rotaryCounter
         if event.key() == Qt.Key_Escape:
             self.close()
-        
+
         # Scroll Wheel
         elif event.key() == Qt.Key_Left:
             # print('left')
             self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
             self.updateUIPicture()
+            self.updateUITop()
             # index = self.decreaseIndex()
 
             # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
@@ -711,6 +810,10 @@ class MainWindow(QMainWindow):
             # print('right')
             self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
             self.updateUIPicture()
+            self.updateUITop()
+            # self.rightLabel.show2() # working
+
+
             # index = self.increaseIndex()
             # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
             # self.imageFader.set_next_image(path)
@@ -772,16 +875,11 @@ class MainWindow(QMainWindow):
     #     img = QPixmap(self.buildFile(result))
     #     self.imgLabel.setPixmap(img)
 
-    # UI Work
-    def load_new_image(self, result, value):
-        # print('new image')
-        # print(value)
-        # self.pictureLandscape.update_pixmap(self.current_raw)
-        self.pictureLandscape.update_pixmap(result)
-
+    '''
     def increment_label(self):
         self.index += 1
         self.indexLabel.setText('Count: %d' % self.index)
+    '''
 
     # def recurring_timer(self):
     #     self.seconds += 1
@@ -799,7 +897,7 @@ class MainWindow(QMainWindow):
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
     '''
 
-    # Testing
+    # ----------------------Testing-----------------------
 
     # Memory usage in kB
     def printCurrentMemoryUsage(self):
