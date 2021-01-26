@@ -463,11 +463,15 @@ class MainWindow(QMainWindow):
 
         self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
         self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
-        
+
         # print(self.leftLabel.__class__.__bases__)
         self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
         # print(dir(self.rightLabel))
         self.centerLabel = UILabelTopCenter(self, '', '')
+
+        self.timerFadeOutUI = QTimer()
+        self.timerFadeOutUI.setSingleShot(True)
+        self.timerFadeOutUI.timeout.connect(self._fadeOutUI)
 
     def setupGPIO(self):
         # Set the GPIO mode, alternative is GPIO.BOARD
@@ -539,23 +543,24 @@ class MainWindow(QMainWindow):
 
     # The new image has been faded onto the screen, now fade out all the UI components
     def finished_image_fade(self):
-        print('\nfinished fading, result finish emit')
-        # QTimer.singleShot(1000, self._animationHelper)  # switch out
-
+        print('\ndef finished_image_fade() -- result emitted')
+        self.timerFadeOutUI.start(1000)
 
         # Hide the following UI
         # self.topUnderlay.fadeOut()
         # TODO - add back in
         # self.leftLabel.fadeOut()
-        self.rightLabel.doAnimation()  # works - add back in
-        self.centerLabel.fadeOut()  # works - add back in
+        # self.rightLabel.doAnimation()  # works - add back in
+        # self.centerLabel.fadeOut()  # works - add back in
 
         # = UILabelTop(self, '', Qt.AlignLeft)
         # self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
         # self.centerLabel
 
-    def _animationHelper(self):
-        self.rightLabel.doAnimation()
+    def _fadeOutUI(self):
+        self.topUnderlay.fadeOut()
+        self.rightLabel.fadeOut()
+        self.leftLabel.fadeOut()
         self.centerLabel.fadeOut()
 
     '''
@@ -690,15 +695,22 @@ class MainWindow(QMainWindow):
     # in 1 method, instead of having the fade attached to each individual class
     # Animations
 
+
     def updateUITop(self):
+        self.timerFadeOutUI.stop()  # stop the timer that is about to cause a fade out
+
+        self.topUnderlay.show()
+
         self.centerLabel.setPrimaryText(self.picture.altitude)
         self.centerLabel.setSecondaryText('M')
         self.centerLabel.show()
 
         self.rightLabel.setPrimaryText(self.picture.time)
-        self.rightLabel.show2()
+        self.rightLabel.show()
+
         hikeText = 'Hike {h}'.format(h=self.picture.hike_id)
         self.leftLabel.setPrimaryText(hikeText)
+        self.leftLabel.show()
 
     def updateUIBottom(self):
         pass
