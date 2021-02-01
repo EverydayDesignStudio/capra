@@ -32,14 +32,14 @@ class MainWindow(QMainWindow):
         self.InitWindow()
 
     def InitWindow(self):
-        self.setWindowIcon(QIcon("assets/icon.png"))
+        # self.setWindowIcon(QIcon("assets/icon.png"))
 
         self.button = QPushButton("Start", self)
         self.button.move(30, 30)
         self.button.clicked.connect(self.doAnimation)
 
         self.label = QLabel("HOWDY", self)
-        bottomImg = QPixmap("assets/bottom.png")
+        bottomImg = QPixmap("assets/test-animation-bottom.png")
         self.label.setPixmap(bottomImg)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setGeometry(0, 610, 1280, 110)
@@ -49,7 +49,8 @@ class MainWindow(QMainWindow):
         # self.frame.setFrameStyle(QFrame.Panel | QFrame.Raised)
         # self.frame.setGeometry(150, 30, 100, 100)
 
-        # self.show()
+        self.show()
+        # self.showFullScreen()
 
     def paintRectangle(self, event):
         width = self.pos2[0]-self.pos1[0]
@@ -78,6 +79,11 @@ class MainWindow(QMainWindow):
         self.anim2.start()
 
         self.update()
+
+    def keyPressEvent(self, event):
+        global rotaryCounter
+        if event.key() == Qt.Key_Escape:
+            self.close()
 
 
 # Simple wrapper of QLabel, for easier image loading
