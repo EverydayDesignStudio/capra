@@ -49,8 +49,8 @@ class MainWindow(QMainWindow):
         # self.frame.setFrameStyle(QFrame.Panel | QFrame.Raised)
         # self.frame.setGeometry(150, 30, 100, 100)
 
-        self.show()
-        # self.showFullScreen()
+        # self.show()
+        self.showFullScreen()
 
     def paintRectangle(self, event):
         width = self.pos2[0]-self.pos1[0]
