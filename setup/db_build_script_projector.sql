@@ -16,7 +16,7 @@ CREATE TABLE "pictures" (
 	"hike"								INTEGER,
 	"index_in_hike"				INTEGER,
 	"altitude"						REAL,
-	"altrank_hike"	  	INTEGER UNIQUE, --
+	"altrank_hike"	  		INTEGER, --
 	"altrank_global"	  	INTEGER UNIQUE, --
 	"altrank_global_h"		INTEGER UNIQUE, --
 	"color_hsv"						TEXT,						-- "H,S,V" (decimal)
@@ -24,7 +24,7 @@ CREATE TABLE "pictures" (
 	"color_rank_value"		TEXT,						-- possible intermediate value used to sort colors
 	"color_rank_hike"			INTEGER,
 	"color_rank_global"		INTEGER UNIQUE,
-	"color_rank_global_h"	INTEGER UNIQUE,
+	"color_rank_global_h"	INTEGER UNIQUE, -- global_h = PREVIOUS_PICTURES + rank_value
 	"colors_count"				INTEGER,				-- # of dominant colors			>> for transfer animation only
 	"colors_rgb"					TEXT,						-- "R1,G1,B1|R2,G2,B2|..."	>> for transfer animation only
 	"colors_conf"					TEXT,						-- confidence value for each dominant color
