@@ -11,6 +11,7 @@ import glob
 import sys
 import sqlite3
 import datetime
+from operator import itemgetter
 from PIL import ImageTk, Image                      # Pillow image functions
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
@@ -19,31 +20,13 @@ from colormath.color_objects import HSVColor, LabColor
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000
 
-
 ####################################################
-### TODO: Congifure these variables
 
-# hike6 - 903
-# hike5 - 1389
-# hike3 - 2157
-
-# hike29 - 2288
-
-# hike31 - 560
-# hike33 - 1726
-# hike10 - 3561
-
-# When grouping rows, specify starting and ending index (e.g. 3_camX ~ 17_camX ==> 3, 17)
-INDEX_START = 1100
-INDEX_END = 1200
-# INDEX_END = 20
-currHike = 29
-
+currHike = -1
+globalCounter_h = 0
 dummyGlobalColorRank = -1
 dummyGlobalAltRank = -1
 dummyGlobalCounter = 0
-
-####################################################
 
 DROPBOX = "/Users/myoo/Dropbox/"
 
@@ -56,7 +39,6 @@ dest_db_name = "capra_projector_jan2021_min_test.db"
 
 ####################################################
 
-BASEHIKEPATH = "/media/pi/capra-hd/hike" + str(currHike) + "/"
 WHITE_IMAGE = DROPBOX + BASEPATH_DEST + "white.jpg"
 
 srcPath = ""
@@ -68,6 +50,7 @@ dbSRCController = None
 dbDESTController = None
 
 CLUSTERS = 4        # assumes X number of dominant colors in a pictures
+REPETITION = 8
 
 FILENAME = "[!\.]*_cam[1-3].jpg"
 FILENAME_FULLSIZE = "[!\.]*_cam2f.jpg"
@@ -164,51 +147,35 @@ def sortby_hue_luminosity(r, g, b, repetitions=1):
 
 
 def sort_by_alts(commits):
-    tmpList = []
-    for p_name, p_info in commits.items():
-        res = []
-        res.append(p_info[7])   # index_in_hike
-        res.append(p_info[8])   # altitude
-        tmpList.append(res)
-
-    tmpList.sort(key=lambda x: x[1])
+    commits.sort(key=itemgetter(8, 0))
 
     rankList = {}
-    for i in range(len(tmpList)):
-        tmp = tmpList[i]
-        rankList[tmp[0]] = i+1
+    for i in range(len(commits)):
+        rankList[itemgetter(7)(commits[i])] = i+1
 
     return rankList
 
+def splitColor(item):
+    tmp = itemgetter(12)(item)
+    return sortby_hue_luminosity(int(tmp.split(",")[0]), int(tmp.split(",")[1]), int(tmp.split(",")[2]), REPETITION)
+
 def sort_by_colors(dic):
-    tmpList = []
-    for p_name, p_info in dic.items():
-        res = p_info["most_dominant_color_rgb"]
-        res.insert(0, p_name)
-        res.append(p_info["index"])
-        tmpList.append(res)
-
     # Sort the colors by hue & luminosity
-    repetition = 8
-    tmpList.sort(key=lambda rgb: sortby_hue_luminosity(rgb[1], rgb[2], rgb[3], repetition))
+    dic.sort(key=splitColor)
 
-    # Generates the image
     rankList = {}
-    for i in range(len(tmpList)):
-        tmp = tmpList[i]
-        rankList[tmp[4]] = i+1
+    for i in range(len(dic)):
+        rankList[itemgetter(7)(dic[i])] = i+1
 
-    ## TEST - generate color spectrum based on the color rank
+    # generate a color spectrum based on the color rank
     colorCount = 1
     colorSpectrumRGB_test = []
-    for i in range(len(tmpList)):
-        tmp = tmpList[i]
-        tmp.pop(4)
-        tmp.pop(0)
-        colorSpectrumRGB_test.append(tmp)
+    for i in range(len(dic)):
+        tmp = dic[i][12]
+        colorSpectrumRGB_test.append((tmp.split(",")[0], tmp.split(",")[1], tmp.split(",")[2]))
         colorCount += 1
 
-    generatePics(colorSpectrumRGB_test, FOLDERNAME + "-{}x{}".format(DIMX, DIMY) + "-colorSpectrum_dec2020")
+    generatePics(colorSpectrumRGB_test, "hike{}-{}x{}".format(currHike, DIMX, DIMY) + "-colorSpectrum_jan2021")
 
     return rankList
 
@@ -221,27 +188,17 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
 
     color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=image1, image2=image2, image3=image3, image_processing_size=(DIMX, DIMY))
 
-    pic = {
-        "index": index_in_hike,
-        "color_size": color_size,
-        "colors_hsv": colors_hsv,
-        "colors_rgb": colors_rgb,
-        "confidences": confidences,
-        "most_dominant_color_hsv": colors_hsv[0],
-        "most_dominant_color_rgb": colors_rgb[0]
-    }
-
     picDatetime = datetime.datetime.fromtimestamp(row[1])
 
-    #     time,
+    #     TIME,
     #     year, month, day, minute, dayofweek,
-    #     hike, index_in_hike, altitude, altrank_hike, altrank_global, altrank_global_h,             # TODO: implement altitude ranks, index 9, 10, 11
-    #     color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global, color_rank_global_h,    # TODO: implement color ranks, index 15, 16, 17
+    #     hike, index_in_hike, altitude, altrank_hike, ALTRANK_GLOBAL, ALTRANK_GLOBAL_H,             # TODO: implement altitude ranks, index 9, 10, 11
+    #     color_hsv, color_rgb, color_rank_value, color_rank_hike, COLOR_RANK_GLOBAL, COLOR_RANK_GLOBAL_H,    # TODO: implement color ranks, index 15, 16, 17
     #     colors_count, colors_rgb, colors_conf,
     #     camera1, camera2, camera3, camera_landscape
 
     # ** 0 is monday in dayofweek
-    # ** camera_landscape points to the path to cam2 pic
+    # ** camera_landscape points to the path to cam2
     ### TODO: change this index to row[0] and row[1] if cameraDB is used
     commit = [row[1],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
@@ -250,9 +207,11 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 row[22], row[23], row[24], row[23][:-4] + "f" + row[23][-4:]]
 
-    # print(commit)
+    # if (index_in_hike >= 417 and index_in_hike <= 430):
+    #     print("# " + str(index_in_hike))
+    #     print(commit)
 
-    return pic, commit, colors_hsv[0]
+    return commit, colors_hsv[0]
 
 
 def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_size=None):
@@ -476,60 +435,6 @@ def buildHike(currHike):
             if (os.path.exists(picPathCam3_src)):
                 img = Image.open(picPathCam3_src)
                 img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            # pic = {
-            #     "picture_name": fileName,
-            #     "index": i,
-            #     "color_size": color_size,
-            #     "colors_hsv": colors_hsv,
-            #     "colors_rgb": colors_rgb,
-            #     "confidences": confidences,
-            #     "most_dominant_color_hsv": colors_hsv[0],
-            #     "most_dominant_color_rgb": colors_rgb[0]
-            # }
-            #
-            pics[fileName] = pic
-            commits[fileName] = commit
-            domColorsHike_hsv.append(domCol_hsv)
-
-            count += 1
-            dummyGlobalCounter += 1
-
-        # attach color ranking within the current hike
-        # then, upsert rows
-        colRankList = sort_by_colors(pics)
-        altRankList = sort_by_alts(commits.copy())
-        # TODO: avoid incremental check
-        for index_in_hike in range(INDEX_START, INDEX_END+1, 1):
-            fileName = "{}_camN".format(index_in_hike)
-
-            if index_in_hike not in altRankList or index_in_hike not in colRankList:
-                continue
-
-            commits[fileName][9] = altRankList[index_in_hike]
-            commits[fileName][15] = colRankList[index_in_hike]
-            commits[fileName][10] = dummyGlobalAltRank
-            commits[fileName][16] = dummyGlobalColorRank
-
-            # TODO: assign better dummy values
-            dummyGlobalColorRank -= 1
-            dummyGlobalAltRank -= 1
-
-            # print(commits[fileName])
-
-            commit = tuple(commits[fileName])
-            dbDESTController.upsert_picture(*commit)
-
-
-        dbDESTController.upsert_hike(currHike, avgAlt, -currHike,
-                                        startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
-                                        endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
-                                        ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
-                                        numValidRows, BASEHIKEPATH)
-
-        print("## Count: {} rows processed".format(count-1))
-
-        # sys.stdout = orig_stdout
-        # f.close()
                 img_res.save(picPathCam3_dest)
             else:
                 img = Image.open(WHITE_IMAGE)
@@ -550,6 +455,67 @@ def buildHike(currHike):
         dummyGlobalCounter += 1
         count += 1
 
+    ### Post-processing
+    # attach color ranking within the current hike
+    # then, upsert rows
+    # colRankList = sort_by_colors(pics.copy())
+    # altRankList = sort_by_alts(commits.copy())
+    colRankList = sort_by_colors(list(commits.copy().values()))
+    altRankList = sort_by_alts(list(commits.copy().values()))
+
+    for index_in_hike in range(numValidRows):
+        fileName = "{}_camN".format(index_in_hike)
+
+        if index_in_hike not in altRankList or index_in_hike not in colRankList:
+            continue
+
+        altrank = altRankList[index_in_hike]
+        commits[fileName][9] = altrank
+        commits[fileName][10] = dummyGlobalAltRank
+        commits[fileName][11] = globalCounter_h + altrank
+
+        colrank = colRankList[index_in_hike]
+        commits[fileName][15] = colrank
+        commits[fileName][16] = dummyGlobalColorRank
+        commits[fileName][17] = globalCounter_h + colrank
+
+        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(index_in_hike, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
+
+        dummyGlobalColorRank -= 1
+        dummyGlobalAltRank -= 1
+
+        # print(commits[fileName])
+
+        commit = tuple(commits[fileName])
+        dbDESTController.upsert_picture(*commit)
+
+    # make a row for the hike table with postprocessed values
+    avgAlt /= numValidRows
+    domColorHike_hsv = []
+    domColorHike_hsv = get_dominant_color_1D(domColorsHike_hsv, CLUSTERS)
+    roundToHundredth(domColorHike_hsv)
+
+    hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
+    hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
+    domColorHike_rgb = hsvToRgb(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
+
+    #     HIKE_ID, avg_altitude, AVG_ALTITUDE_RANK,
+    #     START_TIME, start_year, start_month, start_day, start_minute, start_dayofweek,
+    #     END_TIME, end_year, end_month, end_day, end_minute, end_dayofweek,
+    #     color_hsv, color_rgb, color_rank_value, COLOR_RANK,               # TODO: calculate color rank
+    #     pictures, PATH
+
+    # TODO: determine global hike color rank
+
+    defaultHikePath = "/media/pi/capra-hd/hike" + str(currHike) + "/"
+
+    dbDESTController.upsert_hike(currHike, avgAlt, -currHike,
+                                    startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
+                                    endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
+                                    ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
+                                    numValidRows, defaultHikePath)
+
+    print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, count))
 
 
 def compute_checksum(path, currHike):
@@ -623,6 +589,7 @@ def main():
                 buildHike(currHike)
 
             currHike += 1
+            globalCounter_h += currExpectedHikeSize
 
     # At this point, all hikes are processed.
     # TODO: need to calculate global ranks
