@@ -32,6 +32,7 @@ import psutil
 import sys
 import time
 import traceback
+from classes.singleton import Singleton
 
 # Database Location
 if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -52,14 +53,17 @@ elif platform.system() == 'Linux':
     PATH = 'home/pi/capra-storage/demo'
 
 # Filewide Statuses
-# --- Hardware
+# ----- Hardware -----
 rotaryCounter = 0
-# --- UI
+# ----- UI -----
 # status_orientation = 0      # (0)landscape (1)portrait
 # status_setting = 0          # (0)hike (1)global
 # status_mode = 0             # (0)time (1)altitude (2)color
 isReadyForNewPicture = True
 
+
+# Statuses
+# -----------------------------------------------------------------------------
 
 class StatusOrientation(IntEnum):
     LANDSCAPE = 0
@@ -81,6 +85,58 @@ class StatusMode(IntEnum):
     TIME = 0
     ALTITUDE = 1
     COLOR = 2
+
+
+# Singleton Status class
+class Status(Singleton):
+    """
+    Singleton class containing all status variables for the slideshow
+    • orientation, playpause, scope, mode
+    """
+
+    # Class variables, not instance variables
+    _orientation = StatusOrientation.LANDSCAPE
+    _playpause = StatusPlayPause.PAUSE
+    _scope = StatusScope.HIKE
+    _mode = StatusMode.TIME
+
+    # Eventually maybe we would need to setup this with input from the database
+    def __init__(self):
+        super().__init__()
+
+    # Mode
+    def get_mode(self) -> StatusMode:
+        return Status()._mode
+
+    def next_mode(self):
+        Status()._mode = StatusMode((Status()._mode + 1) % 3)
+
+    # Scope
+    def get_scope(self) -> StatusScope:
+        return Status()._scope
+
+    def change_scope(self):
+        Status()._scope = StatusScope((Status()._scope + 1) % 2)
+
+    # Play Pause
+    def get_playpause(self) -> StatusPlayPause:
+        return Status()._playpause
+
+    def change_playpause(self):
+        Status()._playpause = StatusPlayPause((Status()._playpause + 1) % 2)
+
+    # Orientation
+    def get_orientation(self) -> StatusOrientation:
+        return Status()._orientation
+
+    def change_orientation(self):
+        Status()._orientation = StatusOrientation((Status()._orientation + 1) % 2)
+
+    def set_orientation_landscape(self):
+        Status()._orientation = StatusOrientation.LANDSCAPE
+
+    def set_orientation_vertical(self):
+        Status()._orientation = StatusOrientation.PORTRAIT
 
 
 # Global status values -- they need to have global file scope due to the modification by the hardware
@@ -630,45 +686,30 @@ class MainWindow(QMainWindow):
     #     self.addWidget(self.modeLabel)
 
     # UI Interactions
+    # -------------------------------------------------------------------------
+
     def changeMode(self):
-        # global status_mode
-        # status_mode = (status_mode + 1) % 3
-        # print('New status: %d' % status_mode)
+        print('changeMode()')
 
-        global mode
-        mode = StatusMode((mode.value + 1) % 3)
-        # print(mode.value)
-        # newval = mode.value + 1
-        # print(newval)
+        Status().next_mode()
 
+        mode = Status().get_mode()
         if mode == StatusMode.TIME:
-            print(mode)
             self.modeOverlay.setTime()
         elif mode == StatusMode.ALTITUDE:
-            print(mode)
             self.modeOverlay.setAltitude()
         elif mode == StatusMode.COLOR:
-            print(mode)
             self.modeOverlay.setColor()
 
     def setLandscape(self):
         print('setLandscape()')
-        global orientation
-        orientation = StatusOrientation.LANDSCAPE
-        print(orientation.value)
-        self.stacklayout.setCurrentIndex(orientation)
+        Status().set_orientation_landscape()
+        self.stacklayout.setCurrentIndex(Status().get_orientation())
 
     def setVertical(self):
         print('setVertical()')
-        global orientation
-        orientation = StatusOrientation.PORTRAIT
-        print(orientation.value)
-        self.stacklayout.setCurrentIndex(orientation)
-
-    def updateUIPicture(self):
-        # Sending to the bg thread - this begins another fading process
-        # self.topUnderlay.fadeIn()
-        # self.topUnderlay.show()
+        Status().set_orientation_vertical()
+        self.stacklayout.setCurrentIndex(Status().get_orientation())
 
         self.imageFader.set_next_image(self.picture.camera2)
 
