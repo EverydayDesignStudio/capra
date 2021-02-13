@@ -22,6 +22,9 @@ Individual Make commands, if manually needed
 [make projector_db]		create a new database along with file storage
 
 
+----------------------------Tests----------------------------
+[make test_projector_software]	runs software tess for the slideshow application
+
 endef
 
 export INIT_MESSAGE
@@ -86,3 +89,8 @@ camera_db:
 
 camera_services:
 	./services/init-camera-services
+
+
+# -------------- Tests --------------
+test_projector_software:
+	./tests/run_projector_software_tests

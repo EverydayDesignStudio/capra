@@ -1,0 +1,16 @@
+#!/bin/bash
+# 
+# Runs all software tests for the projectors
+
+# Exit the script when any command fails
+set -e
+
+# Add list of test classes here for a complete runnning of all software tests
+
+echo "
+🟢 Starting Test Suite...
+----------------------------------------------------------------------
+"
+python3 -m tests.projector_classes_test
+
+exit 0
