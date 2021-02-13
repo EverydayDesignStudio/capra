@@ -180,7 +180,7 @@ class UIUnderlay(UILabel):
         # self.move(0, 0)
         self.setAlignment(Qt.AlignCenter)
         self.setGeometry(0, 0, 1280, 187)
-        pixmap = QPixmap('assets/underlay.png')
+        pixmap = QPixmap('assets/Underlay@1x.png')
         self.setPixmap(pixmap)
 
 
