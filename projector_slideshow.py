@@ -22,6 +22,7 @@ import PIL
 from PIL import ImageTk, Image, ImageQt
 # from PIL.ImageQt import ImageQt
 # from RPi import GPIO
+# from lsm303d import LSM303D
 from datetime import datetime
 from enum import Enum, IntEnum, unique, auto
 
@@ -33,6 +34,15 @@ import sys
 import time
 import traceback
 from classes.singleton import Singleton
+
+# PIN and Settings values are stored here
+import globals as g
+g.init()
+
+
+# Globals
+# -----------------------------------------------------------------------------
+print('projector_slideshow.py running')
 
 # Database Location
 if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -533,21 +543,36 @@ class MainWindow(QMainWindow):
         # Set the GPIO mode, alternative is GPIO.BOARD
         GPIO.setmode(GPIO.BCM)
 
-        # Hardware Pins
-        self.PIN_ROTARY_A = 23
-        self.PIN_ROTARY_B = 24
-        self.PIN_ROTARY_BUTT = 25
+        # Rotary Encoder
+        self.PIN_ROTARY_A = g.ENC1_A
+        self.PIN_ROTARY_B = g.ENC1_B
 
-        self.PIN_MODE = 20
-        self.PIN_PREV = 6
-        self.PIN_PLAY_PAUSE = 5
-        self.PIN_NEXT = 13
+        # Buttons
+        self.PIN_ROTARY_BUTT = g.BUTT_ENC1
+        self.PIN_PREV = g.BUTT_PREV
+        self.PIN_PLAY_PAUSE = g.BUTT_PLAY_PAUSE
+        self.PIN_NEXT = g.BUTT_NEXT
+        self.PIN_MODE = g.BUTT_MODE
+        self.PIN_HALL_EFFECT = g.HALL_EFFECT_PIN
 
         # Accelerometer
+        self.PIN_ACCEL = g.ACCEL
 
         # NeoPixels
+        self.PIN_NEOPIXELS = g.NEO1
 
         # LED indicators
+        self.PIN_LED_WHITE1 = g.WHITE_LED1
+        self.PIN_LED_WHITE2 = g.WHITE_LED2
+        self.PIN_LED_WHITE3 = g.WHITE_LED3
+
+        self.PIN_LED_RGB_RED = g.RGB2_RED
+        self.PIN_LED_RGB_GREEN = g.RGB2_GREEN
+        self.PIN_LED_RGB_BLUE = g.RGB2_BLUE
+
+        self.PIN_LED_TEST_RED = g.RGB1_RED
+        self.PIN_LED_TEST_GREEN = g.RGB1_GREEN
+        # self.PIN_LED_TEST_BLUE = 0
 
     # Setup threads to check for hardware changes
     def setupThreads(self):

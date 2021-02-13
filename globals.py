@@ -91,6 +91,8 @@ def init():
     global BUTT_ON
     BUTT_ON = 3             # BOARD - 5
 
+    global ACCEL
+    ACCEL = 0x1d            # Accelerometer
     global ACCEL_SCL
     ACCEL_SCL = 3           # BOARD - 5
     global ACCEL_SDA
