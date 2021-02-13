@@ -10,10 +10,13 @@
 # REFACTOR
 
 # Imports
-from classes.capra_data_types import Picture, Hike
-from classes.sql_controller import SQLController
-from classes.sql_statements import SQLStatements
-from classes.ui_components import *
+import math
+import os
+import platform
+import psutil
+import sys
+import time
+import traceback
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -24,15 +27,12 @@ from PIL import ImageTk, Image, ImageQt
 # from RPi import GPIO
 # from lsm303d import LSM303D
 from datetime import datetime
-from enum import Enum, IntEnum, unique, auto
+from enum import IntEnum, unique, auto
 
-import math
-import os
-import platform
-import psutil
-import sys
-import time
-import traceback
+from classes.capra_data_types import Picture, Hike
+from classes.sql_controller import SQLController
+from classes.sql_statements import SQLStatements
+from classes.ui_components import *
 from classes.singleton import Singleton
 
 # PIN and Settings values are stored here
