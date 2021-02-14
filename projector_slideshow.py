@@ -677,58 +677,30 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Shift:
             print('Shift Global / Hike')
 
-        # Next Previous Hike / Global
+        # Next/Previous Buttons
         elif event.key() == Qt.Key_Up:
-            print('up arrow')
+            print('Next Button')
         elif event.key() == Qt.Key_Down:
-            print('down arrow')
+            print('Previous Button')
 
-        # Pressing Scroll Wheel
-        elif event.key() == Qt.Key_Shift:
-            print('Shift - change global / hike')
-
-        # Mode (Time, Altitude, Color)
+        # Change Mode - Time, Altitude, Color
         elif event.key() == Qt.Key_M:
+            print('Mode change')
             self.changeMode()
 
-        # Play Pause
+        # Play/Pause
         elif event.key() == Qt.Key_Space:
             print('Space - Play/Pause')
+
+        # Change Orientation
         elif event.key() == Qt.Key_L:
+            print('setLandscape')
             self.setLandscape()
         elif event.key() == Qt.Key_V:
+            print('setVertical')
             self.setVertical()
         else:
-            print(event)
-
-    # def thread_result(self, result):
-    #     print('From MainLoop: %d' % result)
-    #     # self.workerThreadLabel.setText('Worker: %d' % result)
-
-    #     img = QPixmap(self.buildFile(result))
-    #     self.imgLabel.setPixmap(img)
-
-    '''
-    def increment_label(self):
-        self.index += 1
-        self.indexLabel.setText('Count: %d' % self.index)
-    '''
-
-    # def recurring_timer(self):
-    #     self.seconds += 1
-    #     self.timerLabel.setText('Timer: %d' % self.seconds)
-
-    '''
-    # Helper Methods
-    def buildLandscape(self, num) -> str:
-        path = '/home/pi/capra-storage/images/{n}_fullscreen.jpg'.format(n=num)
-        print(path)
-        return path
-
-    def buildFile(self, num) -> str:
-        # return '~/capra-storage/images/{n}_cam3.jpg'.format(n=num)
-        return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
-    '''
+            print(event.key())
 
     # Testing
     # -------------------------------------------------------------------------
