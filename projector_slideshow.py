@@ -303,9 +303,9 @@ class HardwareButton(QRunnable):
 
 
 # Continually tries blending the next image into the current image
-class ImageFader(QRunnable):
+class ImageBlender(QRunnable):
     def __init__(self, current_path, *args, **kwargs):
-        super(ImageFader, self).__init__()
+        super(ImageBlender, self).__init__()
 
         # Needed setup
         self.alpha = 0
@@ -313,7 +313,7 @@ class ImageFader(QRunnable):
         self.current_raw = Image.open(current_path, 'r')
         self.next_raw = Image.open(current_path, 'r')
 
-        # Testing
+        # REMOVE - this is just for testing
         self.text_current = 'currently'
         self.text_next = 'nextly'
         self.next_value = 0
@@ -448,13 +448,13 @@ class MainWindow(QMainWindow):
         self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
 
         # ImageFader, sends 2 callbacks
-        # result()    : at ever frame that 
-        # finished()  : when blending has finished, sends callback to notify
-        #               used to notify the fade out of UI elements
-        self.imageFader = ImageFader(self.picture.camera2)
-        self.imageFader.signals.result.connect(self._load_new_image)
-        self.imageFader.signals.finished.connect(self._finished_image_fade)
-        self.threadpoolSoftware.start(self.imageFader)
+        # result()    : at ever frame that finished a blend
+        # finished()  : when blending has finished blending two the two images,
+        #               sends callback to notify the fade out of UI elements
+        self.imageBlender = ImageBlender(self.picture.camera2)
+        self.imageBlender.signals.result.connect(self._load_new_image)
+        self.imageBlender.signals.finished.connect(self._finished_image_blend)
+        self.threadpoolSoftware.start(self.imageBlender)
 
     # Setup hardware pins
     def setupGPIO(self):
@@ -534,9 +534,9 @@ class MainWindow(QMainWindow):
         self.pictureLandscape.update_pixmap(result)
 
     # The new image has finished blending; now fade out the UI components
-    def _finished_image_fade(self):
+    def _finished_image_blend(self):
         # REMOVE - Remove this testing setup for checking the number of blends
-        print('\ndef finished_image_fade() -- result emitted')
+        print('\ndef finished_image_blend() -- result emitted')
         print('FINISHED Blending')
         print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
@@ -577,9 +577,9 @@ class MainWindow(QMainWindow):
         Status().set_orientation_vertical()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
-    # TODO - still need to have multiple blurring images
+    # TODO - still need to have multiple blending images
     def updateImage(self):
-        self.imageFader.set_next_image(self.picture.camera2)
+        self.imageBlender.set_next_image(self.picture.camera2)
         self.printCurrentMemoryUsage()
 
     # TODO -- Might be more resource efficient to have all the objects faded out
@@ -659,60 +659,23 @@ class MainWindow(QMainWindow):
 
         # Scroll Wheel
         elif event.key() == Qt.Key_Left:
-            # print('left')
             self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
             self.updateImage()
             self.updateUITop()
-            # index = self.decreaseIndex()
-
-            # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
-            # print(path)
-            # self.pictureLandscape.update_image('assets/cam2f2.jpg')
-            # self.imageFader.set_next_image(path)
             # self.printCurrentMemoryUsage()
-
-
-            # self.fade_image()
-
-            # print(rotaryCounter)
-            # self.updatePrev()
         elif event.key() == Qt.Key_Right:
-            # print('right')
             self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
             self.updateImage()
             self.updateUITop()
-            # self.rightLabel.show2() # working
-
-
-            # index = self.increaseIndex()
-            # path = 'capra-storage/hike10/' + str(index) + '_cam2.jpg'
-            # self.imageFader.set_next_image(path)
             # self.printCurrentMemoryUsage()
-
-
-            # self.fade_image()
-
-            # self.imageFader.text_next = '+1'
-            # self.imageFader.set_next_image('assets/7.jpg')
-            # self.imageFader.increment_next()
-
-            # print(rotaryCounter)
-            # self.pictureLandscape = Image('assets/cam2f3.jpg')
-            # self.alpha = 0.1  # Resets amount of fade between pictures
-            # self.pictureLandscape.update_image('assets/cam2f3.jpg')
-
-            # self.alpha = 0.5  # Resets amount of fade between pictures
-            # self.fade_image()
-
-            # TODO - trying to pigeon in the fading program from the other
-            # self.alpha = 0.1  # Resets amount of fade between pictures
-            # if self.index + 1 >= len(self.fileList):
-            #     self.index = 0
-            # else:
-            #     self.index += 1
-            # self.next_raw_mid = Image.open(self.fileList[self.index], 'r')
-
-            # self.updateNext()
+        # Increase/Decrease speed
+        elif event.key() == Qt.Key_Equal:
+            print('++ Scroll Speed')
+        elif event.key() == Qt.Key_Minus:
+            print('-- Scroll Speed')
+        # Change Scope - Scrollwheel press
+        elif event.key() == Qt.Key_Shift:
+            print('Shift Global / Hike')
 
         # Next Previous Hike / Global
         elif event.key() == Qt.Key_Up:
