@@ -19,20 +19,21 @@ import time
 # UI Super Classes
 # -----------------------------------------------------------------------------
 
-# Super class for universal animations of QLabels
 class UILabel(QLabel):
+    """Super class for universal animations of QLabels"""
     def __init__(self, window):
         super().__init__(window)
 
         self.anim = QPropertyAnimation()
         self.fadeEffect = QGraphicsOpacityEffect()
 
-    def fadeOut(self):
+    def fadeOut(self, duration: int):
+        """Fades out the label over passed in duration (milliseconds)"""
         self.setGraphicsEffect(self.fadeEffect)
         self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
         self.anim.setStartValue(1)
         self.anim.setEndValue(0)
-        self.anim.setDuration(1000)
+        self.anim.setDuration(duration)
         self.anim.start()
         self.update()
 

@@ -639,9 +639,9 @@ class MainWindow(QMainWindow):
         # self.centerLabel
 
     def _fadeOutUI(self):
-        self.topUnderlay.fadeOut()
-        self.rightLabel.fadeOut()
-        self.leftLabel.fadeOut()
+        self.topUnderlay.fadeOut(1000)
+        self.rightLabel.fadeOut(1000)
+        self.leftLabel.fadeOut(1000)
         self.centerLabel.fadeOut()
 
     '''
