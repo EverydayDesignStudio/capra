@@ -65,10 +65,6 @@ elif platform.system() == 'Linux':
 # Filewide Statuses
 # ----- Hardware -----
 rotaryCounter = 0
-# ----- UI -----
-# status_orientation = 0      # (0)landscape (1)portrait
-# status_setting = 0          # (0)hike (1)global
-# status_mode = 0             # (0)time (1)altitude (2)color
 isReadyForNewPicture = True
 
 
@@ -156,6 +152,9 @@ mode = StatusMode.TIME
 playpause = StatusPlayPause.PLAY
 
 
+# Threads
+# -----------------------------------------------------------------------------
+
 # Threading Infrastructure
 class WorkerSignals(QObject):
     '''
@@ -174,40 +173,7 @@ class WorkerSignals(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
     result = pyqtSignal(object, object)
-    # results = pyqtSignal(object, int)
     progress = pyqtSignal(int)
-
-
-'''
-class Worker(QRunnable):
-    def __init__(self, *args, **kwargs):
-        super(Worker, self).__init__()
-
-        self.clk = 23
-        self.cnt = 24
-
-        GPIO.setup(self.clk, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        GPIO.setup(self.cnt, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
-        self.clkLastState = GPIO.input(self.clk)
-
-        self.count = 0
-        self.signals = WorkerSignals()
-
-    def run(self):
-        while True:
-            self.clkState = GPIO.input(self.clk)
-            self.cntState = GPIO.input(self.cnt)
-            if self.clkState != self.clkLastState:
-                if self.cntState != self.clkState:
-                    self.count += 1
-                    # self.signals.result.emit(self.count)
-                else:
-                    self.count -= 1
-                    # self.signals.result.emit(self.count)
-            self.clkLastState = self.clkState
-            # print(self.count)
-'''
 
 
 # Custom Hardware Controls
@@ -336,7 +302,7 @@ class HardwareButton(QRunnable):
             time.sleep(0.05)
 
 
-# Continually tries fading the next image into the current image
+# Continually tries blending the next image into the current image
 class ImageFader(QRunnable):
     def __init__(self, current_path, *args, **kwargs):
         super(ImageFader, self).__init__()
@@ -353,23 +319,12 @@ class ImageFader(QRunnable):
         self.next_value = 0
         self.inside_data = 'shhhh, it is a secret'
 
-    '''
-    def run(self):
-        while True:
-            print(self.text_current)
-            time.sleep(0.5)
-            # print(self.text_next)
-            print(self.next_value)
-            time.sleep(3)
-            self.signals.result.emit(self.inside_data)
-    '''
-
     def increment_next(self):
         self.next_value += 1
 
-    # Receives a new "next image" which is consequently faded into the current
-    # image. If this process happens in the middle of a fade, then the new image
-    # will be faded into this already faded together photo
+    # Receives a new "next image" which is consequently blended into the current
+    # image. If this process happens in the middle of a blend, then the new image
+    # will be blended into this already blended together photo
     def set_next_image(self, path):
         self.next_raw = Image.open(path, 'r')
         self.alpha = 0.25
@@ -387,74 +342,33 @@ class ImageFader(QRunnable):
                     self.signals.finished.emit()
             time.sleep(0.1)  # 1/20frames = 0.05
 
-    '''
-    def run(self):
-        if self.alpha < 1.0:
-            self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
-
-            # self.current_raw.save("assets/blended.jpg")
-            # self.pictureLandscape.update_image('assets/blended.jpg')
-            self.pictureLandscape.update_pixmap(self.current_raw)
-
-            # TODO - how long the last image hangs around
-            #   Lower - the longer a piece stays on screen
-            #   Higher - the faster the bit of an image leaves
-            # self.alpha = self.alpha + 0.0417
-            # self.alpha = self.alpha + 0.0209
-            self.alpha = self.alpha + 0.1
-
-        # TODO - Change this value to affect the speed of the fade
-        #   Lower the number the quicker the fade
-        #   Higher the number the slower the fade
-        # root.after(40, self.fade_image)
-        time.sleep(0.05)
-
-        while True:
-            if GPIO.input(self.PIN) == False:         # Button press detected
-                if self.status == False:              # Button was just OFF
-                    self.signals.result.emit(True)
-                    self.status = True              # Update the status to ON
-            else:                                   # Button is not pressed
-                self.status = False
-            time.sleep(0.05)
-    '''
-
-
-# Custom Widgets & UI Elements
-# TODO - add rotatable widget container
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        # TODO - make sure this actually works
-        # Images from Pillow
-        self.alpha = 0
-        # self.current_raw = Image.open('assets/5.jpg', 'r')
-        # self.next_raw = Image.open('assets/7.jpg', 'r')
-        # self.index = 1486
+        # Test counter variable to see the frame rate
+        self.blendCount = 0
 
         # TODO - implement with the new Db structure
         self.setupDB()
         self.setupWindowLayout()
         self.setupUI()
-        # REMOVE - as they aren't needed anymore (I think)
-        # self.setupLandscapeUI()
-        # self.setupVerticalUI()
+        self.setupSoftwareThreads()
 
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            print('---- No GPIO setup needed ----')
-            self.setupSoftwareThreads()
-        elif platform.system() == 'Linux':
+        # if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        #     print('---- No GPIO setup needed ----')
+        #     self.setupSoftwareThreads()
+        if platform.system() == 'Linux':
             # self.index = 1
             # self.seconds = 0
             self.setupGPIO()
-            self.setupThreads()
-            self.setupSoftwareThreads()
+            self.setupHardwareThreads()
+            # self.setupSoftwareThreads()
 
-        # TODO - decide if this is needed
+        # REVIEW - not having this may cause a crash
         # Updates the UI's picture for the first time
-        self.updateUIPicture()
+        # self.updateImage()
 
         # Show the MainWindow
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -462,14 +376,17 @@ class MainWindow(QMainWindow):
         elif platform.system() == 'Linux':
             self.showFullScreen()
 
+    # Setup Helpers
+    # -------------------------------------------------------------------------
+
+    # Initializes the database connection
+    # Note: database path is stored at top of file in global variable DB
     def setupDB(self):
         self.sql_controller = SQLController(database=DB)
         self.picture = self.sql_controller.get_first_time_picture()
         self.picture.print_obj_mvp()
 
-        # self.picture_starter = self.sql_controller.get_first_time_picture_in_hike(10)
-
-    # UI Setup
+    # Setup the window size, title, and container layout 
     def setupWindowLayout(self):
         self.setWindowTitle("Capra Explorer Slideshow")
         self.setGeometry(0, 300, 1280, 720)
@@ -490,10 +407,10 @@ class MainWindow(QMainWindow):
         verticallayout = QHBoxLayout()
         verticallayout.setContentsMargins(0, 0, 0, 0)
         verticallayout.setSpacing(0)
-        verticallayout.addWidget(UIImage('assets/cam1.jpg'))
-        verticallayout.addWidget(UIImage('assets/cam2.jpg'))
         # TODO - this will eventually be images from DB, but they need to be
         # the proper size or else it'll mess up the size of the window
+        verticallayout.addWidget(UIImage('assets/cam1.jpg'))
+        verticallayout.addWidget(UIImage('assets/cam2.jpg'))
         # verticallayout.addWidget(UIImage(self.picture.camera2))
         verticallayout.addWidget(UIImage('assets/cam3.jpg'))
 
@@ -506,39 +423,40 @@ class MainWindow(QMainWindow):
         centralWidget.setLayout(pagelayout)
         self.setCentralWidget(centralWidget)
 
-        '''
-        app = QtWidgets.QApplication(sys.argv)
-        screen = app.primaryScreen()
-        print('Screen: %s' % screen.name())
-        size = screen.size()
-        print('Size: %d x %d' % (size.width(), size.height()))
-        rect = screen.availableGeometry()
-        print('Available: %d x %d' % (rect.width(), rect.height()))
-        '''
-
+    # Setup the custom UI components that are on top of the slideshow
     def setupUI(self):
-        # self.topUnderlay = QLabel(self)
-        # topUnderlayImg = QPixmap("assets/TopUnderlay.png")
-        # self.topUnderlay.setPixmap(topUnderlayImg)
-        # self.topUnderlay.setAlignment(Qt.AlignCenter)
-        # self.topUnderlay.setGeometry(0, 0, 1280, 187)
-
-        # self.topUnderlay = UIImageOverlay(self, 'assets/TopUnderlay.png')
-        # self.topUnderlay = UIImageOverlay(self, 'assets/bottom.png')
+        # Top UI elements
         self.topUnderlay = UIUnderlay(self)
-
-        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
         self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
-
-        # print(self.leftLabel.__class__.__bases__)
-        self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
-        # print(dir(self.rightLabel))
         self.centerLabel = UILabelTopCenter(self, '', '')
+        self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
 
+        # Mode UI element
+        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
+
+        # TODO - timeline elements
+
+        # Setups up a UI timer for controlling the fade out of UI elements
         self.timerFadeOutUI = QTimer()
         self.timerFadeOutUI.setSingleShot(True)
         self.timerFadeOutUI.timeout.connect(self._fadeOutUI)
 
+    # Setup all software threads
+    # ImageFader - handles the fading between old and new pictures
+    def setupSoftwareThreads(self):
+        self.threadpoolSoftware = QThreadPool()
+        self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
+
+        # ImageFader, sends 2 callbacks
+        # result()    : at ever frame that 
+        # finished()  : when blending has finished, sends callback to notify
+        #               used to notify the fade out of UI elements
+        self.imageFader = ImageFader(self.picture.camera2)
+        self.imageFader.signals.result.connect(self._load_new_image)
+        self.imageFader.signals.finished.connect(self._finished_image_fade)
+        self.threadpoolSoftware.start(self.imageFader)
+
+    # Setup hardware pins
     def setupGPIO(self):
         # Set the GPIO mode, alternative is GPIO.BOARD
         GPIO.setmode(GPIO.BCM)
@@ -575,7 +493,7 @@ class MainWindow(QMainWindow):
         # self.PIN_LED_TEST_BLUE = 0
 
     # Setup threads to check for hardware changes
-    def setupThreads(self):
+    def setupHardwareThreads(self):
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(7)  # TODO - change if more threads are needed
 
@@ -605,110 +523,33 @@ class MainWindow(QMainWindow):
         buttonNext.signals.result.connect(self.pressed_next)
         self.threadpool.start(buttonNext)
 
-    def setupSoftwareThreads(self):
-        self.threadpoolSoftware = QThreadPool()
-        self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
-
-        # Software Threads
-        self.imageFader = ImageFader(self.picture.camera2)
-        self.imageFader.signals.result.connect(self.load_new_image)
-        self.imageFader.signals.finished.connect(self.finished_image_fade)
-        self.threadpoolSoftware.start(self.imageFader)
-
     # UI Callbacks from bg threads
-    # Loads the newly faded image from the background thread into the image container
-    def load_new_image(self, result, value):
-        # print(value)
-        # self.pictureLandscape.update_pixmap(self.current_raw)
+    # -------------------------------------------------------------------------
+
+    # Loads the newly blended image from the background thread into the UIImage
+    def _load_new_image(self, result, alpha):
+        # REMOVE - Test variable to show how many times it blends the two images
+        self.blendCount += 1
+
         self.pictureLandscape.update_pixmap(result)
 
-    # The new image has been faded onto the screen, now fade out all the UI components
-    def finished_image_fade(self):
+    # The new image has finished blending; now fade out the UI components
+    def _finished_image_fade(self):
+        # REMOVE - Remove this testing setup for checking the number of blends
         print('\ndef finished_image_fade() -- result emitted')
-        self.timerFadeOutUI.start(1000)
+        print('FINISHED Blending')
+        print('Blended {b}xs\n'.format(b=self.blendCount))
+        self.blendCount = 0
 
-        # Hide the following UI
-        # self.topUnderlay.fadeOut()
-        # TODO - add back in
-        # self.leftLabel.fadeOut()
-        # self.rightLabel.doAnimation()  # works - add back in
-        # self.centerLabel.fadeOut()  # works - add back in
+        self.timerFadeOutUI.start(1000)  # wait 1s until you fade out top UI
 
-        # = UILabelTop(self, '', Qt.AlignLeft)
-        # self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
-        # self.centerLabel
-
+    # Called when timerFadeOutUI finishes. This is bound in setupUI()
+    # The timer is stopped when there is a keyboard / hardware interaction
     def _fadeOutUI(self):
         self.topUnderlay.fadeOut(1000)
         self.rightLabel.fadeOut(1000)
         self.leftLabel.fadeOut(1000)
         self.centerLabel.fadeOut()
-
-    '''
-    # Animations
-    def doAnimation(self):
-        self.anim = QPropertyAnimation(self.topUnderlay, b"geometry")
-        self.anim.setDuration(400)
-        self.anim.setStartValue(QRect(0, 0, 1280, 110))
-        self.anim.setEndValue(QRect(0, 600, 1280, 110))
-        self.anim.start()
-
-        fadeEffect = QGraphicsOpacityEffect()
-        self.topUnderlay.setGraphicsEffect(fadeEffect)
-        self.anim2 = QPropertyAnimation(fadeEffect, b"opacity")
-        # self.anim2 = QPropertyAnimation(self.label, b"windowOpacity")
-        self.anim2.setStartValue(0)
-        self.anim2.setEndValue(1)
-        self.anim2.setDuration(400)
-        self.anim2.start()
-
-        self.update()
-    '''
-
-    '''
-    def setupLandscapeUI(self):
-        # Image
-        self.imgLabel = QLabel()
-
-        img = QPixmap(self.buildLandscape(2561))
-        self.imgLabel.setPixmap(img)
-        self.grid.addWidget(self.imgLabel)
-
-        # Label overlay
-        testLabel = QLabel('Time Mode', self)
-        testLabel.move(1150, 10)
-
-        # Icon overlay
-        # modeBg = QLabel(self)
-        # modeBg.setStyleSheet("background-color: rgba(0, 0, 0, 0.3)")
-        # modeBg.setGeometry(0, 0, 1280, 720)
-
-        # modeImg = QPixmap('/home/pi/capra/icons/time.png')
-        # modeLabel = QLabel(self)  # need the self to set position absolutely
-        # modeLabel.setPixmap(modeImg)
-        # modeLabel.setGeometry(540, 260, 350, 200)  # left,top,w,h
-    '''
-
-    '''
-    def changeLandscapeUI(self, picture: Picture):
-        # Image
-        landscape = picture.camera_landscape
-        temp = [x.strip() for x in landscape.split('/')]
-        path = '/home/pi/capra-storage-demo/{h}/{jpg}'.format(h=temp[4], jpg=temp[5])
-        # print(path)
-
-        self.img = QPixmap(path)
-        self.imgLabel.setPixmap(self.img)
-    '''
-
-    # def setupVerticalUI(self):
-    #     self.img = QPixmap(self.buildFile(2561))
-
-    #     self.grid.addWidget(self.indexLabel, 3, 1)
-    #     self.grid.addWidget(self.button, 4, 1)
-    #     self.grid.addWidget(self.timerLabel, 2, 1)
-    #     self.grid.addWidget(self.workerThreadLabel, 5, 1)
-    #     self.addWidget(self.modeLabel)
 
     # UI Interactions
     # -------------------------------------------------------------------------
@@ -736,34 +577,16 @@ class MainWindow(QMainWindow):
         Status().set_orientation_vertical()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
+    # TODO - still need to have multiple blurring images
+    def updateImage(self):
         self.imageFader.set_next_image(self.picture.camera2)
-
-        # TODO - add back in
-        # self.rightLabel.show2()
-        # self.leftLabel.show()
-
-
-        # self.printCurrentMemoryUsage()
-
-
-        # timeText = self.picture.
-        # self.rightLabel.setPrimaryText(self.picture.altitude)
-        # self.centerLabel.setPrimaryText(timeText)
-
-        # self.rightLabel
-
-        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
-        # self.leftLabel = UILabelTop(self, 'HIKE 10', Qt.AlignLeft)
-        # self.rightLabel = UILabelTop(self, 'JULY, 11th, 2019', Qt.AlignRight)
-        # self.centerLabel = UILabelTopCenter(self, '2,234', 'M')
+        self.printCurrentMemoryUsage()
 
     # TODO -- Might be more resource efficient to have all the objects faded out
     # in 1 method, instead of having the fade attached to each individual class
     # Animations
-
-
     def updateUITop(self):
-        self.timerFadeOutUI.stop()  # stop the timer that is about to cause a fade out
+        self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
 
         self.topUnderlay.show()
 
@@ -781,41 +604,9 @@ class MainWindow(QMainWindow):
     def updateUIBottom(self):
         pass
 
-
-    # REMOVE
-    '''
-    def increaseIndex(self):
-        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
-        self.picture.print_obj_mvp()
-
-        self.imageFader.set_next_image(self.picture.camera2)
-        self.printCurrentMemoryUsage()
-
-        # self.index += 1
-        # if self.index > 1799:
-        #     self.index = 1486
-
-        # self.rightLabel.setText(str(self.index))
-
-        # return self.index
-
-    def decreaseIndex(self):
-        self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
-        self.picture.print_obj_mvp()
-
-        self.imageFader.set_next_image(self.picture.camera2)
-        self.printCurrentMemoryUsage()
-
-        # self.index -= 1
-        # if self.index < 1486:
-        #     self.index = 1799
-
-        # self.rightLabel.setText(str(self.index))
-
-        # return self.index
-    '''
-
     # Hardware Button Presses
+    # -------------------------------------------------------------------------
+
     def rotary_changed(self, result):
         # print(result)
 
@@ -860,6 +651,7 @@ class MainWindow(QMainWindow):
             print('Landscape')  # 0
 
     # Keyboard Presses
+    # -------------------------------------------------------------------------
     def keyPressEvent(self, event):
         global rotaryCounter
         if event.key() == Qt.Key_Escape:
@@ -869,7 +661,7 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Left:
             # print('left')
             self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
-            self.updateUIPicture()
+            self.updateImage()
             self.updateUITop()
             # index = self.decreaseIndex()
 
@@ -887,7 +679,7 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Right:
             # print('right')
             self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
-            self.updateUIPicture()
+            self.updateImage()
             self.updateUITop()
             # self.rightLabel.show2() # working
 
@@ -975,36 +767,24 @@ class MainWindow(QMainWindow):
         return '/home/pi/capra-storage/images/{n}_cam3.jpg'.format(n=num)
     '''
 
-    # ----------------------Testing-----------------------
+    # Testing
+    # -------------------------------------------------------------------------
 
     # Memory usage in kB
     def printCurrentMemoryUsage(self):
         process = psutil.Process(os.getpid())
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
-    # Fades between the current image and the NEXT image
-    def fade_image(self):
-        # print('Fading the image at alpha of: ', self.alpha)
-        if self.alpha < 1.0:
-            self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
 
-            # self.current_raw.save("assets/blended.jpg")
-            # self.pictureLandscape.update_image('assets/blended.jpg')
-            self.pictureLandscape.update_pixmap(self.current_raw)
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
 
-            # TODO - how long the last image hangs around
-            #   Lower - the longer a piece stays on screen
-            #   Higher - the faster the bit of an image leaves
-            # self.alpha = self.alpha + 0.0417
-            # self.alpha = self.alpha + 0.0209
-            self.alpha = self.alpha + 0.1
+    # screen = app.primaryScreen()
+    # print('Screen: %s' % screen.name())
+    # size = screen.size()
+    # print('Size: %d x %d' % (size.width(), size.height()))
+    # rect = screen.availableGeometry()
+    # print('Available: %d x %d' % (rect.width(), rect.height()))
 
-        # TODO - Change this value to affect the spee of the fade
-        #   Lower the number the quicker the fade
-        #   Higher the number the slower the fade
-        # root.after(40, self.fade_image)
-
-
-app = QApplication(sys.argv)
-window = MainWindow()
-app.exec_()
+    window = MainWindow()
+    app.exec_()

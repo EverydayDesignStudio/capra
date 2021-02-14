@@ -15,6 +15,7 @@ from PIL import Image, ImageQt  # Pillow image functions
 import sys
 import time
 
+# TODO - add rotatable widget container
 
 # UI Super Classes
 # -----------------------------------------------------------------------------
@@ -207,19 +208,19 @@ class UIModeOverlay(QLabel):
         anim1.start()
 
     def setTime(self):
-        print('time')
+        # print('UIModeOverlay.setTime()')
         pixmap = QPixmap('assets/Time@1x.png')
         self.setPixmap(pixmap)
         self._doAnimation()
 
     def setAltitude(self):
-        print('alt')
+        # print('UIModeOverlay.setAltitude()')
         pixmap = QPixmap('assets/Altitude@1x.png')
         self.setPixmap(pixmap)
         self._doAnimation()
 
     def setColor(self):
-        print('color')
+        # print('UIModeOverlay.setColor()')
         pixmap = QPixmap('assets/Color@1x.png')
         self.setPixmap(pixmap)
         self._doAnimation()
