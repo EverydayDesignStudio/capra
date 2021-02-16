@@ -671,48 +671,46 @@ class MainWindow(QMainWindow):
     # Hardware Button Presses
     # -------------------------------------------------------------------------
 
+    # TODO - test this code on the Pi
     def rotary_changed(self, result):
-        # print(result)
+        print('rotary_changed; result: {r}'.format(r=result))
 
-        self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+        # self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
         # self.picture.print_obj()
-
-        self.changeLandscapeUI(self.picture)
 
         # if isReadyForNewPicture:
         #     print('ready for new picture')
 
-        # if result > 0:
-        #     print('Next: %d' % result)
-        # elif result < 0:
-        #     print('Previous: %d' % result)
+        if result > 0:
+            print('Next: %d' % result)
+            self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+
+        elif result < 0:
+            print('Previous: %d' % result)
+            self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(result))
 
         # change = rotaryCounter - rotaryCounterLast
         # print(change)
         # print('\n')
+
+        self.updateImages()
+        self.updateUITop()
 
     def pressed_encoder(self, result):
         print('Encoder button was pressed: %d' % result)
 
     def pressed_mode(self, result):
         print('Mode button was pressed: %d' % result)
+        self.changeMode()
 
     def pressed_next(self, result):
         print('Next button was pressed: %d' % result)
-        self.changeLandscapeUI(11)
 
     def pressed_prev(self, result):
         print('Previous button was pressed: %d' % result)
-        self.changeLandscapeUI(2561)
 
     def pressed_play_pause(self, result):
-        # print('Play Pause button was pressed: %d' % result)
-        global orientation
-        orientation = ((orientation + 1) % 2)
-        if orientation:
-            print('Portrait')  # 1
-        else:
-            print('Landscape')  # 0
+        print('Play Pause button was pressed: %d' % result)
 
     # Keyboard Presses
     # -------------------------------------------------------------------------
