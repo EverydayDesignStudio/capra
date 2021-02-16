@@ -377,3 +377,15 @@ class SQLStatements:
     def get_hike_path(self, hike_id: int) -> str:
         statement = "SELECT path FROM hikes WHERE hike_id == {}".format(hike_id)
         return statement
+
+    def get_pictures_time_altitude_domcol(self):
+        statement = 'SELECT time, altitude, color_hsv FROM pictures'
+        return statement
+
+    def update_pictures_globalAltRank(self, timestamp: float, altRank: int):
+        statement = 'UPDATE pictures SET altrank_global = {} WHERE time = {}'.format(altRank, timestamp)
+        return statement
+
+    def update_pictures_globalColRank(self, timestamp: float, colRank: int):
+        statement = 'UPDATE pictures SET color_rank_global = {} WHERE time = {}'.format(colRank, timestamp)
+        return statement

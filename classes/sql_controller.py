@@ -531,3 +531,19 @@ class SQLController:
         cursor.execute(self.statements.get_hike_path(hike_id))
         row = cursor.fetchone()
         return row
+
+    def get_pictures_global_ranking_raw_data(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_time_altitude_domcol())
+        res = cursor.fetchall()
+        return res
+
+    def update_pictures_global_AltRank(self, timestamp: float, altRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalAltRank(timestamp, altRank))
+        self.connection.commit()
+
+    def update_pictures_global_ColRank(self, timestamp: float, colRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalColRank(timestamp, colRank))
+        self.connection.commit()

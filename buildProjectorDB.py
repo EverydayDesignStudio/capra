@@ -49,6 +49,10 @@ DESTDBPATH = DROPBOX + BASEPATH_DEST + dest_db_name
 dbSRCController = None
 dbDESTController = None
 
+COLOR_HSV_INDEX = -1    # used in the sortColor helper function
+
+NEW_DATA = False
+
 CLUSTERS = 4        # assumes X number of dominant colors in a pictures
 REPETITION = 8
 
@@ -146,36 +150,41 @@ def sortby_hue_luminosity(r, g, b, repetitions=1):
     return (h2, lum)
 
 
-def sort_by_alts(commits):
-    commits.sort(key=itemgetter(8, 0))
+def sort_by_alts(data, alt_index, index_in_hike):
+    data.sort(key=itemgetter(alt_index, 0))  # 8 - altitude
 
     rankList = {}
-    for i in range(len(commits)):
-        rankList[itemgetter(7)(commits[i])] = i+1
+    for i in range(len(data)):
+        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 7 - index_in_hike
 
     return rankList
 
 def splitColor(item):
-    tmp = itemgetter(12)(item)
+    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 12 - color_hsv
     return sortby_hue_luminosity(int(tmp.split(",")[0]), int(tmp.split(",")[1]), int(tmp.split(",")[2]), REPETITION)
 
-def sort_by_colors(dic):
+def sort_by_colors(data, color_index, index_in_hike, output=True):
+    global COLOR_HSV_INDEX
+    # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
+    COLOR_HSV_INDEX = color_index
+
     # Sort the colors by hue & luminosity
-    dic.sort(key=splitColor)
+    data.sort(key=splitColor)
 
     rankList = {}
-    for i in range(len(dic)):
-        rankList[itemgetter(7)(dic[i])] = i+1
+    for i in range(len(data)):
+        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 7 - index_in_hike
 
-    # generate a color spectrum based on the color rank
-    colorCount = 1
-    colorSpectrumRGB_test = []
-    for i in range(len(dic)):
-        tmp = dic[i][12]
-        colorSpectrumRGB_test.append((tmp.split(",")[0], tmp.split(",")[1], tmp.split(",")[2]))
-        colorCount += 1
+    if (output):
+        # generate a color spectrum based on the color rank
+        colorCount = 1
+        colorSpectrumRGB_test = []
+        for i in range(len(data)):
+            tmp = data[i][color_index]    # 12 - color_hsv
+            colorSpectrumRGB_test.append((tmp.split(",")[0], tmp.split(",")[1], tmp.split(",")[2]))
+            colorCount += 1
 
-    generatePics(colorSpectrumRGB_test, "hike{}-{}x{}".format(currHike, DIMX, DIMY) + "-colorSpectrum_jan2021")
+        generatePics(colorSpectrumRGB_test, "hike{}-{}x{}".format(currHike, DIMX, DIMY) + "-colorSpectrum_jan2021")
 
     return rankList
 
@@ -460,8 +469,8 @@ def buildHike(currHike):
     # then, upsert rows
     # colRankList = sort_by_colors(pics.copy())
     # altRankList = sort_by_alts(commits.copy())
-    colRankList = sort_by_colors(list(commits.copy().values()))
-    altRankList = sort_by_alts(list(commits.copy().values()))
+    colRankList = sort_by_colors(list(commits.copy().values()), color_index=12, index_in_hike=7, output=True)
+    altRankList = sort_by_alts(list(commits.copy().values()), alt_index=8, index_in_hike=7)
 
     for index_in_hike in range(numValidRows):
         fileName = "{}_camN".format(index_in_hike)
@@ -479,7 +488,7 @@ def buildHike(currHike):
         commits[fileName][16] = dummyGlobalColorRank
         commits[fileName][17] = globalCounter_h + colrank
 
-        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(index_in_hike, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
+#        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(index_in_hike, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
 
         dummyGlobalColorRank -= 1
         dummyGlobalAltRank -= 1
@@ -505,8 +514,6 @@ def buildHike(currHike):
     #     color_hsv, color_rgb, color_rank_value, COLOR_RANK,               # TODO: calculate color rank
     #     pictures, PATH
 
-    # TODO: determine global hike color rank
-
     defaultHikePath = "/media/pi/capra-hd/hike" + str(currHike) + "/"
 
     dbDESTController.upsert_hike(currHike, avgAlt, -currHike,
@@ -531,6 +538,7 @@ def check_hike_postprocessing(currHike):
 def main():
     global dbSRCController, dbDESTController, dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter, globalCounter_h
     global srcPath, destPath
+    global COLOR_HSV_INDEX
 
     # TODO: initialize DB if does not exist
 
@@ -573,6 +581,8 @@ def main():
             continue
 
         else:
+            NEW_DATA = True
+
             # 2. if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
             # also check if DB is updated to post-processed values as well
             if (checkSum_transferred == currExpectedHikeSize * 3 and
@@ -591,9 +601,41 @@ def main():
             currHike += 1
             globalCounter_h += currExpectedHikeSize
 
-    # At this point, all hikes are processed.
-    # TODO: need to calculate global ranks
+    ### At this point, all hikes are processed.
 
+    # calculate global ranks for pictures, only when there is new data
+    if (True or NEW_DATA):
+        rankTimer = time.time()
+
+        globalAltList = []
+        globalColorList = []
+
+        rows = dbDESTController.get_pictures_global_ranking_raw_data()
+        for i in range(len(rows)):
+            row = rows[i]
+            globalAltList.append((row[0], row[1]))
+            globalColorList.append((row[0], row[2]))
+
+        globalAltList.sort(key=lambda data: data[1])
+
+        # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
+        COLOR_HSV_INDEX = 1
+        globalColorList.sort(key=splitColor)
+
+        for i in range(len(globalAltList)):
+            row = globalAltList[i]
+            rank = i + 1
+            dbDESTController.update_pictures_global_AltRank(row[0], rank)
+
+        for i in range(len(globalColorList)):
+            row = globalColorList[i]
+            rank = i + 1
+            dbDESTController.update_pictures_global_ColRank(row[0], rank)
+
+        NEW_DATA = False
+
+
+    print("--- global ranking took {} seconds".format(str(time.time() - rankTimer)))
 
     print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - hikeTimer)))
 
