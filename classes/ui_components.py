@@ -154,15 +154,15 @@ class UIImage(QLabel):
         pixmap = QPixmap(path)
         self.setPixmap(pixmap)
 
-    # Utilizes local storage
     def update_image(self, path: str):
+        """Loads new image from local storage path"""
         self.pixmap = QPixmap(path)
-        print('Is this a Pixmap?: {t}'.format(t=type(self.pixmap)))
+        # print('Is this a Pixmap?: {t}'.format(t=type(self.pixmap)))
         self.setPixmap(self.pixmap)
 
-    # Utilizes image conversion
     # TODO - see how processing consumption for this, compares to saving locally
     def update_pixmap(self, im):
+        """Accepts a raw image and utilizes image conversion to load it"""
         im = im.convert("RGB")
         data = im.tobytes("raw", "RGB")
         # qim = QImage(data, im.size[0], im.size[1], QImage.Format_ARGB32)  # give weird color distortion

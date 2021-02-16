@@ -23,7 +23,7 @@ class SQLController:
                           minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
                           altitude=row[9], altrank_global=row[11],
                           color_hsv=row[12], color_rgb=row[13], color_rank_hike=row[15], color_rank_global=row[16],
-                          camera1=row[20], camera2=row[21], camera3=row[22], camera_land=row[23])
+                          camera1=row[20], camera2=row[21], camera3=row[22], cameraf=row[23])
 
         return picture
 

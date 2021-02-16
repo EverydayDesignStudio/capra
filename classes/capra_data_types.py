@@ -1,7 +1,11 @@
-# Defines a picture object
+# Defines custom data types for capra. Currently all are only used in conjunction
+# with the projector
+
+import platform
 
 
 class Picture:
+    """Defines object which hold a row from the database table 'pictures'"""
     # def __init__(self, picture_id, time, altitude,
     #              brightness, b_rank, hue, h_rank, hue_lumosity, hl_rank,
     #              hike_id, index_in_hike, camera1, camera2, camera3, camera_land):
@@ -26,7 +30,7 @@ class Picture:
     def __init__(self, picture_id, time, year, month, day, minute, dayofweek,
                  hike_id, index_in_hike, altitude, altrank_global,
                  color_hsv, color_rgb, color_rank_hike, color_rank_global,
-                 camera1, camera2, camera3, camera_land):
+                 camera1, camera2, camera3, cameraf):
         self.picture_id = picture_id
         self.time = time
         self.year = year
@@ -46,25 +50,31 @@ class Picture:
         self.color_rank_hike = color_rank_hike
         self.color_rank_global = color_rank_global
 
-        self.camera2 = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam2.jpg'
-
-        # self.camera1 = camera1
-        # self.camera2 = camera2
-        # self.camera3 = camera3
-        # self.camera_landscape = camera_land
+        # HACK  - switches between the two paths types
+        # TODO - will need to be changed due to accepting the file path from a prompt on startup of the Mac program
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            self.camera1 = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam1.jpg'
+            self.camera2 = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam2.jpg'
+            self.camera3 = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam3.jpg'
+            self.cameraf = 'capra-storage/hike' + str(self.hike_id) + '/' + str(self.index_in_hike) + '_cam2f.jpg'
+        elif platform.system() == 'Linux':
+            self.camera1 = camera1
+            self.camera2 = camera2
+            self.camera3 = camera3
+            self.cameraf = cameraf
 
     def print_obj_mvp(self):
-        print('({id}, {t}, {yr}, {mth}, {day}, {min}, {dow}, {hike_id}, {index}, {alt}, {altr}, {hsv}, {rgb}, {crh}, {crg}, {c2})\
+        print('({id}, {t}, {yr}, {mth}, {day}, {min}, {dow}, {hike_id}, {index}, {alt}, {altr}, {hsv}, {rgb}, {crh}, {crg}, {c1}, {c2}, {c3}, {cf})\
             '.format(id=self.picture_id, t=self.time, yr=self.year, mth=self.month, day=self.day,
                      min=self.minute, dow=self.dayofweek, hike_id=self.hike_id, index=self.index_in_hike,
                      alt=self.altitude, altr=self.altrank_global, hsv=self.color_hsv, rgb=self.color_rgb,
-                     crh=self.color_rank_hike, crg=self.color_rank_global, c2=self.camera2))
+                     crh=self.color_rank_hike, crg=self.color_rank_global, c1=self.camera1, c2=self.camera2, c3=self.camera3, cf=self.cameraf))
 
     def print_obj(self):
-        print('({id}, {t}, {alt}, {hike_id}, {index}, {c1}, {c2}, {c3}, {cl})\
+        print('({id}, {t}, {alt}, {hike_id}, {index}, {c1}, {c2}, {c3}, {cf})\
             '.format(id=self.picture_id, t=self.time, alt=self.altitude,
                      hike_id=self.hike_id, index=self.index_in_hike,
-                     c1=self.camera1, c2=self.camera2, c3=self.camera3, cl=self.camera_landscape))
+                     c1=self.camera1, c2=self.camera2, c3=self.camera3, cf=self.cameraf))
 
 
     # def print_obj(self):

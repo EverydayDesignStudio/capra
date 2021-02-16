@@ -3,11 +3,11 @@
 # Slideshow application for the Capra Explorer
 # Allows passing through photos with a smooth fading animation
 
-# FIXME
-# HACK
 # TODO
 # REVIEW
-# REFACTOR
+# REMOVE
+# FIXME
+# HACK
 
 # Imports
 import math
@@ -31,7 +31,7 @@ from enum import IntEnum, unique, auto
 
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
-from classes.sql_statements import SQLStatements
+# from classes.sql_statements import SQLStatements
 from classes.ui_components import *
 from classes.singleton import Singleton
 
@@ -162,17 +162,20 @@ class WorkerSignals(QObject):
     Supported signals are:
 
     finished
-        No data
+        No data passed, just a notifier of completion
     error
         `tuple` (exctype, value, traceback.format_exc() )
     result
         `object` data returned from processing, anything
+    results
+        Four `object` data returned from processing, anything
     progress
         `int` indicating % progress
     '''
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
-    result = pyqtSignal(object, object)
+    result = pyqtSignal(object)
+    results = pyqtSignal(object, object, object, object)
     progress = pyqtSignal(int)
 
 
@@ -304,14 +307,29 @@ class HardwareButton(QRunnable):
 
 # Continually tries blending the next image into the current image
 class ImageBlender(QRunnable):
-    def __init__(self, current_path, *args, **kwargs):
+    def __init__(self, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
         # Needed setup
         self.alpha = 0
         self.signals = WorkerSignals()
-        self.current_raw = Image.open(current_path, 'r')
-        self.next_raw = Image.open(current_path, 'r')
+        self.currentf_raw = Image.open(currentf_path, 'r')
+        self.nextf_raw = Image.open(currentf_path, 'r')
+        # self.current1_raw = Image.open(current1_path, 'r')
+        # self.next1_raw = Image.open(current1_path, 'r')
+        # self.current2_raw = Image.open(current2_path, 'r')
+        # self.next2_raw = Image.open(current2_path, 'r')
+        # self.current3_raw = Image.open(current3_path, 'r')
+        # self.next3_raw = Image.open(current3_path, 'r')
+
+        self.p1 = current1_path
+        self.p2 = current2_path
+        self.p3 = current3_path
+
+        # print(self.currentf_raw)
+        # print(self.current1_raw)
+        # print(self.current2_raw)
+        # print(self.current3_raw)
 
         # REMOVE - this is just for testing
         self.text_current = 'currently'
@@ -325,19 +343,36 @@ class ImageBlender(QRunnable):
     # Receives a new "next image" which is consequently blended into the current
     # image. If this process happens in the middle of a blend, then the new image
     # will be blended into this already blended together photo
-    def set_next_image(self, path):
-        self.next_raw = Image.open(path, 'r')
+    def set_next_images(self, path1, path2, path3, pathf):
+        self.nextf_raw = Image.open(pathf, 'r')
+
+        # TODO - implement this with blending the images
+        # self.next1_raw = Image.open(path1, 'r')
+        # self.next2_raw = Image.open(path2, 'r')
+        # self.next3_raw = Image.open(path3, 'r')
+
+        self.p1 = path1
+        self.p2 = path2
+        self.p3 = path3
+
         self.alpha = 0.25
 
     # Continually runs blending together
     def run(self):
         while True:
             if self.alpha < 0.75:
-                self.current_raw = Image.blend(self.current_raw, self.next_raw, self.alpha)
-                # self.alpha = self.alpha + 0.02  # Rougly 20 frames until the old picture is blurred out
-                self.alpha += 0.04
+                self.currentf_raw = Image.blend(self.currentf_raw, self.nextf_raw, self.alpha)
 
-                self.signals.result.emit(self.current_raw, self.alpha)
+                # TODO 
+                # self.current1_raw = Image.blend(self.current1_raw, self.next1_raw, self.alpha)
+                # self.current2_raw = Image.blend(self.current2_raw, self.next2_raw, self.alpha)
+                # self.current3_raw = Image.blend(self.current3_raw, self.next3_raw, self.alpha)
+
+                self.alpha += 0.025  # Rougly 20 frames until the old picture is blurred out
+                # self.alpha += 0.04
+
+                self.signals.results.emit(self.p1, self.p2, self.p3, self.currentf_raw)
+                # self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
                 if self.alpha >= 0.75:
                     self.signals.finished.emit()
             time.sleep(0.1)  # 1/20frames = 0.05
@@ -368,7 +403,7 @@ class MainWindow(QMainWindow):
 
         # REVIEW - not having this may cause a crash
         # Updates the UI's picture for the first time
-        # self.updateImage()
+        # self.updateImages()
 
         # Show the MainWindow
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
@@ -400,7 +435,7 @@ class MainWindow(QMainWindow):
 
         # Landscape view
         # Sets the initial picture to the first selected image from the DB
-        self.pictureLandscape = UIImage(self.picture.camera2)
+        self.pictureLandscape = UIImage(self.picture.cameraf)
         self.stacklayout.addWidget(self.pictureLandscape)
 
         # Vertical view
@@ -409,10 +444,17 @@ class MainWindow(QMainWindow):
         verticallayout.setSpacing(0)
         # TODO - this will eventually be images from DB, but they need to be
         # the proper size or else it'll mess up the size of the window
-        verticallayout.addWidget(UIImage('assets/cam1.jpg'))
-        verticallayout.addWidget(UIImage('assets/cam2.jpg'))
+        self.pictureVertical1 = UIImage(self.picture.camera1)
+        self.pictureVertical2 = UIImage(self.picture.camera2)
+        self.pictureVertical3 = UIImage(self.picture.camera3)
+
+        verticallayout.addWidget(self.pictureVertical1)
+        verticallayout.addWidget(self.pictureVertical2)
+        verticallayout.addWidget(self.pictureVertical3)
+
+        # verticallayout.addWidget(UIImage(self.picture.camera1))
         # verticallayout.addWidget(UIImage(self.picture.camera2))
-        verticallayout.addWidget(UIImage('assets/cam3.jpg'))
+        # verticallayout.addWidget(UIImage(self.picture.camera3))
 
         verticalWidget = QWidget()
         verticalWidget.setLayout(verticallayout)
@@ -448,11 +490,11 @@ class MainWindow(QMainWindow):
         self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
 
         # ImageFader, sends 2 callbacks
-        # result()    : at ever frame that finished a blend
+        # results()    : at ever frame that finished a blend
         # finished()  : when blending has finished blending two the two images,
         #               sends callback to notify the fade out of UI elements
-        self.imageBlender = ImageBlender(self.picture.camera2)
-        self.imageBlender.signals.result.connect(self._load_new_image)
+        self.imageBlender = ImageBlender(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
+        self.imageBlender.signals.results.connect(self._load_new_images)
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
 
@@ -526,12 +568,34 @@ class MainWindow(QMainWindow):
     # UI Callbacks from bg threads
     # -------------------------------------------------------------------------
 
-    # Loads the newly blended image from the background thread into the UIImage
-    def _load_new_image(self, result, alpha):
+    # Loads the newly blended image from the background thread into the UIImages on the MainWindow
+    def _load_new_images(self, image1, image2, image3, imagef):
+        """image 1, 2, 3 are strings to the path location
+        imagef is an raw Image.open()"""
+
         # REMOVE - Test variable to show how many times it blends the two images
         self.blendCount += 1
 
-        self.pictureLandscape.update_pixmap(result)
+        # print(imagef)
+        # print(image1)
+        # print(image2)
+        # print(image3)
+
+        self.pictureLandscape.update_pixmap(imagef)
+        # self.pictureVertical1 = UIImage(self.picture.camera1)
+        # self.pictureVertical2 = UIImage(self.picture.camera2)
+        # self.pictureVertical3 = UIImage(self.picture.camera3)
+
+        self.pictureVertical1.update_image(image1)
+        self.pictureVertical2.update_image(image2)
+        self.pictureVertical3.update_image(image3)
+
+        # TODO - get it so the blending works for vertical pictures as well
+        # FIXME - there is an issue with how update_pixmap is loading the images
+        #         for some weird reason, when it is vertical, it ends up with that distortion
+        # self.pictureVertical1.update_pixmap(image1)
+        # self.pictureVertical2.update_pixmap(image2)
+        # self.pictureVertical3.update_pixmap(image3)
 
     # The new image has finished blending; now fade out the UI components
     def _finished_image_blend(self):
@@ -578,8 +642,8 @@ class MainWindow(QMainWindow):
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
     # TODO - still need to have multiple blending images
-    def updateImage(self):
-        self.imageBlender.set_next_image(self.picture.camera2)
+    def updateImages(self):
+        self.imageBlender.set_next_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
         self.printCurrentMemoryUsage()
 
     # TODO -- Might be more resource efficient to have all the objects faded out
@@ -660,12 +724,12 @@ class MainWindow(QMainWindow):
         # Scroll Wheel
         elif event.key() == Qt.Key_Left:
             self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
-            self.updateImage()
+            self.updateImages()
             self.updateUITop()
             # self.printCurrentMemoryUsage()
         elif event.key() == Qt.Key_Right:
             self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
-            self.updateImage()
+            self.updateImages()
             self.updateUITop()
             # self.printCurrentMemoryUsage()
         # Increase/Decrease speed
