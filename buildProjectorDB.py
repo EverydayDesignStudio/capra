@@ -161,7 +161,7 @@ def sort_by_alts(data, alt_index, index_in_hike):
 
 def splitColor(item):
     tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 12 - color_hsv
-    return sortby_hue_luminosity(int(tmp.split(",")[0]), int(tmp.split(",")[1]), int(tmp.split(",")[2]), REPETITION)
+    return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
 
 def sort_by_colors(data, color_index, index_in_hike, output=True):
     global COLOR_HSV_INDEX
@@ -522,6 +522,7 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     numValidRows, defaultHikePath)
 
+
     print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, count))
 
 
@@ -609,7 +610,10 @@ def main():
 
         globalAltList = []
         globalColorList = []
+        # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
+        COLOR_HSV_INDEX = 1
 
+        ### global ranks for pictures
         rows = dbDESTController.get_pictures_global_ranking_raw_data()
         for i in range(len(rows)):
             row = rows[i]
@@ -617,20 +621,40 @@ def main():
             globalColorList.append((row[0], row[2]))
 
         globalAltList.sort(key=lambda data: data[1])
-
-        # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
-        COLOR_HSV_INDEX = 1
-        globalColorList.sort(key=splitColor)
-
         for i in range(len(globalAltList)):
             row = globalAltList[i]
             rank = i + 1
             dbDESTController.update_pictures_global_AltRank(row[0], rank)
 
+        globalColorList.sort(key=splitColor)
         for i in range(len(globalColorList)):
             row = globalColorList[i]
             rank = i + 1
             dbDESTController.update_pictures_global_ColRank(row[0], rank)
+
+
+        ### global ranks for hikes
+        globalAltList.clear()
+        globalColorList.clear()
+
+        rows = dbDESTController.get_hikes_global_ranking_raw_data()
+        for i in range(len(rows)):
+            row = rows[i]
+            globalAltList.append((row[0], row[1]))
+            globalColorList.append((row[0], row[2]))
+
+        globalAltList.sort(key=lambda data: data[1])
+        for i in range(len(globalAltList)):
+            row = globalAltList[i]
+            rank = i + 1
+            dbDESTController.update_hikes_global_AltRank(row[0], rank)
+
+        globalColorList.sort(key=splitColor)
+        for i in range(len(globalColorList)):
+            row = globalColorList[i]
+            rank = i + 1
+            dbDESTController.update_hikes_global_ColRank(row[0], rank)
+
 
         NEW_DATA = False
 

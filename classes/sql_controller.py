@@ -532,6 +532,9 @@ class SQLController:
         row = cursor.fetchone()
         return row
 
+
+    ### Global rankings for pictures
+
     def get_pictures_global_ranking_raw_data(self):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_pictures_time_altitude_domcol())
@@ -546,4 +549,23 @@ class SQLController:
     def update_pictures_global_ColRank(self, timestamp: float, colRank: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.update_pictures_globalColRank(timestamp, colRank))
+        self.connection.commit()
+
+
+    ### Gloval rankings for hikes
+
+    def get_hikes_global_ranking_raw_data(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_id_altitude_domcol())
+        res = cursor.fetchall()
+        return res
+
+    def update_hikes_global_AltRank(self, hike_id: int, altRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_globalAltRank(hike_id, altRank))
+        self.connection.commit()
+
+    def update_hikes_global_ColRank(self, hike_id: int, colRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_globalColRank(hike_id, colRank))
         self.connection.commit()
