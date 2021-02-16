@@ -569,3 +569,29 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.update_hikes_globalColRank(hike_id, colRank))
         self.connection.commit()
+
+
+    ### Color spectrum
+    def get_pictures_rgb_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_hike(hike))
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_rgb_global(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_global())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_rgb_global_h(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_global_h())
+        res = cursor.fetchall()
+        return res
+
+    def get_hikes_rgb_global(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_rgb_global())
+        res = cursor.fetchall()
+        return res

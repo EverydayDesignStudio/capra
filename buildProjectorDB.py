@@ -105,11 +105,13 @@ def hsvToRgb(h, s, v):
     ret = list(map(lambda a : round(a*255), list(color_rgb)))
     return ret
 
+
 def formatColors(colors):
     res = ""
     for color in colors:
         res += ",".join(map(str, color)) + "|"
     return res[:-1]
+
 
 def roundToHundredth(lst):
     for i in range(len(lst)):
@@ -117,16 +119,17 @@ def roundToHundredth(lst):
     return lst
 
 
-def generatePics(colors_sorted, name: str):
+def generatePics(colors_sorted, name: str, path: str):
     # Generates the picture
     height = 50
     img = np.zeros((height, len(colors_sorted), 3), np.uint8)  # (0,255)
 
     for x in range(0, len(colors_sorted)-1):
-        c = [colors_sorted[x][0], colors_sorted[x][1], colors_sorted[x][2]]
+        tmp = colors_sorted[x][0]
+        c = [float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2])]
         img[:, x] = c
 
-    cv2.imwrite(destPath + '{n}.png'.format(n=name), img)
+    cv2.imwrite(path + '{n}.png'.format(n=name), img)
 
 
 def sortby_hue_luminosity(r, g, b, repetitions=1):
@@ -159,14 +162,16 @@ def sort_by_alts(data, alt_index, index_in_hike):
 
     return rankList
 
+
 def splitColor(item):
     tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 12 - color_hsv
     return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
 
-def sort_by_colors(data, color_index, index_in_hike, output=True):
+
+def sort_by_colors(data, color_index_hsv, index_in_hike):
     global COLOR_HSV_INDEX
     # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
-    COLOR_HSV_INDEX = color_index
+    COLOR_HSV_INDEX = color_index_hsv
 
     # Sort the colors by hue & luminosity
     data.sort(key=splitColor)
@@ -174,17 +179,6 @@ def sort_by_colors(data, color_index, index_in_hike, output=True):
     rankList = {}
     for i in range(len(data)):
         rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 7 - index_in_hike
-
-    if (output):
-        # generate a color spectrum based on the color rank
-        colorCount = 1
-        colorSpectrumRGB_test = []
-        for i in range(len(data)):
-            tmp = data[i][color_index]    # 12 - color_hsv
-            colorSpectrumRGB_test.append((tmp.split(",")[0], tmp.split(",")[1], tmp.split(",")[2]))
-            colorCount += 1
-
-        generatePics(colorSpectrumRGB_test, "hike{}-{}x{}".format(currHike, DIMX, DIMY) + "-colorSpectrum_jan2021")
 
     return rankList
 
@@ -469,7 +463,7 @@ def buildHike(currHike):
     # then, upsert rows
     # colRankList = sort_by_colors(pics.copy())
     # altRankList = sort_by_alts(commits.copy())
-    colRankList = sort_by_colors(list(commits.copy().values()), color_index=12, index_in_hike=7, output=True)
+    colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=12, index_in_hike=7)
     altRankList = sort_by_alts(list(commits.copy().values()), alt_index=8, index_in_hike=7)
 
     for index_in_hike in range(numValidRows):
@@ -522,6 +516,9 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     numValidRows, defaultHikePath)
 
+    # create color spectrum for the current hike
+    colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
+    generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
     print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, count))
 
@@ -632,6 +629,13 @@ def main():
             rank = i + 1
             dbDESTController.update_pictures_global_ColRank(row[0], rank)
 
+        # create color spectrum for globalColor and globalColor_h
+        colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
+        generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DROPBOX + BASEPATH_DEST)
+
+        colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
+        generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DROPBOX + BASEPATH_DEST)
+
 
         ### global ranks for hikes
         globalAltList.clear()
@@ -654,7 +658,6 @@ def main():
             row = globalColorList[i]
             rank = i + 1
             dbDESTController.update_hikes_global_ColRank(row[0], rank)
-
 
         NEW_DATA = False
 

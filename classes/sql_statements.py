@@ -382,7 +382,7 @@ class SQLStatements:
     ### Global rankings for pictures
 
     def get_pictures_time_altitude_domcol(self):
-        statement = 'SELECT time, altitude, color_hsv FROM pictures'
+        statement = 'SELECT time, altitude, color_hsv, color_rgb FROM pictures'
         return statement
 
     def update_pictures_globalAltRank(self, timestamp: float, altRank: int):
@@ -397,7 +397,7 @@ class SQLStatements:
     ### Global rankings for hikes
 
     def get_hikes_id_altitude_domcol(self):
-        statement = 'SELECT hike_id, avg_altitude, color_hsv FROM hikes'
+        statement = 'SELECT hike_id, avg_altitude, color_hsv, color_rgb FROM hikes'
         return statement
 
     def update_hikes_globalAltRank(self, hike_id: int, altRank: int):
@@ -406,4 +406,23 @@ class SQLStatements:
 
     def update_hikes_globalColRank(self, hike_id: int, colRank: int):
         statement = 'UPDATE hikes SET color_rank = {} WHERE hike_id = {}'.format(colRank, hike_id)
+        return statement
+
+
+    ### Color Spectrum
+
+    def get_pictures_rgb_hike(self, hike: int):
+        statement = 'SELECT color_rgb FROM pictures WHERE hike = {} ORDER BY color_rank_hike'.format(hike)
+        return statement
+
+    def get_pictures_rgb_global(self):
+        statement = 'SELECT color_rgb FROM pictures ORDER BY color_rank_global'
+        return statement
+
+    def get_pictures_rgb_global_h(self):
+        statement = 'SELECT color_rgb FROM pictures ORDER BY color_rank_global_h'
+        return statement
+
+    def get_hikes_rgb_global(self):
+        statement = 'SELECT color_rgb FROM hikes ORDER BY color_rank'
         return statement
