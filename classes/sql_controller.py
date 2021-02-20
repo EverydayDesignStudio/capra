@@ -13,11 +13,11 @@ class SQLController:
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.statements = SQLStatements()
 
-    #------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # New Functions 2020
-    #------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
 
-    # _underscores signify that they should be treated as private functions to  this class
+    # Private functions
     def _build_picture_from_row(self, row: list) -> Picture:
         picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
                           minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
@@ -36,18 +36,23 @@ class SQLController:
 
         return picture
 
-    # Initial queries
+    # Initializing queries - used to get the initial row from the database
     def get_first_time_picture(self) -> Picture:
         sql = self.statements.select_by_time_first_picture()
         return self._get_picture_from_sql_statement(sql)
 
-    # The 24 queries
+    def get_picture_with_id(self, id: int) -> Picture:
+        sql = self.statements.select_picture_by_id(id)
+        return self._get_picture_from_sql_statement(sql)
+
+    # Time
     def get_next_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_next_time_in_hikes(current_picture.time, offset))
         all_rows = cursor.fetchall()
         if not all_rows:
             print("ERROR!!!")
+            return None
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
 
@@ -57,9 +62,18 @@ class SQLController:
         all_rows = cursor.fetchall()
         if not all_rows:
             print("ERROR!!!")
+            return None
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
 
+    # ✅ get_next_time_in_hikes
+    # ✅ get_previous_time_in_hikes
+    # get_next_time_in_global
+    # get_previous_time_in_global
+    # get_next_time_skip_in_hikes
+    # get_previous_time_skip_in_hikes
+    # get_next_time_skip_in_global
+    # get_previous_time_skip_in_global
 
     # Projector
     # --------------------------------------------------------------------------

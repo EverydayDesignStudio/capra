@@ -5,16 +5,20 @@
 class SQLStatements:
 
     # Select by ID and index
-    def select_by_ids_picture(self, hike_id: int, index_in_hike: int) -> str:
+    def select_picture_by_hike_ids(self, hike_id: int, index_in_hike: int) -> str:
         statement = 'SELECT * FROM pictures WHERE hike={id} AND \
             index_in_hike={index}'.format(id=hike_id, index=index_in_hike)
         return statement
 
-    #------------------------------------------------------------------------
-    # New Functions 2020
-    #------------------------------------------------------------------------
+    def select_picture_by_id(self, picture_id: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id={id}'.format(id=picture_id)
+        return statement
 
-    # Hikes
+    # --------------------------------------------------------------------------
+    # Projector -- New Functions 2020 / 2021
+    # --------------------------------------------------------------------------
+
+    # In Hike
     # --------------------------------------------------------------------------
 
     # Time
@@ -36,6 +40,15 @@ class SQLStatements:
         END);'.format(t=time, off=offset)
         return statement
 
+    # ✅ select_next_time_in_hikes
+    # ✅ select_previous_time_in_hikes
+    # select_next_time_in_global
+    # select_previous_time_in_global
+    # select_next_time_skip_in_hikes
+    # select_previous_time_skip_in_hikes
+    # select_next_time_skip_in_global
+    # select_previous_time_skip_in_global
+
     # Altitude
     def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
         statement = ''
@@ -46,7 +59,11 @@ class SQLStatements:
         statement = ''
         return statement
 
-    # Projector
+    # In Global
+    # --------------------------------------------------------------------------
+
+    # --------------------------------------------------------------------------
+    # Old Projector Functions
     # --------------------------------------------------------------------------
 
     # ******************************     Time     ******************************
@@ -201,6 +218,7 @@ class SQLStatements:
         statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
         return statement
 
+    # --------------------------------------------------------------------------
     # Camera
     # --------------------------------------------------------------------------
     def select_hike_count(self) -> str:
