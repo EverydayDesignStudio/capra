@@ -24,7 +24,8 @@ from PyQt5.QtCore import *
 import PIL
 from PIL import ImageTk, Image, ImageQt
 # from PIL.ImageQt import ImageQt
-# from RPi import GPIO
+if platform.system() == 'Linux':
+    from RPi import GPIO
 # from lsm303d import LSM303D
 from datetime import datetime
 from enum import IntEnum, unique, auto
@@ -57,14 +58,15 @@ if platform.system() == 'Darwin' or platform.system() == 'Windows':
 
 elif platform.system() == 'Linux':
     print('We on a Raspberry Pi!')
-    # DB = '/media/pi/capra-hd/capra_projector.db'
+    DB = '/media/pi/capra-hd/capra_projector_dec2020_min_hike10_dest.db'
     # PATH = '/media/pi/capra-hd'
-    DB = '/home/pi/capra-storage-demo/capra_projector.db'
-    PATH = 'home/pi/capra-storage/demo'
+    # DB = '/home/pi/capra-storage-demo/capra_projector.db'
+    # PATH = 'home/pi/capra-storage/demo'
 
 # Filewide Statuses
 # ----- Hardware -----
 rotaryCounter = 0
+rotaryCounterLast = 0
 isReadyForNewPicture = True
 
 
@@ -270,8 +272,9 @@ class RotaryEncoder(QRunnable):
 
             # TODO -- remove both of these lines
             # Resetting counter will happen in Main UI Thread
+            # rotaryCounter = 0
+
             self.signals.result.emit(rotaryCounter)
-            rotaryCounter = 0
 
     def clear(self, ev=None):
         global rotaryCounter
@@ -310,6 +313,11 @@ class ImageBlender(QRunnable):
     def __init__(self, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
+        self.sql_controller = SQLController(database=DB)
+        self.picture = self.sql_controller.get_first_time_picture()
+        self.picture.print_obj_mvp()
+        #jordan
+
         # Needed setup
         self.alpha = 0
         self.signals = WorkerSignals()
@@ -344,13 +352,34 @@ class ImageBlender(QRunnable):
     # image. If this process happens in the middle of a blend, then the new image
     # will be blended into this already blended together photo
     def set_next_images(self, path1, path2, path3, pathf):
+        global isReadyForNewPicture
+
+        # nextf_raw = Image.open(pathf, 'r')
+        # try:
+        #     print('try:')
+        #     isReadyForNewPicture = True
+        #     self.nextf_raw = nextf_raw
+        # finally:
+        #     print('finally:')
+
         self.nextf_raw = Image.open(pathf, 'r')
+        isReadyForNewPicture = True
+        # Jordan
+
+        # REVIEW - I think this might be where the bottle neck is. So my thought
+        # is that we just emit a signal back to the main thread to handle this
+        # with Image.open(pathf, 'r') as nextf_raw:
+        #     self.nextf_raw = nextf_raw
+        #     print('a new image has been opened')
+
+        # self.nextf_raw = Image.open(pathf, 'r')
+
+        # print(self.nextf_raw)
 
         # TODO - implement this with blending the images
         # self.next1_raw = Image.open(path1, 'r')
         # self.next2_raw = Image.open(path2, 'r')
         # self.next3_raw = Image.open(path3, 'r')
-
         self.p1 = path1
         self.p2 = path2
         self.p3 = path3
@@ -360,10 +389,35 @@ class ImageBlender(QRunnable):
     # Continually runs blending together
     def run(self):
         while True:
+            global rotaryCounter
+            global rotaryCounterLast
+
+            change = rotaryCounter - rotaryCounterLast
+            # print(change)
+
+            if change > 0:
+                print('POSITIVE')
+                print(change)
+                rotaryCounterLast = rotaryCounter
+                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, change)
+                self.signals.result.emit(self.picture)
+                print(self.picture.cameraf)
+                self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+                self.alpha = 0.25
+            elif change < 0:
+                print('NEGATIVE')
+                print(change)
+                rotaryCounterLast = rotaryCounter
+                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(change))
+                self.signals.result.emit(self.picture)
+                print(self.picture.cameraf)
+                self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+                self.alpha = 0.25
+
             if self.alpha < 0.75:
                 self.currentf_raw = Image.blend(self.currentf_raw, self.nextf_raw, self.alpha)
 
-                # TODO 
+                # TODO
                 # self.current1_raw = Image.blend(self.current1_raw, self.next1_raw, self.alpha)
                 # self.current2_raw = Image.blend(self.current2_raw, self.next2_raw, self.alpha)
                 # self.current3_raw = Image.blend(self.current3_raw, self.next3_raw, self.alpha)
@@ -409,7 +463,8 @@ class MainWindow(QMainWindow):
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
             self.show()
         elif platform.system() == 'Linux':
-            self.showFullScreen()
+            # self.showFullScreen()
+            self.show()
 
     # Setup Helpers
     # -------------------------------------------------------------------------
@@ -417,6 +472,7 @@ class MainWindow(QMainWindow):
     # Initializes the database connection
     # Note: database path is stored at top of file in global variable DB
     def setupDB(self):
+        print('Our DB location: {db}'.format(db=DB))
         self.sql_controller = SQLController(database=DB)
         self.picture = self.sql_controller.get_first_time_picture()
         self.picture.print_obj_mvp()
@@ -494,6 +550,7 @@ class MainWindow(QMainWindow):
         # finished()  : when blending has finished blending two the two images,
         #               sends callback to notify the fade out of UI elements
         self.imageBlender = ImageBlender(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
+        self.imageBlender.signals.result.connect(self._load_new_row)
         self.imageBlender.signals.results.connect(self._load_new_images)
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
@@ -540,9 +597,9 @@ class MainWindow(QMainWindow):
         self.threadpool.setMaxThreadCount(7)  # TODO - change if more threads are needed
 
         # Rotary Encoder
-        rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
-        rotaryEncoder.signals.result.connect(self.rotary_changed)
-        self.threadpool.start(rotaryEncoder)
+        self.rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
+        # self.rotaryEncoder.signals.result.connect(self.rotary_changed)
+        self.threadpool.start(self.rotaryEncoder)
 
         buttonEncoder = HardwareButton(self.PIN_ROTARY_BUTT)
         buttonEncoder.signals.result.connect(self.pressed_encoder)
@@ -597,6 +654,12 @@ class MainWindow(QMainWindow):
         # self.pictureVertical2.update_pixmap(image2)
         # self.pictureVertical3.update_pixmap(image3)
 
+    def _load_new_row(self, picture: Picture):
+        """Receives a new picture from the database"""
+        # print(picture)
+        self.picture = picture
+        print(self.picture.picture_id)
+
     # The new image has finished blending; now fade out the UI components
     def _finished_image_blend(self):
         # REMOVE - Remove this testing setup for checking the number of blends
@@ -604,6 +667,11 @@ class MainWindow(QMainWindow):
         print('FINISHED Blending')
         print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
+
+        # Allows another image to be blended onto the current image
+        # HACK - sorta works, but this is the safe (but ugly) base case
+        # global isReadyForNewPicture
+        # isReadyForNewPicture = True
 
         self.timerFadeOutUI.start(1000)  # wait 1s until you fade out top UI
 
@@ -673,28 +741,37 @@ class MainWindow(QMainWindow):
 
     # TODO - test this code on the Pi
     def rotary_changed(self, result):
-        print('rotary_changed; result: {r}'.format(r=result))
-
-        # self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+        print('rotary_changed() result: {r}'.format(r=result))
         # self.picture.print_obj()
 
-        # if isReadyForNewPicture:
-        #     print('ready for new picture')
+        global isReadyForNewPicture
 
-        if result > 0:
-            print('Next: %d' % result)
-            self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+        if isReadyForNewPicture:
+            # HACK Only allow this image to be blended
+            isReadyForNewPicture = True
 
-        elif result < 0:
-            print('Previous: %d' % result)
-            self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(result))
+            # print('ready for new picture')
+            if result > 0:
+                # print('Next: %d' % result)
+                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
+            elif result < 0:
+                # print('Previous: %d' % result)
+                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(result))
+
+            # HACK - Clears the rotaryEncoder thread's counter since the count has
+            # been used in a database call. Otherwise, we want the count to be maintained
+            print('about to call clear()')
+            self.rotaryEncoder.clear()
+
+            global rotaryCounter
+            print(rotaryCounter)
+
+            self.updateImages()
+            self.updateUITop()
 
         # change = rotaryCounter - rotaryCounterLast
         # print(change)
         # print('\n')
-
-        self.updateImages()
-        self.updateUITop()
 
     def pressed_encoder(self, result):
         print('Encoder button was pressed: %d' % result)
