@@ -18,10 +18,10 @@ class SQLStatements:
     # Projector -- New Functions 2020 / 2021
     # --------------------------------------------------------------------------
 
-    # In Hike
+    # Time
     # --------------------------------------------------------------------------
 
-    # Time
+    # Time in Hikes
     def select_next_time_in_hikes(self, time: int, offset: int) -> str:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
             SELECT \
@@ -40,16 +40,35 @@ class SQLStatements:
         END);'.format(t=time, off=offset)
         return statement
 
+    # Time in Global
+    def select_next_time_in_global(self, minute: int, time: int, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN ((SELECT count(*) FROM pictures WHERE minute={m} AND time >{t}) >= ({off}%(SELECT count(*) FROM pictures))) \
+            THEN (SELECT picture_id FROM pictures WHERE minute={m} AND time>={t} ORDER BY minute ASC, time ASC LIMIT 1 OFFSET {off}%(SELECT count(*) FROM pictures)) \
+            ELSE CASE WHEN ((SELECT count(*) FROM pictures WHERE minute>{m}) > (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time >={t}))%(SELECT count(*) FROM pictures))) \
+                THEN (SELECT picture_id FROM pictures WHERE minute>{m} ORDER BY minute ASC, time ASC LIMIT 1 OFFSET (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time >={t}))%(SELECT count(*) FROM pictures))) \
+                ELSE (SELECT picture_id FROM pictures ORDER BY minute ASC, time ASC LIMIT 1 OFFSET (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time>={t})-(SELECT count(*) FROM pictures WHERE minute>{m}))%(SELECT count(*) FROM pictures))) \
+                END \
+            END);'.format(m=minute, t=time, off=offset)
+        return statement
+
+    # Time Skip in Hikes
+
+    # Time Skip in Global
+
     # ✅ select_next_time_in_hikes
     # ✅ select_previous_time_in_hikes
-    # select_next_time_in_global
-    # select_previous_time_in_global
+    # ✅ select_next_time_in_global
+    # ⭕️ select_previous_time_in_global
     # select_next_time_skip_in_hikes
     # select_previous_time_skip_in_hikes
     # select_next_time_skip_in_global
     # select_previous_time_skip_in_global
 
     # Altitude
+    # --------------------------------------------------------------------------
+
+    # Altitude in Hikes
     def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
         statement = ''
         # SELECT picture_id, time, altitude, hike, index_in_hike, avg_altitude, camera2 FROM pictures INNER JOIN hikes on hike=hike_id WHERE avg_altitude >= 1505.2 ORDER BY avg_altitude ASC, altitude ASC --LIMIT 20 OFFSET 5;
@@ -59,13 +78,26 @@ class SQLStatements:
         statement = ''
         return statement
 
-    # In Global
+    # Altitude in Global
+
+    # Altitude Skip in Hikes
+
+    # Altitude Skip in Global
+
+    # Color
     # --------------------------------------------------------------------------
+
+    # Color in Hikes
+
+    # Color in Global
+
+    # Color Skip in Hikes
+
+    # Color Skip in Global
 
     # --------------------------------------------------------------------------
     # Old Projector Functions
     # --------------------------------------------------------------------------
-
     # ******************************     Time     ******************************
 
     # Time - first & last across hikes

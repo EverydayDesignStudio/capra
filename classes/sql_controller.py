@@ -14,38 +14,74 @@ class SQLController:
         self.statements = SQLStatements()
 
     # --------------------------------------------------------------------------
-    # New Functions 2020
+    # New Functions 2020 / 2021
     # --------------------------------------------------------------------------
 
     # Private functions
+    def _execute_query(self, query) -> Picture:
+        '''Returns the first (row) Picture from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        all_rows = cursor.fetchall()
+        if not all_rows:
+            print("ERROR UPON CALLING QUERY:")
+            print(query)
+            return None
+        else:  # new Picture was retrieved from database
+            return self._build_picture_from_row(all_rows[0])
+
+    # TODO - make sure this has all the new columns and is up to date based on the latest schema
     def _build_picture_from_row(self, row: list) -> Picture:
+        '''Builds a Picture object from a row in the database'''
         picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
                           minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
                           altitude=row[9], altrank_global=row[11],
                           color_hsv=row[12], color_rgb=row[13], color_rank_hike=row[15], color_rank_global=row[16],
                           camera1=row[20], camera2=row[21], camera3=row[22], cameraf=row[23])
-
-        return picture
-
-    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
-        cursor = self.connection.cursor()
-        cursor.execute(statement)
-        all_rows = cursor.fetchall()
-        picture = self._build_picture_from_row(all_rows[0])
-        # picture.print_obj()
-
         return picture
 
     # Initializing queries - used to get the initial row from the database
-    def get_first_time_picture(self) -> Picture:
-        sql = self.statements.select_by_time_first_picture()
-        return self._get_picture_from_sql_statement(sql)
-
+    # TODO - write tests for all of these functions
     def get_picture_with_id(self, id: int) -> Picture:
         sql = self.statements.select_picture_by_id(id)
-        return self._get_picture_from_sql_statement(sql)
+        return self._execute_query(sql)
+
+    def get_first_time_picture(self) -> Picture:
+        sql = self.statements.select_by_time_first_picture()
+        return self._execute_query(sql)
+
+    def get_last_time_picture(self) -> Picture:
+        sql = self.statements.select_by_time_last_picture()
+        return self._execute_query(sql)
+
+    def get_first_time_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_time_first_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_last_time_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_time_last_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_greatest_altitude_picture(self) -> Picture:
+        sql = self.statements.select_by_altitude_greatest_picture()
+        return self._execute_query(sql)
+
+    def get_least_altitude_picture(self) -> Picture:
+        sql = self.statements.select_by_altitude_least_picture()
+        return self._execute_query(sql)
+
+    def get_greatest_altitude_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_altitude_greatest_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_least_altitude_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
+        return self._execute_query(sql)
 
     # Time
+    # --------------------------------------------------------------------------
+
+    # Time in Hikes
     def get_next_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_next_time_in_hikes(current_picture.time, offset))
@@ -66,10 +102,19 @@ class SQLController:
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
 
+    # Time in Global
+    def get_next_time_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_time_in_global(current.minute, current.time, offset)
+        return self._execute_query(sql)
+
+    # Time Skip in Hikes
+
+    # Time Skip in Global
+
     # ✅ get_next_time_in_hikes
     # ✅ get_previous_time_in_hikes
-    # get_next_time_in_global
-    # get_previous_time_in_global
+    # ✅ get_next_time_in_global
+    # ⭕️ get_previous_time_in_global
     # get_next_time_skip_in_hikes
     # get_previous_time_skip_in_hikes
     # get_next_time_skip_in_global
@@ -163,10 +208,6 @@ class SQLController:
                 return current_picture
 
     # Time - across hikes
-    def get_last_time_picture(self) -> Picture:
-        sql = self.statements.select_by_time_last_picture()
-        return self._get_picture_from_sql_statement(sql)
-
     def next_time_picture_across_hikes(self, current_picture: Picture) -> Picture:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_by_time_next_picture(current_picture.time))
@@ -186,14 +227,6 @@ class SQLController:
             return self._build_picture_from_row(all_rows[0])
 
     # Time - in a hike
-    def get_first_time_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_time_first_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_last_time_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_time_last_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
     def next_time_picture_in_hike(self, current_picture: Picture) -> Picture:
         cursor = self.connection.cursor()
         h = current_picture.hike_id
@@ -217,15 +250,6 @@ class SQLController:
             return self.get_last_time_picture_in_hike(hike_id=h)
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
-
-    # Altitude - get starting picture
-    def get_greatest_altitude_picture(self) -> Picture:
-        sql = self.statements.select_by_altitude_greatest_picture()
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_least_altitude_picture(self) -> Picture:
-        sql = self.statements.select_by_altitude_least_picture()
-        return self._get_picture_from_sql_statement(sql)
 
     # Altitude - next & previous across hikes
     def next_altitude_picture_across_hikes(self, current_picture: Picture) -> Picture:
@@ -272,15 +296,6 @@ class SQLController:
             return self.get_greatest_altitude_picture()
         else:  # there is a previous picture
             return self._build_picture_from_row(all_rows[0])
-
-    # Altitude - greatest & least in a hike
-    def get_greatest_altitude_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_altitude_greatest_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_least_altitude_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
 
     # Altitude - next & previous in a hike
     def next_altitude_picture_in_hike(self, current_picture: Picture) -> Picture:
