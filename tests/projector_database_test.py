@@ -122,14 +122,76 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_in_global(self.picture, 6216)
         self.assertEqual(pic.picture_id, 894)
 
+    def test_get_previous_time_in_global(self):
+        # in minute
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 1)
+        self.assertEqual(pic.picture_id, 1993)
+
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 8)
+        self.assertEqual(pic.picture_id, 1986)
+
+        # above
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 9)
+        self.assertEqual(pic.picture_id, 1985)
+
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 834)
+        self.assertEqual(pic.picture_id, 1160)
+
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 1101)
+        self.assertEqual(pic.picture_id, 893)
+
+        # wrap around
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 1102)
+        self.assertEqual(pic.picture_id, 892)
+
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 1800)
+        self.assertEqual(pic.picture_id, 194)
+
+        # moding
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 3659)
+        self.assertEqual(pic.picture_id, 1993)
+
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 3668)
+        self.assertEqual(pic.picture_id, 1984)
+
+    def test_get_next_time_skip_in_hikes(self):
+        pass
+
+    def test_get_next_time_skip_in_global(self):
+        # id    time        minute  id
+        # 1994  1556391512  718 ->  2219
+        # 2000  1556391536  718	->  2225
+        pic = self.sql_controller.get_next_time_skip_in_global(self.picture)
+        self.assertEqual(pic.picture_id, 2219)
+
+        pic = self.sql_controller.get_picture_with_id(2000)
+        pic = self.sql_controller.get_next_time_skip_in_global(pic)
+        self.assertEqual(pic.picture_id, 2225)
+
+        # id    time        minute  id
+        # 650   1556325800  1063 -> 875
+        # 688   1556325952  1065 -> 906
+        # 872   1556326688  1078 -> 1090
+        pic = self.sql_controller.get_picture_with_id(650)
+        pic = self.sql_controller.get_next_time_skip_in_global(pic)
+        self.assertEqual(pic.picture_id, 875)
+
+        pic = self.sql_controller.get_picture_with_id(688)
+        pic = self.sql_controller.get_next_time_skip_in_global(pic)
+        self.assertEqual(pic.picture_id, 906)
+
+        pic = self.sql_controller.get_picture_with_id(872)
+        pic = self.sql_controller.get_next_time_skip_in_global(pic)
+        self.assertEqual(pic.picture_id, 1090)
+
     # ✅ test_get_next_time_in_hikes
     # ✅ test_get_previous_time_in_hikes
     # ✅ test_get_next_time_in_global
-    # ⭕ test_get_previous_time_in_global
+    # ✅ test_get_previous_time_in_global
     # test_get_next_time_skip_in_hikes
     # test_get_previous_time_skip_in_hikes
-    # test_get_next_time_skip_in_global
-    # test_get_previous_time_skip_in_global
+    # ✅ test_get_next_time_skip_in_global
+    # ⭕ test_get_previous_time_skip_in_global
 
 
 if __name__ == '__main__':

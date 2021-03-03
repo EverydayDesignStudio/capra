@@ -52,18 +52,69 @@ class SQLStatements:
             END);'.format(m=minute, t=time, off=offset)
         return statement
 
+    def select_previous_time_in_global(self, minute: int, time: int, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN ((SELECT count(*) FROM pictures WHERE minute={m} AND time<{t}) >= ({off}%(SELECT count(*) FROM pictures))) \
+            THEN (SELECT picture_id FROM pictures WHERE minute={m} AND time<={t} ORDER BY minute DESC, time DESC LIMIT 1 OFFSET {off}%(SELECT count(*) FROM pictures)) \
+            ELSE CASE WHEN ((SELECT count(*) FROM pictures WHERE minute<{m}) > (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time <={t}))%(SELECT count(*) FROM pictures))) \
+                THEN (SELECT picture_id FROM pictures WHERE minute<{m} ORDER BY minute DESC, time DESC LIMIT 1 OFFSET (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time <={t}))%(SELECT count(*) FROM pictures))) \
+                ELSE (SELECT picture_id FROM pictures ORDER BY minute DESC, time DESC LIMIT 1 OFFSET (({off}-(SELECT count(*) FROM pictures WHERE minute={m} AND time<={t})-(SELECT count(*) FROM pictures WHERE minute<{m}))%(SELECT count(*) FROM pictures))) \
+                END \
+            END);'.format(m=minute, t=time, off=offset)
+        return statement
+
     # Time Skip in Hikes
 
     # Time Skip in Global
+    # def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
+    #     skip_ahead = 15  # private variable in case we want to change how big the skip is
+    #     statement = 'SELECT * FROM pictures WHERE minute>=({m}+{s}) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
+    #         SELECT CAST(( \
+    #             (CAST((SELECT count(*) FROM pictures WHERE minute={m} AND time <={t}) AS REAL) /*get # it is in minute (<= for next) casted as float*/ \
+    #             /(SELECT count(*) FROM pictures WHERE minute={m})) /*divide by the total for this minute*/ \
+    #             * (SELECT count(*) FROM pictures WHERE minute=(SELECT minute FROM pictures WHERE minute>={m}+{s} ORDER BY minute ASC, time ASC LIMIT 1)) /*multiple by count for next available minute at least 15min ahead*/ \
+    #         ) AS INT) /*cast back to integer*/ \
+    #         ) - 1; /*move back 1 (first value of minute is an offset of 0)*/'.format(m=minute, t=time, s=skip_ahead)
+    #     return statement
+
+    def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
+        skip_ahead = 15  # private variable in case we want to change how big the skip is
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+            SELECT CASE WHEN ( \
+                (SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m}+{s})) >= 1) \
+                THEN ( /*there is a next minute below in table*/ \
+                    SELECT picture_id FROM pictures WHERE minute>=({m}+{s}) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE minute={m} AND time<={t}) AS REAL) /*get # it is in minute (<= for next) casted as float*/ \
+                        /(SELECT count(*) FROM pictures WHERE minute={m})) /*divide by the total for this minute*/ \
+                        * (SELECT count(*) FROM pictures WHERE minute=(SELECT minute FROM pictures WHERE minute>={m}+{s} ORDER BY minute ASC, time ASC LIMIT 1)) /*multiple by count for next available minute at least 15min ahead*/ \
+                    ) AS INT) ) - 1 /*cast back to integer. move back 1 (first value of minute has offset of 0)*/ \
+                ) \
+                ELSE ( /*wrap back around to top of table*/ \
+                    SELECT picture_id FROM pictures WHERE minute>=( \
+                            /* first minute value */						 /* skip value */	 /* how many minutes from top of table */ \
+                        (SELECT minute FROM pictures ORDER BY minute ASC LIMIT 1)+ {s} - (SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m})) \
+                    ) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE minute={m} AND time<={t}) AS REAL) \
+                        /(SELECT count(*) FROM pictures WHERE minute={m})) \
+                        * (SELECT count(*) FROM pictures WHERE minute=(SELECT minute FROM pictures WHERE minute>=( \
+                            (SELECT minute FROM pictures ORDER BY minute ASC LIMIT 1)+{s} - (SELECT count(DISTINCT minute) FROM pictures WHERE minute>={m}) /* same from 6 lines above */ \
+                        ) ORDER BY minute ASC, time ASC LIMIT 1)) \
+                    ) AS INT) ) - 1 \
+                ) \
+                END \
+            END);'.format(m=minute, t=time, s=skip_ahead)
+        return statement
 
     # ✅ select_next_time_in_hikes
     # ✅ select_previous_time_in_hikes
     # ✅ select_next_time_in_global
-    # ⭕️ select_previous_time_in_global
+    # ✅ select_previous_time_in_global
     # select_next_time_skip_in_hikes
     # select_previous_time_skip_in_hikes
-    # select_next_time_skip_in_global
-    # select_previous_time_skip_in_global
+    # ✅ select_next_time_skip_in_global
+    # ⭕️ select_previous_time_skip_in_global
 
     # Altitude
     # --------------------------------------------------------------------------
