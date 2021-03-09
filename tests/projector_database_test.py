@@ -155,7 +155,17 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 1984)
 
     def test_get_next_time_skip_in_hikes(self):
-        pass
+        # id	time		hike	index_in_hike			id
+        #                                           (451/2158) * 385 = 80
+        # 1566	1556389800	3		450					--> 3353
+        pic = self.sql_controller.get_picture_with_id(1566)
+        pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3353)
+
+        #										    (80/385) * 892	= 185
+        # 3353	1556399116	4		79					--> 185 (index_in_hike=184)
+        pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 185)
 
     def test_get_next_time_skip_in_global(self):
         # id    time        minute  id

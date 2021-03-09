@@ -64,19 +64,32 @@ class SQLStatements:
         return statement
 
     # Time Skip in Hikes
+    def select_next_time_skip_in_hikes(self, hike: int, time: int) -> str:
+        skip_ahead = 1  # private variable in case we want to change how big the skip is
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+            SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE hike>{h}) \
+                THEN (									  /* hike + skip */ \
+                    SELECT picture_id FROM pictures WHERE hike>=({h}+{s}) ORDER BY time ASC LIMIT 1 OFFSET ( \
+                        SELECT CAST(( \
+                            (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
+                            /(SELECT count(*) FROM pictures WHERE hike={h})) \
+                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>={h}+{s} LIMIT 1)) \
+                        ) AS INT) - 1 \
+                    ) \
+                ) \
+                ELSE ( \
+                    SELECT picture_id FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 LIMIT 1) ORDER BY time ASC LIMIT 1 OFFSET ( \
+                        SELECT CAST(( \
+                            (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
+                            /(SELECT count(*) FROM pictures WHERE hike={h})) \
+                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 LIMIT 1)) \
+                        ) AS INT) - 1 \
+                    ) \
+                ) \
+            END END);'.format(h=hike, t=time, s=skip_ahead)
+        return statement
 
     # Time Skip in Global
-    # def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
-    #     skip_ahead = 15  # private variable in case we want to change how big the skip is
-    #     statement = 'SELECT * FROM pictures WHERE minute>=({m}+{s}) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
-    #         SELECT CAST(( \
-    #             (CAST((SELECT count(*) FROM pictures WHERE minute={m} AND time <={t}) AS REAL) /*get # it is in minute (<= for next) casted as float*/ \
-    #             /(SELECT count(*) FROM pictures WHERE minute={m})) /*divide by the total for this minute*/ \
-    #             * (SELECT count(*) FROM pictures WHERE minute=(SELECT minute FROM pictures WHERE minute>={m}+{s} ORDER BY minute ASC, time ASC LIMIT 1)) /*multiple by count for next available minute at least 15min ahead*/ \
-    #         ) AS INT) /*cast back to integer*/ \
-    #         ) - 1; /*move back 1 (first value of minute is an offset of 0)*/'.format(m=minute, t=time, s=skip_ahead)
-    #     return statement
-
     def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
         skip_ahead = 15  # private variable in case we want to change how big the skip is
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
@@ -111,7 +124,7 @@ class SQLStatements:
     # ✅ select_previous_time_in_hikes
     # ✅ select_next_time_in_global
     # ✅ select_previous_time_in_global
-    # select_next_time_skip_in_hikes
+    # ⭕️ select_next_time_skip_in_hikes
     # select_previous_time_skip_in_hikes
     # ✅ select_next_time_skip_in_global
     # ⭕️ select_previous_time_skip_in_global
