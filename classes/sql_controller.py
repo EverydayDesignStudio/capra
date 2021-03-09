@@ -116,17 +116,24 @@ class SQLController:
         sql = self.statements.select_next_time_skip_in_hikes(current.hike_id, current.time)
         return self._execute_query(sql)
 
+    def get_previous_time_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_time_skip_in_hikes(current.hike_id, current.time)
+        return self._execute_query(sql)
+
     # Time Skip in Global
     def get_next_time_skip_in_global(self, current: Picture) -> Picture:
         sql = self.statements.select_next_time_skip_in_global(current.minute, current.time)
         return self._execute_query(sql)
 
+    def get_previous_time_skip_in_global(self, current: Picture) -> Picture:
+        pass
+
     # ✅ get_next_time_in_hikes
     # ✅ get_previous_time_in_hikes
     # ✅ get_next_time_in_global
     # ✅ get_previous_time_in_global
-    # ⭕ get_next_time_skip_in_hikes
-    # get_previous_time_skip_in_hikes
+    # ✅ get_next_time_skip_in_hikes
+    # ✅ get_previous_time_skip_in_hikes
     # ✅ get_next_time_skip_in_global
     # ⭕ get_previous_time_skip_in_global
 

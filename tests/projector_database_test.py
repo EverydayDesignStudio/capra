@@ -167,6 +167,24 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 185)
 
+    def test_get_previous_time_skip_in_hikes(self):
+        # id	time		hike	index_in_hike			picture_id
+        #											(451/2158) * 223 = 47
+        # 1566	1556389800	3		450					<-- 938
+        pic = self.sql_controller.get_picture_with_id(1566)
+        pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 938)
+
+        #												(46/223) * 892 = 184
+        # 938	1556377380	2		46					<-- 184
+        pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 184)
+
+        #												(183/892) * 385	= 79
+        # 184	1556323936	1		183					--> 3352
+        pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3352)
+
     def test_get_next_time_skip_in_global(self):
         # id    time        minute  id
         # 1994  1556391512  718 ->  2219
@@ -198,8 +216,8 @@ class DatabaseTest(unittest.TestCase):
     # ✅ test_get_previous_time_in_hikes
     # ✅ test_get_next_time_in_global
     # ✅ test_get_previous_time_in_global
-    # test_get_next_time_skip_in_hikes
-    # test_get_previous_time_skip_in_hikes
+    # ✅ test_get_next_time_skip_in_hikes
+    # ✅ test_get_previous_time_skip_in_hikes
     # ✅ test_get_next_time_skip_in_global
     # ⭕ test_get_previous_time_skip_in_global
 
