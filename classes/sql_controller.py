@@ -443,6 +443,7 @@ class SQLController:
                             dayofweek: int,
                             hike: int,
                             index_in_hike: int,
+                            time_rank_global: int,
                             altitude: float,
                             altrank_hike: int,
                             altrank_global: int,
@@ -462,7 +463,7 @@ class SQLController:
                             camera_landscape: str):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.upsert_picture_row(time, year, month, day, minute, dayofweek,
-                                                            hike, index_in_hike, altitude, altrank_hike, altrank_global, altrank_global_h,
+                                                            hike, index_in_hike, time_rank_global, altitude, altrank_hike, altrank_global, altrank_global_h,
                                                             color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h,
                                                             colors_count, colors_rgb, colors_conf,
                                                             camera1, camera2, camera3, camera_landscape))
@@ -540,6 +541,11 @@ class SQLController:
         cursor.execute(self.statements.get_pictures_time_altitude_domcol())
         res = cursor.fetchall()
         return res
+
+    def update_pictures_global_TimeRank(self, timestamp: float, timeRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalTimeRank(timestamp, timeRank))
+        self.connection.commit()
 
     def update_pictures_global_AltRank(self, timestamp: float, altRank: int):
         cursor = self.connection.cursor()

@@ -15,8 +15,9 @@ CREATE TABLE "pictures" (
 	"dayofweek"						INTEGER,
 	"hike"								INTEGER,
 	"index_in_hike"				INTEGER,
+	"time_rank_global"		INTEGER UNIQUE,	--  first sorted by minute, then time
 	"altitude"						REAL,
-	"altrank_hike"	  		INTEGER, --
+	"altrank_hike"	  		INTEGER, 				--
 	"altrank_global"	  	INTEGER UNIQUE, --
 	"altrank_global_h"		INTEGER UNIQUE, --
 	"color_hsv"						TEXT,						-- "H,S,V" (decimal)

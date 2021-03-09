@@ -35,7 +35,7 @@ BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-stora
 
 # TODO: set DB accordingly
 src_db_name = "capra_projector_jan2021_min_AllHikes.db"
-dest_db_name = "capra_projector_jan2021_min_test.db"
+dest_db_name = "capra_projector_mar2021_min_test.db"
 
 ####################################################
 
@@ -195,17 +195,21 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
 
     #     TIME,
     #     year, month, day, minute, dayofweek,
-    #     hike, index_in_hike, altitude, altrank_hike, ALTRANK_GLOBAL, ALTRANK_GLOBAL_H,             # TODO: implement altitude ranks, index 9, 10, 11
-    #     color_hsv, color_rgb, color_rank_value, color_rank_hike, COLOR_RANK_GLOBAL, COLOR_RANK_GLOBAL_H,    # TODO: implement color ranks, index 15, 16, 17
+    #     hike, index_in_hike, TIME_RANK_GLOBAL,
+    #     altitude, altrank_hike, ALTRANK_GLOBAL, ALTRANK_GLOBAL_H,
+    #     color_hsv, color_rgb, color_rank_value, color_rank_hike, COLOR_RANK_GLOBAL, COLOR_RANK_GLOBAL_H,
     #     colors_count, colors_rgb, colors_conf,
     #     camera1, camera2, camera3, camera_landscape
+    #
+    # ** ALLCAP columns are UNIQUE
 
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
     ### TODO: change this index to row[0] and row[1] if cameraDB is used
     commit = [row[1],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, row[9], -1, -1, dummyGlobalCounter,
+                currHike, index_in_hike, dummyGlobalCounter,
+                row[9], -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 row[22], row[23], row[24], row[23][:-4] + "f" + row[23][-4:]]
@@ -463,8 +467,8 @@ def buildHike(currHike):
     # then, upsert rows
     # colRankList = sort_by_colors(pics.copy())
     # altRankList = sort_by_alts(commits.copy())
-    colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=12, index_in_hike=7)
-    altRankList = sort_by_alts(list(commits.copy().values()), alt_index=8, index_in_hike=7)
+    colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=13, index_in_hike=7)
+    altRankList = sort_by_alts(list(commits.copy().values()), alt_index=9, index_in_hike=7)
 
     for index_in_hike in range(numValidRows):
         fileName = "{}_camN".format(index_in_hike)
@@ -473,14 +477,14 @@ def buildHike(currHike):
             continue
 
         altrank = altRankList[index_in_hike]
-        commits[fileName][9] = altrank
-        commits[fileName][10] = dummyGlobalAltRank
-        commits[fileName][11] = globalCounter_h + altrank
+        commits[fileName][10] = altrank
+        commits[fileName][11] = dummyGlobalAltRank
+        commits[fileName][12] = globalCounter_h + altrank
 
         colrank = colRankList[index_in_hike]
-        commits[fileName][15] = colrank
-        commits[fileName][16] = dummyGlobalColorRank
-        commits[fileName][17] = globalCounter_h + colrank
+        commits[fileName][16] = colrank
+        commits[fileName][17] = dummyGlobalColorRank
+        commits[fileName][18] = globalCounter_h + colrank
 
 #        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(index_in_hike, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
 
@@ -505,7 +509,7 @@ def buildHike(currHike):
     #     HIKE_ID, avg_altitude, AVG_ALTITUDE_RANK,
     #     START_TIME, start_year, start_month, start_day, start_minute, start_dayofweek,
     #     END_TIME, end_year, end_month, end_day, end_minute, end_dayofweek,
-    #     color_hsv, color_rgb, color_rank_value, COLOR_RANK,               # TODO: calculate color rank
+    #     color_hsv, color_rgb, color_rank_value, COLOR_RANK,
     #     pictures, PATH
 
     defaultHikePath = "/media/pi/capra-hd/hike" + str(currHike) + "/"
@@ -605,6 +609,7 @@ def main():
     if (True or NEW_DATA):
         rankTimer = time.time()
 
+        globalTimeList = []
         globalAltList = []
         globalColorList = []
         # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
@@ -614,8 +619,15 @@ def main():
         rows = dbDESTController.get_pictures_global_ranking_raw_data()
         for i in range(len(rows)):
             row = rows[i]
+            globalTimeList.append((row[0], row[4]))
             globalAltList.append((row[0], row[1]))
             globalColorList.append((row[0], row[2]))
+
+        globalTimeList.sort(key= itemgetter(1, 0))
+        for i in range(len(globalTimeList)):
+            row = globalTimeList[i]
+            rank = i + 1
+            dbDESTController.update_pictures_global_TimeRank(row[0], rank)
 
         globalAltList.sort(key=lambda data: data[1])
         for i in range(len(globalAltList)):
