@@ -313,7 +313,8 @@ class ImageBlender(QRunnable):
     def __init__(self, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
-        self.sql_controller = SQLController(database=DB)
+        # TODO - check if it breaks
+        self.sql_controller = SQLController(database=DB, system=platform.system())
         self.picture = self.sql_controller.get_first_time_picture()
         self.picture.print_obj_mvp()
         #jordan
@@ -473,7 +474,7 @@ class MainWindow(QMainWindow):
     # Note: database path is stored at top of file in global variable DB
     def setupDB(self):
         print('Our DB location: {db}'.format(db=DB))
-        self.sql_controller = SQLController(database=DB)
+        self.sql_controller = SQLController(database=DB, system=platform.system())
         self.picture = self.sql_controller.get_first_time_picture()
         self.picture.print_obj_mvp()
 

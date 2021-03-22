@@ -8,9 +8,10 @@ from classes.sql_statements import SQLStatements
 
 
 class SQLController:
-    def __init__(self, database: str):
+    def __init__(self, database: str, system: str):
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
+        self.system = system
         self.statements = SQLStatements()
 
     # --------------------------------------------------------------------------
@@ -28,16 +29,60 @@ class SQLController:
             print(query)
             return None
         else:  # new Picture was retrieved from database
-            return self._build_picture_from_row(all_rows[0])
+            # REMOVE - eventually remove once we have the new test database
+            # HACK - due to having two database states, we have to toggle which
+            # version of the row builder we currently use
+            if self.system == 'Darwin' or self.system == 'Windows':
+                picture = self._old_build_picture_from_row(all_rows[0])  # slideshow program
+                #picture = self._build_picture_from_row(all_rows[0])  # database tests
+            else:
+                picture = self._build_picture_from_row(all_rows[0])
+            return picture
 
-    # TODO - make sure this has all the new columns and is up to date based on the latest schema
-    def _build_picture_from_row(self, row: list) -> Picture:
-        '''Builds a Picture object from a row in the database'''
+    # REMOVE - eventually remove, but leave in for right now while testing hike10
+    def _old_build_picture_from_row(self, row: list) -> Picture:
+        '''Builds a (Dec. 2020) Picture object from a row in the database'''
+        camera1 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
+        camera2 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
+        camera3 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
+        cameraf = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
+
         picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
                           minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
-                          altitude=row[9], altrank_global=row[11],
-                          color_hsv=row[12], color_rgb=row[13], color_rank_hike=row[15], color_rank_global=row[16],
-                          camera1=row[20], camera2=row[21], camera3=row[22], cameraf=row[23])
+                          altitude=row[9], altrank_hike=row[10], altrank_global=row[11], altrank_global_h='nil',
+                          color_hsv=row[12], color_rgb=row[13], colorrank_hike=row[15], colorrank_global=row[16],
+                          colorrank_global_h='nil', colors_count='nil', colors_rgb='nil', colors_conf='nil',
+                          camera1=camera1, camera2=camera2, camera3=camera3, cameraf=cameraf,
+                          created=row[24], updated=row[25])
+        return picture
+
+    def _build_picture_from_row(self, row: list) -> Picture:
+        '''Builds latest version of the Picture object from a row in the database'''
+
+        # TODO - will need to be changed due to accepting the file path from a prompt on startup of the Mac program
+        # camera1 = ''
+        # camera2 = ''
+        # camera3 = ''
+        # cameraf = ''
+        if self.system == 'Darwin' or self.system == 'Windows':
+            camera1 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
+            camera2 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
+            camera3 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
+            cameraf = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
+        elif self.system == 'Linux':
+            camera1 = row[22]
+            camera2 = row[23]
+            camera3 = row[24]
+            cameraf = row[25]
+
+        picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
+                          minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
+                          altitude=row[9], altrank_hike=row[10], altrank_global=row[11], altrank_global_h=row[12],
+                          color_hsv=row[13], color_rgb=row[14], colorrank_hike=row[16], colorrank_global=row[17],
+                          colorrank_global_h=row[18], colors_count=row[19], colors_rgb=row[20], colors_conf=row[21],
+                          camera1=camera1, camera2=camera2, camera3=camera3, cameraf=cameraf,
+                          created=row[26], updated=row[27])
+
         return picture
 
     # Initializing queries - used to get the initial row from the database
@@ -82,25 +127,13 @@ class SQLController:
     # --------------------------------------------------------------------------
 
     # Time in Hikes
-    def get_next_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
-        cursor = self.connection.cursor()
-        cursor.execute(self.statements.select_next_time_in_hikes(current_picture.time, offset))
-        all_rows = cursor.fetchall()
-        if not all_rows:
-            print("ERROR!!!")
-            return None
-        else:  # there is a next time picture
-            return self._build_picture_from_row(all_rows[0])
+    def get_next_time_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_time_in_hikes(current.time, offset)
+        return self._execute_query(sql)
 
-    def get_previous_time_in_hikes(self, current_picture: Picture, offset: int) -> Picture:
-        cursor = self.connection.cursor()
-        cursor.execute(self.statements.select_previous_time_in_hikes(current_picture.time, offset))
-        all_rows = cursor.fetchall()
-        if not all_rows:
-            print("ERROR!!!")
-            return None
-        else:  # there is a next time picture
-            return self._build_picture_from_row(all_rows[0])
+    def get_previous_time_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_time_in_hikes(current.time, offset)
+        return self._execute_query(sql)
 
     # Time in Global
     def get_next_time_in_global(self, current: Picture, offset: int) -> Picture:

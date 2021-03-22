@@ -4,6 +4,7 @@ from typing import Any
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+import platform
 import unittest
 import random
 
@@ -18,7 +19,7 @@ class DatabaseTest(unittest.TestCase):
     def setUpClass(self):
         # NOTE - if the database or id is changed, all the tests will break
         # They are dependent upon that
-        self.sql_controller = SQLController(database=self.DB)
+        self.sql_controller = SQLController(database=self.DB, system=platform.system())
         self.picture = self.sql_controller.get_picture_with_id(1994)
 
         # For testing directly on the sql statements
@@ -28,11 +29,47 @@ class DatabaseTest(unittest.TestCase):
     def tearDownClass(self):
         self.sql_controller = None
 
-    # --------------------------------------------------------------------------
-
     def test_get_picture_with_id(self):
         self.assertEqual(self.picture.picture_id, 1994)
         self.assertEqual(self.picture.altitude, 936.62)
+
+    def test_picture_object(self):
+        picture = self.sql_controller.get_picture_with_id(1994)
+
+        self.assertEqual(picture.picture_id, 1994)
+        self.assertEqual(picture.time, 1556391512.0)
+        self.assertEqual(picture.year, 2019)
+        self.assertEqual(picture.month, 4)
+        self.assertEqual(picture.day, 27)
+        self.assertEqual(picture.minute, 718)
+        self.assertEqual(picture.dayofweek, 5)
+
+        self.assertEqual(picture.hike_id, 3)
+        self.assertEqual(picture.index_in_hike, 878)
+
+        self.assertEqual(picture.altitude, 936.62)
+        self.assertEqual(picture.altrank_hike, 855)
+        self.assertEqual(picture.altrank_global, 2355)
+        self.assertEqual(picture.altrank_global_h, 1970)
+
+        self.assertEqual(picture.color_hsv, '91,18,220')
+        self.assertEqual(picture.color_rgb, '204,219,220')
+        self.assertEqual(picture.colorrank_hike, 1776)
+        self.assertEqual(picture.colorrank_global, 2785)
+        self.assertEqual(picture.colorrank_global_h, 2891)
+        self.assertEqual(picture.colors_count, 4)
+        self.assertEqual(picture.colors_rgb, '204,219,220|52,46,17|122,117,75|17,17,15')
+        self.assertEqual(picture.colors_conf, '0.22,0.18,0.16,0.11')
+
+        self.assertEqual(picture.camera1, 'capra-storage/hike3/878_cam1.jpg')
+        self.assertEqual(picture.camera2, 'capra-storage/hike3/878_cam2.jpg')
+        self.assertEqual(picture.camera3, 'capra-storage/hike3/878_cam3.jpg')
+        self.assertEqual(picture.cameraf, 'capra-storage/hike3/878_cam2f.jpg')
+        self.assertEqual(picture.created, '2021-02-16 09:39:15')
+        self.assertEqual(picture.updated, '2021-02-16 09:39:15')
+
+    # Time
+    # --------------------------------------------------------------------------
 
     def test_get_next_time_in_hikes(self):
         # next picture by 1
