@@ -568,7 +568,6 @@ def main():
     while currHike <= latest_src_hikeID:
 
         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
-        destPath = build_hike_path(DROPBOX + BASEPATH_DEST, currHike, True)
 
         if (currHike > 2):
             break;
@@ -577,10 +576,6 @@ def main():
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
 
-        expectedCheckSumTotal = currExpectedHikeSize * 4
-        checkSum_transferred, checkSum_rotated, checkSum_total = compute_checksum(destPath, currHike)
-
-        # print("[{}] Hike {}: {} files expected, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
 
         # 1. skip empty hikes
         if (currExpectedHikeSize == 0):
@@ -590,6 +585,14 @@ def main():
 
         else:
             NEW_DATA = True
+
+            destPath = build_hike_path(DROPBOX + BASEPATH_DEST, currHike, True)
+
+            expectedCheckSumTotal = currExpectedHikeSize * 4
+            checkSum_transferred, checkSum_rotated, checkSum_total = compute_checksum(destPath, currHike)
+
+            # print("[{}] Hike {}: {} files expected, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
+
 
             # 2. if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
             # also check if DB is updated to post-processed values as well
