@@ -248,14 +248,6 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_skip_in_global(pic)
         self.assertEqual(pic.picture_id, 1090)
 
-    # ✅ test_get_next_time_in_hikes
-    # ✅ test_get_previous_time_in_hikes
-    # ✅ test_get_next_time_in_global
-    # ✅ test_get_previous_time_in_global
-    # ✅ test_get_next_time_skip_in_hikes
-    # ✅ test_get_previous_time_skip_in_hikes
-    # ✅ test_get_next_time_skip_in_global
-    # ⭕ test_get_previous_time_skip_in_global
 
 
 if __name__ == '__main__':

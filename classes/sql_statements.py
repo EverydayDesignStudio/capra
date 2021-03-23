@@ -145,14 +145,6 @@ class SQLStatements:
             END);'.format(m=minute, t=time, s=skip_ahead)
         return statement
 
-    # ✅ select_next_time_in_hikes
-    # ✅ select_previous_time_in_hikes
-    # ✅ select_next_time_in_global
-    # ✅ select_previous_time_in_global
-    # ✅ select_next_time_skip_in_hikes
-    # ✅ select_previous_time_skip_in_hikes
-    # ✅ select_next_time_skip_in_global
-    # ⭕️ select_previous_time_skip_in_global
 
     # Altitude
     # --------------------------------------------------------------------------

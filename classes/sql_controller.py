@@ -162,15 +162,9 @@ class SQLController:
     def get_previous_time_skip_in_global(self, current: Picture) -> Picture:
         pass
 
-    # ✅ get_next_time_in_hikes
-    # ✅ get_previous_time_in_hikes
-    # ✅ get_next_time_in_global
-    # ✅ get_previous_time_in_global
-    # ✅ get_next_time_skip_in_hikes
-    # ✅ get_previous_time_skip_in_hikes
-    # ✅ get_next_time_skip_in_global
-    # ⭕ get_previous_time_skip_in_global
 
+    # TODO REMOVE - go through and remove all the old methods that aren't needed anymore
+    # likely it will be most of them
     # Projector
     # --------------------------------------------------------------------------
     def get_next_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
@@ -193,7 +187,6 @@ class SQLController:
                 print('Color in hikes is not implemented yet')
                 return current_picture
 
-
     # Helper methods
     def _build_hike_from_row(self, row: list) -> Hike:
         hike = Hike(hike_id=row[0], avg_altitude=row[1],
@@ -201,7 +194,6 @@ class SQLController:
                     start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
 
         return hike
-
 
     # Helper method for returning expected number
     # If nothing is returned from db, return 0
