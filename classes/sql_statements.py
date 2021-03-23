@@ -176,6 +176,21 @@ class SQLStatements:
     # --------------------------------------------------------------------------
 
     # Color in Hikes
+    def select_next_color_in_hikes(self, colorrank_global_h: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global_h > {c}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global_h >= {c} ORDER BY color_rank_global_h ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global_h ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE color_rank_global_h > {c}) - 1)) \
+        END);'.format(c=colorrank_global_h, o=offset)
+        return statement
+
+    def select_previous_color_in_hikes(self, colorrank_global_h: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global_h < {c}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global_h <= {c} ORDER BY color_rank_global_h DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global_h DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE color_rank_global_h < {c}) - 1)) \
+        END);'.format(c=colorrank_global_h, o=offset)
+        return statement
 
     # Color in Global
 

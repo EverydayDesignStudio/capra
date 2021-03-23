@@ -278,6 +278,36 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_previous_altitude_in_hikes(pic, 6)
         self.assertEqual(pic.picture_id, 3276)
 
+    # Color
+    # --------------------------------------------------------------------------
+    def test_get_next_color_in_hikes(self):
+        # forward
+        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 2)
+        self.assertEqual(pic.colorrank_global_h, 2893)
+
+        # mod
+        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 9+3658)
+        self.assertEqual(pic.colorrank_global_h, 2900)
+
+        # bottom of the list
+        pic = self.sql_controller.get_picture_with_id(3369)
+        pic = self.sql_controller.get_next_color_in_hikes(pic, 8)
+        self.assertEqual(pic.picture_id, 883)
+
+    def test_get_previous_color_in_hikes(self):
+        # backward
+        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 5)
+        self.assertEqual(pic.colorrank_global_h, 2886)
+
+        # mod
+        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 891+3658)
+        self.assertEqual(pic.colorrank_global_h, 2000)
+
+        # top of the list
+        pic = self.sql_controller.get_picture_with_id(341)
+        pic = self.sql_controller.get_previous_color_in_hikes(pic, 25)
+        self.assertEqual(pic.picture_id, 3482)
+        self.assertEqual(pic.colorrank_global_h, 3658)
 
 if __name__ == '__main__':
     print('Results of : projector_database_test.py\n')
