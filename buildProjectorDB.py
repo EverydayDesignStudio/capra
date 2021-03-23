@@ -304,28 +304,34 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
         base = TOTAL*3
         confidences.append(round(label[1]/base, 2))
 
-    # exclude colors that are similar to existing ones and with < 0.1 confidence value
     index_to_remove = set()
+    confidence_value_threshold = 0.1
+    if (len(dominant_colors_hsv) >= k):
+        # exclude colors that are similar to existing ones and with < 0.1 confidence value
+        for i in range(k):
+            color_i = dominant_colors_hsv[i]
+            color_i_hsv = HSVColor(color_i[0], color_i[1], color_i[2])
+            color_i_lab = convert_color(color_i_hsv, LabColor)
 
-    for i in range(k):
-        color_i = dominant_colors_hsv[i]
-        color_i_hsv = HSVColor(color_i[0], color_i[1], color_i[2])
-        color_i_lab = convert_color(color_i_hsv, LabColor)
+            color_i_delta = []
 
-        color_i_delta = []
+            for j in range(i+1, k):
+                color_j = dominant_colors_hsv[j]
+                color_j_hsv = HSVColor(color_j[0], color_j[1], color_j[2])
+                color_j_lab = convert_color(color_j_hsv, LabColor)
 
-        for j in range(i+1, k):
-            color_j = dominant_colors_hsv[j]
-            color_j_hsv = HSVColor(color_j[0], color_j[1], color_j[2])
-            color_j_lab = convert_color(color_j_hsv, LabColor)
+                delta_e = delta_e_cie2000(color_i_lab, color_j_lab);
 
-            delta_e = delta_e_cie2000(color_i_lab, color_j_lab);
+                color_i_delta.append(delta_e)
 
-            color_i_delta.append(delta_e)
-
-        for j in range (len(color_i_delta)):
-            if (confidences[i+j+1] < 0.2 and color_i_delta[j] < 40):
-                index_to_remove.add(i+j+1)
+            for j in range(len(color_i_delta)):
+                if (confidences[i+j+1] < confidence_value_threshold and color_i_delta[j] < 40):
+                    index_to_remove.add(i+j+1)
+    else:
+        # if the # of domcol is less than k, trim colors that are < 0.1 confidence value only
+        for i in range(len(dominant_colors_hsv)):
+            if (confidences[i] < confidence_value_threshold):
+                index_to_remove.add(i)
 
     itr = list(index_to_remove)
     itr.sort(reverse = True)
