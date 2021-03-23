@@ -167,6 +167,21 @@ class SQLStatements:
         return statement
 
     # Altitude in Global
+    def select_next_altitude_in_global(self, altrank_global: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global > {a}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global >= {a} ORDER BY altrank_global ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE altrank_global > {a}) - 1)) \
+        END);'.format(a=altrank_global, o=offset)
+        return statement
+
+    def select_previous_altitude_in_global(self, altrank_global: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global < {a}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global <= {a} ORDER BY altrank_global DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE altrank_global < {a}) - 1)) \
+        END);'.format(a=altrank_global, o=offset)
+        return statement
 
     # Altitude Skip in Hikes
 

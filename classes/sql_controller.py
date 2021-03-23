@@ -173,6 +173,15 @@ class SQLController:
         sql = self.statements.select_previous_altitude_in_hikes(current.altrank_global_h, offset)
         return self._execute_query(sql)
 
+    # Altitude in Global
+    def get_next_altitude_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_altitude_in_global(current.altrank_global, offset)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_altitude_in_global(current.altrank_global, offset)
+        return self._execute_query(sql)
+
     # Color
     # --------------------------------------------------------------------------
 

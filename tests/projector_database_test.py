@@ -278,6 +278,40 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_previous_altitude_in_hikes(pic, 6)
         self.assertEqual(pic.picture_id, 3276)
 
+    def test_get_next_altitude_in_global(self):
+        # forward
+        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 1)
+        self.assertEqual(pic.altrank_global, 2356)
+
+        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 3)
+        self.assertEqual(pic.altrank_global, 2358)
+
+        # mod
+        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 100+3658)
+        self.assertEqual(pic.altrank_global, 2455)
+
+        # bottom of list
+        pic = self.sql_controller.get_picture_with_id(2976)
+        pic = self.sql_controller.get_next_altitude_in_global(pic, 1)
+        self.assertEqual(pic.picture_id, 524)
+
+    def test_get_previous_altitude_in_global(self):
+        # previous
+        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 1)
+        self.assertEqual(pic.altrank_global, 2354)
+
+        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 3)
+        self.assertEqual(pic.altrank_global, 2352)
+
+        # mod
+        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 100+3658)
+        self.assertEqual(pic.altrank_global, 2255)
+
+        # top of list
+        pic = self.sql_controller.get_picture_with_id(544)
+        pic = self.sql_controller.get_previous_altitude_in_global(pic, 3)
+        self.assertEqual(pic.picture_id, 3032)
+
     # Color
     # --------------------------------------------------------------------------
     def test_get_next_color_in_hikes(self):
