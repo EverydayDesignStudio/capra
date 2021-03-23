@@ -186,6 +186,23 @@ class SQLStatements:
     # Altitude Skip in Hikes
 
     # Altitude Skip in Global
+    def select_next_altitude_skip_in_global(self, altrank_global: float) -> str:
+        skip_perc = 0.05  # variable to change size of the percentage skip
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global > {a}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global >= {a} ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE altrank_global > {a}) - 1)) \
+        END);'.format(a=altrank_global, p=skip_perc)
+        return statement
+
+    def select_previous_altitude_skip_in_global(self, altrank_global: float) -> str:
+        skip_perc = 0.05  # variable to change size of the percentage skip
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global < {a}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global <= {a} ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE altrank_global < {a}) - 1)) \
+        END);'.format(a=altrank_global, p=skip_perc)
+        return statement
 
     # Color
     # --------------------------------------------------------------------------

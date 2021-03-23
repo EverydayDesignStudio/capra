@@ -182,6 +182,24 @@ class SQLController:
         sql = self.statements.select_previous_altitude_in_global(current.altrank_global, offset)
         return self._execute_query(sql)
 
+    # Altitude Skip in Hikes
+    def get_next_altitude_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = ''
+        return self._execute_query(sql)
+
+    def get_previous_altitude_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = ''
+        return self._execute_query(sql)
+
+    # Altitude Skip in Global
+    def get_next_altitude_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_altitude_skip_in_global(current.altrank_global)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_altitude_skip_in_global(current.altrank_global)
+        return self._execute_query(sql)
+
     # Color
     # --------------------------------------------------------------------------
 
