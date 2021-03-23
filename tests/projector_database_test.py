@@ -399,6 +399,27 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 873)
         self.assertEqual(pic.colorrank_global, 3658)
 
+    def test_get_next_color_skip_in_global(self):
+        pic = self.sql_controller.get_next_color_skip_in_global(self.picture)
+        self.assertEqual(pic.colorrank_global, 2967)
+
+        # bottom
+        pic = self.sql_controller.get_picture_with_id(1220)  # 3640
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 164)
+        self.assertEqual(pic.picture_id, 2592)
+
+    def test_get_previous_color_skip_in_global(self):
+        pic = self.sql_controller.get_previous_color_skip_in_global(self.picture)
+        self.assertEqual(pic.colorrank_global, 2603)
+
+        # top
+        pic = self.sql_controller.get_picture_with_id(310)  # 10
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 3486)
+        self.assertEqual(pic.picture_id, 1792)
+
+
 if __name__ == '__main__':
     print('Results of : projector_database_test.py\n')
     unittest.main()
