@@ -343,6 +343,42 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 3482)
         self.assertEqual(pic.colorrank_global_h, 3658)
 
+    def test_get_next_color_in_global(self):
+        # forward
+        pic = self.sql_controller.get_next_color_in_global(self.picture, 1)
+        self.assertEqual(pic.colorrank_global, 2786)
+
+        pic = self.sql_controller.get_next_color_in_global(self.picture, 10)
+        self.assertEqual(pic.colorrank_global, 2795)
+
+        # mod
+        pic = self.sql_controller.get_next_color_in_global(self.picture, 500+3658)
+        self.assertEqual(pic.colorrank_global, 3285)
+
+        # bottom of the list
+        pic = self.sql_controller.get_picture_with_id(3482)
+        pic = self.sql_controller.get_next_color_in_global(pic, 4)
+        self.assertEqual(pic.picture_id, 518)
+        self.assertEqual(pic.colorrank_global, 1)
+
+    def test_get_previous_color_in_global(self):
+        # backward
+        pic = self.sql_controller.get_previous_color_in_global(self.picture, 1)
+        self.assertEqual(pic.colorrank_global, 2784)
+
+        pic = self.sql_controller.get_previous_color_in_global(self.picture, 10)
+        self.assertEqual(pic.colorrank_global, 2775)
+
+        # mod
+        pic = self.sql_controller.get_previous_color_in_global(self.picture, 500+3658)
+        self.assertEqual(pic.colorrank_global, 2285)
+
+        # top of the list
+        pic = self.sql_controller.get_picture_with_id(882)
+        pic = self.sql_controller.get_previous_color_in_global(pic, 2)
+        self.assertEqual(pic.picture_id, 873)
+        self.assertEqual(pic.colorrank_global, 3658)
+
 if __name__ == '__main__':
     print('Results of : projector_database_test.py\n')
     unittest.main()

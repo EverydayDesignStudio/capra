@@ -194,6 +194,15 @@ class SQLController:
         sql = self.statements.select_previous_color_in_hikes(current.colorrank_global_h, offset)
         return self._execute_query(sql)
 
+    # Color in Global
+    def get_next_color_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_color_in_global(current.colorrank_global, offset)
+        return self._execute_query(sql)
+
+    def get_previous_color_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_color_in_global(current.colorrank_global, offset)
+        return self._execute_query(sql)
+
     # TODO REMOVE - go through and remove all the old methods that aren't needed anymore
     # likely it will be most of them
     # Projector

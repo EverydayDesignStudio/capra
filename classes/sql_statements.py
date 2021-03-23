@@ -208,6 +208,21 @@ class SQLStatements:
         return statement
 
     # Color in Global
+    def select_next_color_in_global(self, colorrank_global: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global >= {c} ORDER BY color_rank_global ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) - 1)) \
+        END);'.format(c=colorrank_global, o=offset)
+        return statement
+
+    def select_previous_color_in_global(self, colorrank_global: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global <= {c} ORDER BY color_rank_global DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) - 1)) \
+        END);'.format(c=colorrank_global, o=offset)
+        return statement
 
     # Color Skip in Hikes
 
