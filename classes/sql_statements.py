@@ -150,13 +150,20 @@ class SQLStatements:
     # --------------------------------------------------------------------------
 
     # Altitude in Hikes
-    def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
-        statement = ''
-        # SELECT picture_id, time, altitude, hike, index_in_hike, avg_altitude, camera2 FROM pictures INNER JOIN hikes on hike=hike_id WHERE avg_altitude >= 1505.2 ORDER BY avg_altitude ASC, altitude ASC --LIMIT 20 OFFSET 5;
+    def select_next_altitude_in_hikes(self, altrank_global_h: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global_h > {a}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global_h >= {a} ORDER BY altrank_global_h ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global_h ASC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE altrank_global_h > {a}) - 1)) \
+        END);'.format(a=altrank_global_h, o=offset)
         return statement
 
-    def select_next_altitude_in_hikes(self, hike: int, altitude: float, offset: int) -> str:
-        statement = ''
+    def select_previous_altitude_in_hikes(self, altrank_global_h: float, offset: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global_h < {a}) >= ({o}%(SELECT count(*) FROM pictures)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global_h <= {a} ORDER BY altrank_global_h DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global_h DESC LIMIT 1 OFFSET ({o}%(SELECT count(*) FROM pictures) - (SELECT count(*) FROM pictures WHERE altrank_global_h < {a}) - 1)) \
+        END);'.format(a=altrank_global_h, o=offset)
         return statement
 
     # Altitude in Global

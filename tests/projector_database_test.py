@@ -248,6 +248,35 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_skip_in_global(pic)
         self.assertEqual(pic.picture_id, 1090)
 
+    # Altitude
+    # --------------------------------------------------------------------------
+    def test_get_next_altitude_in_hikes(self):
+        # forward
+        pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 1)
+        self.assertEqual(pic.altrank_global_h, 1971)
+
+        # mod
+        pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 6+3658)
+        self.assertEqual(pic.picture_id, 1987)
+
+        # bottom of the list
+        pic = self.sql_controller.get_picture_with_id(3274)
+        pic = self.sql_controller.get_next_altitude_in_hikes(pic, 2)
+        self.assertEqual(pic.altrank_global_h, 1)
+
+    def test_get_previous_altitude_in_hikes(self):
+        # backward
+        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 1)
+        self.assertEqual(pic.altrank_global_h, 1969)
+
+        # mod
+        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 10+3658)
+        self.assertEqual(pic.altrank_global_h, 1960)
+
+        # top of the list
+        pic = self.sql_controller.get_picture_with_id(592)
+        pic = self.sql_controller.get_previous_altitude_in_hikes(pic, 6)
+        self.assertEqual(pic.picture_id, 3276)
 
 
 if __name__ == '__main__':

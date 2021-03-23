@@ -161,6 +161,17 @@ class SQLController:
 
     def get_previous_time_skip_in_global(self, current: Picture) -> Picture:
         pass
+    # Altitude
+    # --------------------------------------------------------------------------
+
+    # Altitude in Hikes
+    def get_next_altitude_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_altitude_in_hikes(current.altrank_global_h, offset)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_altitude_in_hikes(current.altrank_global_h, offset)
+        return self._execute_query(sql)
 
 
     # TODO REMOVE - go through and remove all the old methods that aren't needed anymore
