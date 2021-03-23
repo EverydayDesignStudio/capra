@@ -1,6 +1,7 @@
 # Controller to handle the projector UI and camera mainloop talking with the SQLite database
 
 import os
+import platform
 import sqlite3
 import time
 from classes.capra_data_types import Picture, Hike
@@ -8,10 +9,10 @@ from classes.sql_statements import SQLStatements
 
 
 class SQLController:
-    def __init__(self, database: str, system: str):
+    def __init__(self, database: str, filepath=None):
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
-        self.system = system
+        self.filepath = filepath
         self.statements = SQLStatements()
 
     # --------------------------------------------------------------------------
@@ -30,11 +31,11 @@ class SQLController:
             return None
         else:  # new Picture was retrieved from database
             # REMOVE - eventually remove once we have the new test database
-            # HACK - due to having two database states, we have to toggle which
-            # version of the row builder we currently use
-            if self.system == 'Darwin' or self.system == 'Windows':
-                picture = self._old_build_picture_from_row(all_rows[0])  # slideshow program
-                #picture = self._build_picture_from_row(all_rows[0])  # database tests
+            # HACK - due to having two database states, we have to toggle which version
+            # of the row builder we currently use
+            if platform.system() == 'Darwin' or platform.system() == 'Windows':
+                # picture = self._old_build_picture_from_row(all_rows[0])  # slideshow program
+                picture = self._build_picture_from_row(all_rows[0])  # database tests
             else:
                 picture = self._build_picture_from_row(all_rows[0])
             return picture
@@ -42,10 +43,10 @@ class SQLController:
     # REMOVE - eventually remove, but leave in for right now while testing hike10
     def _old_build_picture_from_row(self, row: list) -> Picture:
         '''Builds a (Dec. 2020) Picture object from a row in the database'''
-        camera1 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
-        camera2 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
-        camera3 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
-        cameraf = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
+        camera1 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
+        camera2 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
+        camera3 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
+        cameraf = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
 
         picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
                           minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
@@ -64,12 +65,12 @@ class SQLController:
         # camera2 = ''
         # camera3 = ''
         # cameraf = ''
-        if self.system == 'Darwin' or self.system == 'Windows':
-            camera1 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
-            camera2 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
-            camera3 = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
-            cameraf = 'capra-storage/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
-        elif self.system == 'Linux':
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            camera1 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
+            camera2 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
+            camera3 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
+            cameraf = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
+        elif platform.system() == 'Linux':
             camera1 = row[22]
             camera2 = row[23]
             camera3 = row[24]

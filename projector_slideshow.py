@@ -39,29 +39,8 @@ from classes.singleton import Singleton
 # PIN and Settings values are stored here
 import globals as g
 g.init()
+print('projector_slideshow.py running...')
 
-
-# Globals
-# -----------------------------------------------------------------------------
-print('projector_slideshow.py running')
-
-# Database Location
-if platform.system() == 'Darwin' or platform.system() == 'Windows':
-    print('We on a Mac or PC!')
-    # Multiple hikes, but no color data
-    # DB = '~/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
-
-    # Color data, but only hike 10
-    DB = '/Users/Jordan/Developer/eds/capra/capra-storage/capra_projector_dec2020_min_hike10_dest.db'
-    # DB = '/home/pi/Pictures/capra-projector.db'
-    # PATH = '/home/pi/Pictures'
-
-elif platform.system() == 'Linux':
-    print('We on a Raspberry Pi!')
-    DB = '/media/pi/capra-hd/capra_projector_dec2020_min_hike10_dest.db'
-    # PATH = '/media/pi/capra-hd'
-    # DB = '/home/pi/capra-storage-demo/capra_projector.db'
-    # PATH = 'home/pi/capra-storage/demo'
 
 # Filewide Statuses
 # ----- Hardware -----
@@ -310,14 +289,20 @@ class HardwareButton(QRunnable):
 
 # Continually tries blending the next image into the current image
 class ImageBlender(QRunnable):
-    def __init__(self, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
+    def __init__(self, sql_cntrl, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
-        # TODO - check if it breaks
-        self.sql_controller = SQLController(database=DB, system=platform.system())
-        self.picture = self.sql_controller.get_first_time_picture()
-        self.picture.print_obj_mvp()
-        #jordan
+        # TODO - a SQLCntrl is needed in this thread to properly work for Raspberry Pi
+        # self.sql_controller2 = SQLController(database=DB, system=platform.system())
+        # self.picture = self.sql_controller2.get_first_time_picture()
+        # self.picture = self.sql_controller2.get_picture_with_id(9000)
+        # self.picture.print_obj_mvp()
+
+        # TODO - verify on Pi that this works instead of the above version
+        self.sql_controller2 = sql_cntrl
+        print(f'in ImageBlender: {self.sql_controller2}')
+        # test_pic = self.sql_controller2.get_picture_with_id(9000)
+        # print(test_pic)
 
         # Needed setup
         self.alpha = 0
@@ -396,11 +381,13 @@ class ImageBlender(QRunnable):
             change = rotaryCounter - rotaryCounterLast
             # print(change)
 
+            # NOTE: this local version of SQLController will only be called if the rotary encoder 
+            # is changing, otherwise it simply blends the image if alpha is < 0.75
             if change > 0:
                 print('POSITIVE')
                 print(change)
                 rotaryCounterLast = rotaryCounter
-                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, change)
+                self.picture = self.sql_controller2.get_next_time_in_hikes(self.picture, change)
                 self.signals.result.emit(self.picture)
                 print(self.picture.cameraf)
                 self.nextf_raw = Image.open(self.picture.cameraf, 'r')
@@ -409,7 +396,7 @@ class ImageBlender(QRunnable):
                 print('NEGATIVE')
                 print(change)
                 rotaryCounterLast = rotaryCounter
-                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(change))
+                self.picture = self.sql_controller2.get_previous_time_in_hikes(self.picture, abs(change))
                 self.signals.result.emit(self.picture)
                 print(self.picture.cameraf)
                 self.nextf_raw = Image.open(self.picture.cameraf, 'r')
@@ -440,21 +427,17 @@ class MainWindow(QMainWindow):
         # Test counter variable to see the frame rate
         self.blendCount = 0
 
-        # TODO - implement with the new Db structure
-        self.setupDB()
+        self.setupDB()  # Mac or Windows shows the database dialog
         self.setupWindowLayout()
         self.setupUI()
         self.setupSoftwareThreads()
 
-        # if platform.system() == 'Darwin' or platform.system() == 'Windows':
-        #     print('---- No GPIO setup needed ----')
-        #     self.setupSoftwareThreads()
         if platform.system() == 'Linux':
+            # TODO - figure out what these are used for (if anything)
             # self.index = 1
             # self.seconds = 0
             self.setupGPIO()
             self.setupHardwareThreads()
-            # self.setupSoftwareThreads()
 
         # REVIEW - not having this may cause a crash
         # Updates the UI's picture for the first time
@@ -470,15 +453,29 @@ class MainWindow(QMainWindow):
     # Setup Helpers
     # -------------------------------------------------------------------------
 
-    # Initializes the database connection
-    # Note: database path is stored at top of file in global variable DB
     def setupDB(self):
-        print('Our DB location: {db}'.format(db=DB))
-        self.sql_controller = SQLController(database=DB, system=platform.system())
-        self.picture = self.sql_controller.get_first_time_picture()
-        self.picture.print_obj_mvp()
+        '''Initializes the database connection.\n
+        If on Mac or Windows gives dialog box to select database,
+        otherwise it will use the global defined location for the database'''
 
-    # Setup the window size, title, and container layout 
+        # Mac or Windows: select the location
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
+            self.database = filename[0]
+            self.directory = os.path.dirname(self.database)
+        else:  # Raspberry Pi: preset location
+            self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
+            # TODO Pi - look at better structure instead of setting ivar to None
+            self.directory = None  # uses path from database
+
+        print(self.database)
+        print(self.directory)
+        self.sql_controller = SQLController(database=self.database, filepath=self.directory)
+        # print(f'in setupDB: {self.sql_controller}')
+        self.picture = self.sql_controller.get_first_time_picture()
+        # self.picture.print_obj_mvp()
+
+    # Setup the window size, title, and container layout
     def setupWindowLayout(self):
         self.setWindowTitle("Capra Explorer Slideshow")
         self.setGeometry(0, 300, 1280, 720)
@@ -550,7 +547,7 @@ class MainWindow(QMainWindow):
         # results()    : at ever frame that finished a blend
         # finished()  : when blending has finished blending two the two images,
         #               sends callback to notify the fade out of UI elements
-        self.imageBlender = ImageBlender(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
+        self.imageBlender = ImageBlender(self.sql_controller, self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
         self.imageBlender.signals.result.connect(self._load_new_row)
         self.imageBlender.signals.results.connect(self._load_new_images)
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
@@ -741,6 +738,8 @@ class MainWindow(QMainWindow):
     # -------------------------------------------------------------------------
 
     # TODO - test this code on the Pi
+    # REMOVE & NOTE: this is where the bottleneck was occuring
+    # Was spawning a new instance of the method each time the rotary changed
     def rotary_changed(self, result):
         print('rotary_changed() result: {r}'.format(r=result))
         # self.picture.print_obj()

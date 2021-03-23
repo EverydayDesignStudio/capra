@@ -1,9 +1,6 @@
 # Defines custom data types for capra. Currently all are only used in conjunction
 # with the projector
 
-import platform
-
-
 class Picture:
     """Defines object which hold a row from the database table 'pictures'"""
 

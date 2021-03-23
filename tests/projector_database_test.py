@@ -4,7 +4,6 @@ from typing import Any
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
-import platform
 import unittest
 import random
 
@@ -19,7 +18,7 @@ class DatabaseTest(unittest.TestCase):
     def setUpClass(self):
         # NOTE - if the database or id is changed, all the tests will break
         # They are dependent upon that
-        self.sql_controller = SQLController(database=self.DB, system=platform.system())
+        self.sql_controller = SQLController(database=self.DB, filepath='capra-storage')
         self.picture = self.sql_controller.get_picture_with_id(1994)
 
         # For testing directly on the sql statements
