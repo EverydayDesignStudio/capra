@@ -221,6 +221,15 @@ class SQLController:
         sql = self.statements.select_previous_color_in_global(current.colorrank_global, offset)
         return self._execute_query(sql)
 
+    # Color Skip in Hikes
+    def get_next_color_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_color_skip_in_hikes(current.hike_id, current.colorrank_hike)
+        return self._execute_query(sql)
+
+    def get_previous_color_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_color_skip_in_hikes(current.hike_id, current.colorrank_hike)
+        return self._execute_query(sql)
+
     # Color Skip in Global
     def get_next_color_skip_in_global(self, current: Picture) -> Picture:
         sql = self.statements.select_next_color_skip_in_global(current.colorrank_global)

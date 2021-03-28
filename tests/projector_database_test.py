@@ -431,6 +431,26 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 873)
         self.assertEqual(pic.colorrank_global, 3658)
 
+    def test_get_next_color_skip_in_hikes(self):
+        # hike 3 to hike 2 (colors_rank 2 --> 3)
+        pic = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 1084)
+
+        # wrap around hike 1 to hike 4 (color_rank 4 --> 1)
+        pic = self.sql_controller.get_picture_with_id(94)
+        pic = self.sql_controller.get_next_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3508)
+
+    def test_get_previous_color_skip_in_hikes(self):
+        # hike 3 to hike 4 (colors_rank 2 --> 1)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 3548)
+
+        # wrap to hike 4 to hike 1 (color_rank 1 --> 4)
+        pic = self.sql_controller.get_picture_with_id(3388)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 879)
+
     def test_get_next_color_skip_in_global(self):
         pic = self.sql_controller.get_next_color_skip_in_global(self.picture)
         self.assertEqual(pic.colorrank_global, 2967)
