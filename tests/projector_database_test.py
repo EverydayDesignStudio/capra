@@ -312,6 +312,38 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_previous_altitude_in_global(pic, 3)
         self.assertEqual(pic.picture_id, 3032)
 
+    def test_get_next_altitude_skip_in_hikes(self):
+        # id	time		hike	index_in_hike	alt_rank_hike	id
+        # wrap around												(855/2158) * 892 = 353
+        # 1994	1556391512	3		878				855				--> 694
+        pic = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 694)
+
+        # next													    (47/223) * 385 = 81
+        # 1094	1556378004	2		201				47				--> 3578
+        pic = self.sql_controller.get_picture_with_id(1094)
+        pic = self.sql_controller.get_next_altitude_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3578)
+
+        # next														(800/892) * 223 = 200
+        # 34	1556323336	1		799				33				--> 938
+        pic = self.sql_controller.get_picture_with_id(34)
+        pic = self.sql_controller.get_next_altitude_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 938)
+
+    def test_get_previous_altitude_skip_in_hikes(self):
+        # id	time		hike	index_in_hike	alt_rank_hike		id
+        # previous	to hike 4												(855/2158) * 385 = 152.537
+        # 1994	1556391512	3		878				855				--> 3493
+        pic = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 3493)
+
+        # wrap back to hike 3										(26/892) * 2158 = 62
+        # 619	1556325676	1		618				26				--> 1222
+        pic = self.sql_controller.get_picture_with_id(619)
+        pic = self.sql_controller.get_previous_altitude_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1222)
+
     def test_get_next_altitude_skip_in_global(self):
         pic = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
         self.assertEqual(pic.altrank_global, 2537)

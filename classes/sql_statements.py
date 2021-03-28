@@ -184,6 +184,57 @@ class SQLStatements:
         return statement
 
     # Altitude Skip in Hikes
+    def select_next_altitude_skip_in_hikes(self, hike: int, altrank_hike: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE avg_altitude_rank > (SELECT avg_altitude_rank FROM hikes WHERE hike_id={h})) > 0 \
+            THEN ( \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/) \
+                ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
+                        /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/)) \
+                    ) AS INT) - 1 \
+                ) \
+            ) \
+            ELSE ( \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank ASC LIMIT 1) \
+                ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
+                        /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank ASC LIMIT 1)) \
+                    ) AS INT) - 1 \
+                ) \
+            ) \
+        END END);'.format(h=hike, a=altrank_hike)
+        return statement
+
+    def select_previous_altitude_skip_in_hikes(self, hike: int, altrank_hike: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE picture_id = ( \
+        SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE avg_altitude_rank < (SELECT avg_altitude_rank FROM hikes WHERE hike_id={h})) > 0 \
+            THEN ( \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank<(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank DESC LIMIT 1) \
+                ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
+                        /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank<(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank DESC LIMIT 1)) \
+                    ) AS INT) - 1 \
+                ) \
+            ) \
+            ELSE ( \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank DESC LIMIT 1) \
+                ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
+                    SELECT CAST(( \
+                        (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
+                        /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank DESC LIMIT 1)) \
+                    ) AS INT) - 1 \
+                ) \
+            ) \
+        END END);'.format(h=hike, a=altrank_hike)
+        return statement
 
     # Altitude Skip in Global
     def select_next_altitude_skip_in_global(self, altrank_global: float) -> str:

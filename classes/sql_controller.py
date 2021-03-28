@@ -184,11 +184,11 @@ class SQLController:
 
     # Altitude Skip in Hikes
     def get_next_altitude_skip_in_hikes(self, current: Picture) -> Picture:
-        sql = ''
+        sql = self.statements.select_next_altitude_skip_in_hikes(current.hike_id, current.altrank_hike)
         return self._execute_query(sql)
 
     def get_previous_altitude_skip_in_hikes(self, current: Picture) -> Picture:
-        sql = ''
+        sql = self.statements.select_previous_altitude_skip_in_hikes(current.hike_id, current.altrank_hike)
         return self._execute_query(sql)
 
     # Altitude Skip in Global
