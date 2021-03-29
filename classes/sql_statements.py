@@ -1,8 +1,6 @@
-# Holds all SQL statements for the program
-# The only class that should ever interact with is the SQL_Controller
-
-
 class SQLStatements:
+    '''Holds all SQL statements for the program\n
+    The only class that should ever interact with this is SQLController'''
 
     # Select by ID and index
     def select_picture_by_hike_ids(self, hike_id: int, index_in_hike: int) -> str:
@@ -118,8 +116,7 @@ class SQLStatements:
     def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
         skip_ahead = 15  # private variable in case we want to change how big the skip is
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
-            SELECT CASE WHEN ( \
-                (SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m}+{s})) >= 1) \
+            SELECT CASE WHEN ((SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m}+{s})) > 0) \
                 THEN ( /*there is a next minute below in table*/ \
                     SELECT picture_id FROM pictures WHERE minute>=({m}+{s}) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
                     SELECT CAST(( \
@@ -130,8 +127,8 @@ class SQLStatements:
                 ) \
                 ELSE ( /*wrap back around to top of table*/ \
                     SELECT picture_id FROM pictures WHERE minute>=( \
-                            /* first minute value */						 /* skip value */	 /* how many minutes from top of table */ \
-                        (SELECT minute FROM pictures ORDER BY minute ASC LIMIT 1)+ {s} - (SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m})) \
+                            /* first minute value */						 /* skip value */	 /* how many minutes from bottom of table */ \
+                        (SELECT minute FROM pictures ORDER BY minute ASC LIMIT 1) + {s} - (SELECT count(DISTINCT minute) FROM pictures WHERE minute>=({m})) \
                     ) ORDER BY minute ASC, time ASC LIMIT 1 OFFSET ( \
                     SELECT CAST(( \
                         (CAST((SELECT count(*) FROM pictures WHERE minute={m} AND time<={t}) AS REAL) \

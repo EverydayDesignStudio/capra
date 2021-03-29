@@ -10,6 +10,7 @@ import random
 
 class DatabaseTest(unittest.TestCase):
     DB = 'capra-storage/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
+    filepath = 'capra-storage'
     sql_controller = None
     sql_statements = None
     picture = None
@@ -18,7 +19,7 @@ class DatabaseTest(unittest.TestCase):
     def setUpClass(self):
         # NOTE - if the database or id is changed, all the tests will break
         # They are dependent upon that
-        self.sql_controller = SQLController(database=self.DB, filepath='capra-storage')
+        self.sql_controller = SQLController(database=self.DB, filepath=self.filepath)
         self.picture = self.sql_controller.get_picture_with_id(1994)
 
         # For testing directly on the sql statements
@@ -222,9 +223,9 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 3352)
 
     def test_get_next_time_skip_in_global(self):
-        # id    time        minute  id
-        # 1994  1556391512  718 ->  2219
-        # 2000  1556391536  718	->  2225
+        # id    time        minute      id
+        # 1994  1556391512  718 -> 733  2219
+        # 2000  1556391536  718	-> 733  2225
         pic = self.sql_controller.get_next_time_skip_in_global(self.picture)
         self.assertEqual(pic.picture_id, 2219)
 
@@ -232,10 +233,11 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_skip_in_global(pic)
         self.assertEqual(pic.picture_id, 2225)
 
-        # id    time        minute  id
-        # 650   1556325800  1063 -> 875
-        # 688   1556325952  1065 -> 906
-        # 872   1556326688  1078 -> 1090
+        # id    time        minute          id
+        # 650   1556325800  1063 -> 1078    875
+        # 688   1556325952  1065 -> 1080    906
+        # 872   1556326688  1078 -> 493    1090
+        # 885   1556326740  1079 -> 494    1103
         pic = self.sql_controller.get_picture_with_id(650)
         pic = self.sql_controller.get_next_time_skip_in_global(pic)
         self.assertEqual(pic.picture_id, 875)
@@ -247,6 +249,10 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_picture_with_id(872)
         pic = self.sql_controller.get_next_time_skip_in_global(pic)
         self.assertEqual(pic.picture_id, 1090)
+
+        pic = self.sql_controller.get_picture_with_id(885)
+        pic = self.sql_controller.get_next_time_skip_in_global(pic)
+        self.assertEqual(pic.picture_id, 1103)
 
     def test_get_previous_time_skip_in_global(self):
         # id    time        minute          id
