@@ -160,7 +160,9 @@ class SQLController:
         return self._execute_query(sql)
 
     def get_previous_time_skip_in_global(self, current: Picture) -> Picture:
-        pass
+        sql = self.statements.select_previous_time_skip_in_global(current.minute, current.time)
+        return self._execute_query(sql)
+
     # Altitude
     # --------------------------------------------------------------------------
 
