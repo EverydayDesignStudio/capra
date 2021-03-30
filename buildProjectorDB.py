@@ -35,7 +35,7 @@ BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-stora
 
 # TODO: set DB accordingly
 src_db_name = "capra_projector_jan2021_min_AllHikes.db"
-dest_db_name = "capra_projector_mar2021_min_test.db"
+dest_db_name = "capra_projector_apr2021_min_test_full.db"
 
 ####################################################
 
@@ -53,7 +53,7 @@ COLOR_HSV_INDEX = -1    # used in the sortColor helper function
 
 NEW_DATA = False
 
-CLUSTERS = 4        # assumes X number of dominant colors in a pictures
+CLUSTERS = 5        # assumes X number of dominant colors in a pictures
 REPETITION = 8
 
 FILENAME = "[!\.]*_cam[1-3].jpg"
@@ -563,19 +563,19 @@ def main():
     checkSum_total = 0
 
     dummyGlobalCounter = 1
-    hikeTimer = time.time()
+    masterTimer = time.time()
 
     while currHike <= latest_src_hikeID:
+    # while currHike <= 31:
 
         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
-
-        if (currHike > 2):
-            break;
 
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
 
+        # if (currHike > 32):
+        #     break;
 
         # 1. skip empty hikes
         if (currExpectedHikeSize == 0):
@@ -585,6 +585,7 @@ def main():
 
         else:
             NEW_DATA = True
+            hikeTimer = time.time()
 
             destPath = build_hike_path(DROPBOX + BASEPATH_DEST, currHike, True)
 
@@ -606,8 +607,8 @@ def main():
             else:
                 hikeTimer = time.time()
                 print("[{}] Processing Hike {}".format(timenow(), str(currHike)))
-                # TODO: return proper values
                 buildHike(currHike)
+                print("[{}] --- Hike {} took {} seconds".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
 
             currHike += 1
             globalCounter_h += currExpectedHikeSize
@@ -683,9 +684,9 @@ def main():
         NEW_DATA = False
 
 
-    print("--- global ranking took {} seconds".format(str(time.time() - rankTimer)))
+    print("[{}] --- Global ranking took {} seconds".format(timenow(), str(time.time() - rankTimer)))
 
-    print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - hikeTimer)))
+    print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
 
 
 
