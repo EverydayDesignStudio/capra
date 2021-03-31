@@ -365,11 +365,6 @@ def buildHike(currHike):
     # f = open(DATAPATH + "{}-{}x{}".format(FOLDERNAME, DIMX, DIMY) + '_output_list_RGB.txt', 'w')
     # sys.stdout = f
 
-    validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
-    numValidRows = len(validRows)
-
-    print("NumValidRows: {}".format(numValidRows))
-
     avgAlt = 0
     startTime = 9999999999
     endTime = -1
@@ -377,8 +372,17 @@ def buildHike(currHike):
     pics = {}
     commits = {}
 
-    count = 0
-    for index_in_hike in range(numValidRows):
+    check = 0
+    index_in_hike = 1
+    validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
+    maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
+    numValidRows = len(validRows)
+
+    print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
+    print("[{}] NumValidRows: {}".format(timenow(), str(numValidRows)))
+
+    while (check <= numValidRows and index_in_hike <= maxRows):      ### TODO: is there any edge case for this condition?
+    # for index_in_hike in range(numValidRows):
         # row = validRows[index_in_hike]
         row = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
@@ -393,6 +397,7 @@ def buildHike(currHike):
         picPathCam3_dest = destPath + "{}_cam3.jpg".format(index_in_hike)
 
         if (row is None):
+            index_in_hike += 1
             continue
 
         # TODO: extract row data only when files are already transferred
@@ -405,10 +410,11 @@ def buildHike(currHike):
 
         # if (not os.path.exists(picPathCam1) or not os.path.exists(picPathCam2) or not os.path.exists(picPathCam3)):
         if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
+            index_in_hike += 1
             continue
 
         if (index_in_hike % 200 == 0):
-            print("### Checkpoint at {}".format(index_in_hike))
+            print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
 
         ### TODO: change this index to row[0] if cameraDB is used
         # update timestamps
@@ -466,13 +472,12 @@ def buildHike(currHike):
         domColorsHike_hsv.append(domCol_hsv)
 
         dummyGlobalCounter += 1
-        count += 1
+        check += 1
+        index_in_hike += 1
 
     ### Post-processing
     # attach color ranking within the current hike
     # then, upsert rows
-    # colRankList = sort_by_colors(pics.copy())
-    # altRankList = sort_by_alts(commits.copy())
     colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=13, index_in_hike=7)
     altRankList = sort_by_alts(list(commits.copy().values()), alt_index=9, index_in_hike=7)
 
@@ -530,7 +535,7 @@ def buildHike(currHike):
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
-    print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, count))
+    print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, check))
 
 
 def compute_checksum(path, currHike):
@@ -592,8 +597,9 @@ def main():
             expectedCheckSumTotal = currExpectedHikeSize * 4
             checkSum_transferred, checkSum_rotated, checkSum_total = compute_checksum(destPath, currHike)
 
-            # print("[{}] Hike {}: {} files expected, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
-
+            print("[{}] Hike {}: {} files transferred from SRC, {} files expected".format(timenow(), str(currHike), str(checkSum_transferred), str(currExpectedHikeSize*3)))
+            print("[{}] Hike {}: {} files expected at DEST, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
+            print("[{}] Hike {}: post-processing status: {}".format(timenow(), str(currHike), str(check_hike_postprocessing(currHike))))
 
             # 2. if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
             # also check if DB is updated to post-processed values as well
