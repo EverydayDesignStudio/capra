@@ -29,13 +29,46 @@ dummyGlobalAltRank = -1
 dummyGlobalCounter = 0
 
 DROPBOX = "/Users/myoo/Dropbox/"
+BASEPATH_SRC = None
+BASEPATH_DEST = None
+src_db_name = None
+dest_db_name = None
 
-BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
-BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
+DBTYPE = 'camera'   # 'camera' or 'projector'
+ROWINDEX_TIMESTAMP = None
+ROWINDEX_ALTITUDE = None
+ROWINDEX_INDEX_IN_HIKE = None
+ROWINDEX_CAMERA1 = None
+ROWINDEX_CAMERA2 = None
+ROWINDEX_CAMERA3 = None
 
-# TODO: set DB accordingly
-src_db_name = "capra_projector_jan2021_min_AllHikes.db"
-dest_db_name = "capra_projector_apr2021_min_test_full.db"
+# TODO: set DB and PATH accordingly
+if (DBTYPE == 'projector'):
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
+    src_db_name = "capra_projector_jan2021_min_AllHikes.db"
+
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
+    dest_db_name = "capra_projector_apr2021_min_test_full.db"
+
+    ROWINDEX_TIMESTAMP = 1
+    ROWINDEX_ALTITUDE = 9
+    ROWINDEX_INDEX_IN_HIKE = 8
+    ROWINDEX_CAMERA1 = 22
+
+else:
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
+    src_db_name = "capra_camera.db"
+
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
+    dest_db_name = "capra_projector_apr2021_min_camera_full.db"
+
+    ROWINDEX_TIMESTAMP = 0
+    ROWINDEX_ALTITUDE = 1
+    ROWINDEX_INDEX_IN_HIKE = 3
+    ROWINDEX_CAMERA1 = 4
+
+ROWINDEX_CAMERA2 = ROWINDEX_CAMERA1 + 1
+ROWINDEX_CAMERA3 = ROWINDEX_CAMERA1 + 2
 
 ####################################################
 
@@ -183,15 +216,15 @@ def sort_by_colors(data, color_index_hsv, index_in_hike):
     return rankList
 
 
-def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_processing_size=None):
+def dominantColorWrapper(currHike, row_src, image1, image2, image3=None, image_processing_size=None):
     global dummyGlobalCounter
 
     ### TODO: change this index to row[3] if cameraDB is used
-    index_in_hike = row[8]
+    index_in_hike = row_src[ROWINDEX_INDEX_IN_HIKE]
 
     color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=image1, image2=image2, image3=image3, image_processing_size=(DIMX, DIMY))
 
-    picDatetime = datetime.datetime.fromtimestamp(row[1])
+    picDatetime = datetime.datetime.fromtimestamp(row_src[ROWINDEX_TIMESTAMP])
 
     #     TIME,
     #     year, month, day, minute, dayofweek,
@@ -206,13 +239,13 @@ def dominantColorWrapper(currHike, row, image1, image2, image3=None, image_proce
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
     ### TODO: change this index to row[0] and row[1] if cameraDB is used
-    commit = [row[1],
+    commit = [row_src[ROWINDEX_TIMESTAMP],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, index_in_hike, dummyGlobalCounter,
-                row[9], -1, -1, dummyGlobalCounter,
+                row_src[ROWINDEX_ALTITUDE], -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
-                row[22], row[23], row[24], row[23][:-4] + "f" + row[23][-4:]]
+                row_src[ROWINDEX_CAMERA1], row_src[ROWINDEX_CAMERA2], row_src[ROWINDEX_CAMERA3], row_src[ROWINDEX_CAMERA2][:-4] + "f" + row_src[ROWINDEX_CAMERA2][-4:]]
 
     # if (index_in_hike >= 417 and index_in_hike <= 430):
     #     print("# " + str(index_in_hike))
@@ -384,7 +417,7 @@ def buildHike(currHike):
     while (check <= numValidRows and index_in_hike <= maxRows):      ### TODO: is there any edge case for this condition?
     # for index_in_hike in range(numValidRows):
         # row = validRows[index_in_hike]
-        row = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
+        row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
         picPathCam1_src = srcPath + "{}_cam1.jpg".format(index_in_hike)
         picPathCam2_src = srcPath + "{}_cam2.jpg".format(index_in_hike)
@@ -396,7 +429,7 @@ def buildHike(currHike):
         picPathCam2f_dest = destPath + "{}_cam2f.jpg".format(index_in_hike)
         picPathCam3_dest = destPath + "{}_cam3.jpg".format(index_in_hike)
 
-        if (row is None):
+        if (row_src is None):
             index_in_hike += 1
             continue
 
@@ -416,15 +449,13 @@ def buildHike(currHike):
         if (index_in_hike % 200 == 0):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
 
-        ### TODO: change this index to row[0] if cameraDB is used
         # update timestamps
-        if (row[1] < startTime):
-            startTime = row[1]
-        if (row[1] > endTime):
-            endTime = row[1]
+        if (row_src[ROWINDEX_TIMESTAMP] < startTime):
+            startTime = row_src[ROWINDEX_TIMESTAMP]
+        if (row_src[ROWINDEX_TIMESTAMP] > endTime):
+            endTime = row_src[ROWINDEX_TIMESTAMP]
 
-        ### TODO: change this index to row[1] if cameraDB is used
-        avgAlt += int(row[9])
+        avgAlt += int(row_src[ROWINDEX_ALTITUDE])
 
         # rotate and resize, copy those to the dest folder
         img = None
@@ -466,7 +497,7 @@ def buildHike(currHike):
         if (not os.path.exists(picPathCam3_src)):
             picPathCam3_dest = None
         # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=picPathCam1_dest, image2=picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
-        commit, domCol_hsv = dominantColorWrapper(currHike, row, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+        commit, domCol_hsv = dominantColorWrapper(currHike, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
 
         commits[fileName] = commit
         domColorsHike_hsv.append(domCol_hsv)
@@ -632,30 +663,30 @@ def main():
         COLOR_HSV_INDEX = 1
 
         ### global ranks for pictures
-        rows = dbDESTController.get_pictures_global_ranking_raw_data()
-        for i in range(len(rows)):
-            row = rows[i]
-            globalTimeList.append((row[0], row[4]))
-            globalAltList.append((row[0], row[1]))
-            globalColorList.append((row[0], row[2]))
+        rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
+        for i in range(len(rows_dst)):
+            row_dst = rows_dst[i]
+            globalTimeList.append((row_dst[0], row_dst[4]))
+            globalAltList.append((row_dst[0], row_dst[1]))
+            globalColorList.append((row_dst[0], row_dst[2]))
 
         globalTimeList.sort(key= itemgetter(1, 0))
         for i in range(len(globalTimeList)):
-            row = globalTimeList[i]
+            row_dst = globalTimeList[i]
             rank = i + 1
-            dbDESTController.update_pictures_global_TimeRank(row[0], rank)
+            dbDESTController.update_pictures_global_TimeRank(row_dst[0], rank)
 
         globalAltList.sort(key=lambda data: data[1])
         for i in range(len(globalAltList)):
-            row = globalAltList[i]
+            row_dst = globalAltList[i]
             rank = i + 1
-            dbDESTController.update_pictures_global_AltRank(row[0], rank)
+            dbDESTController.update_pictures_global_AltRank(row_dst[0], rank)
 
         globalColorList.sort(key=splitColor)
         for i in range(len(globalColorList)):
-            row = globalColorList[i]
+            row_dst = globalColorList[i]
             rank = i + 1
-            dbDESTController.update_pictures_global_ColRank(row[0], rank)
+            dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
 
         # create color spectrum for globalColor and globalColor_h
         colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
@@ -669,23 +700,23 @@ def main():
         globalAltList.clear()
         globalColorList.clear()
 
-        rows = dbDESTController.get_hikes_global_ranking_raw_data()
-        for i in range(len(rows)):
-            row = rows[i]
-            globalAltList.append((row[0], row[1]))
-            globalColorList.append((row[0], row[2]))
+        rows_dst = dbDESTController.get_hikes_global_ranking_raw_data()
+        for i in range(len(rows_dst)):
+            row_dst = rows_dst[i]
+            globalAltList.append((row_dst[0], row_dst[1]))
+            globalColorList.append((row_dst[0], row_dst[2]))
 
         globalAltList.sort(key=lambda data: data[1])
         for i in range(len(globalAltList)):
-            row = globalAltList[i]
+            row_dst = globalAltList[i]
             rank = i + 1
-            dbDESTController.update_hikes_global_AltRank(row[0], rank)
+            dbDESTController.update_hikes_global_AltRank(row_dst[0], rank)
 
         globalColorList.sort(key=splitColor)
         for i in range(len(globalColorList)):
-            row = globalColorList[i]
+            row_dst = globalColorList[i]
             rank = i + 1
-            dbDESTController.update_hikes_global_ColRank(row[0], rank)
+            dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
 
         NEW_DATA = False
 
