@@ -11,7 +11,7 @@ import random
 
 class DatabaseTest(unittest.TestCase):
     DB = 'tests/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
-    filepath = 'capra-storage'
+    directory = 'capra-storage'
     sql_controller = None
     sql_statements = None
     picture = None
@@ -20,7 +20,7 @@ class DatabaseTest(unittest.TestCase):
     def setUpClass(self):
         # NOTE - if the database or id is changed, all the tests will break
         # They are dependent upon that
-        self.sql_controller = SQLController(database=self.DB, filepath=self.filepath)
+        self.sql_controller = SQLController(database=self.DB, directory=self.directory)
         self.picture = self.sql_controller.get_picture_with_id(1994)
 
         # For testing directly on the sql statements

@@ -4,6 +4,7 @@
 
 #SQL
 *.db
+*.sqbpro
 
 # Visual Studio Code
 .vscode
