@@ -4,15 +4,16 @@ import os
 import platform
 import sqlite3
 import time
+from PyQt5.QtGui import *
 from classes.capra_data_types import Picture, Hike
 from classes.sql_statements import SQLStatements
 
 
 class SQLController:
-    def __init__(self, database: str, filepath=None):
+    def __init__(self, database: str, directory=None):
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
-        self.filepath = filepath
+        self.directory = directory
         self.statements = SQLStatements()
 
     # --------------------------------------------------------------------------
@@ -21,7 +22,8 @@ class SQLController:
 
     # Private functions
     def _execute_query(self, query) -> Picture:
-        '''Returns the first (row) Picture from a given query'''
+        '''Returns the first (row) `Picture` from a given query'''
+        self.connection.row_factory = sqlite3.Row
         cursor = self.connection.cursor()
         cursor.execute(query)
         all_rows = cursor.fetchall()
@@ -29,60 +31,32 @@ class SQLController:
             print("ERROR UPON CALLING QUERY:")
             print(query)
             return None
-        else:  # new Picture was retrieved from database
-            # REMOVE - eventually remove once we have the new test database
-            # HACK - due to having two database states, we have to toggle which version
-            # of the row builder we currently use
-            if platform.system() == 'Darwin' or platform.system() == 'Windows':
-                # picture = self._old_build_picture_from_row(all_rows[0])  # slideshow program
-                picture = self._build_picture_from_row(all_rows[0])  # database tests
-            else:
-                picture = self._build_picture_from_row(all_rows[0])
+        else:
+            # Picture object was created from database row
+            picture = self._build_picture_from_row(all_rows[0])
             return picture
 
-    # REMOVE - eventually remove, but leave in for right now while testing hike10
-    def _old_build_picture_from_row(self, row: list) -> Picture:
-        '''Builds a (Dec. 2020) Picture object from a row in the database'''
-        camera1 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
-        camera2 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
-        camera3 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
-        cameraf = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
-
-        picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
-                          minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
-                          altitude=row[9], altrank_hike=row[10], altrank_global=row[11], altrank_global_h='nil',
-                          color_hsv=row[12], color_rgb=row[13], colorrank_hike=row[15], colorrank_global=row[16],
-                          colorrank_global_h='nil', colors_count='nil', colors_rgb='nil', colors_conf='nil',
-                          camera1=camera1, camera2=camera2, camera3=camera3, cameraf=cameraf,
-                          created=row[24], updated=row[25])
-        return picture
-
     def _build_picture_from_row(self, row: list) -> Picture:
-        '''Builds latest version of the Picture object from a row in the database'''
-
-        # TODO - will need to be changed due to accepting the file path from a prompt on startup of the Mac program
-        # camera1 = ''
-        # camera2 = ''
-        # camera3 = ''
-        # cameraf = ''
+        '''Builds latest version of the `Picture` object from a row in the database'''
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            camera1 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam1.jpg'
-            camera2 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2.jpg'
-            camera3 = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam3.jpg'
-            cameraf = self.filepath + '/hike' + str(row[7]) + '/' + str(row[8]) + '_cam2f.jpg'
+            camera1 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam1.jpg'
+            camera2 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam2.jpg'
+            camera3 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam3.jpg'
+            cameraf = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam2f.jpg'
         elif platform.system() == 'Linux':
-            camera1 = row[22]
-            camera2 = row[23]
-            camera3 = row[24]
-            cameraf = row[25]
+            camera1 = row['camera1']
+            camera2 = row['camera2']
+            camera3 = row['camera3']
+            cameraf = row['camera_landscape']
 
-        picture = Picture(picture_id=row[0], time=row[1], year=row[2], month=row[3], day=row[4],
-                          minute=row[5], dayofweek=row[6], hike_id=row[7], index_in_hike=row[8],
-                          altitude=row[9], altrank_hike=row[10], altrank_global=row[11], altrank_global_h=row[12],
-                          color_hsv=row[13], color_rgb=row[14], colorrank_hike=row[16], colorrank_global=row[17],
-                          colorrank_global_h=row[18], colors_count=row[19], colors_rgb=row[20], colors_conf=row[21],
+        # Finalized Database schema
+        picture = Picture(picture_id=row['picture_id'], time=row['time'], year=row['year'], month=row['month'], day=row['day'],
+                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'],
+                          altitude=row['altitude'], altrank_hike=row['altrank_hike'], altrank_global=row['altrank_global'], altrank_global_h=row['altrank_global_h'],
+                          color_hsv=row['color_hsv'], color_rgb=row['color_rgb'], colorrank_hike=row['color_rank_hike'], colorrank_global=row['color_rank_global'],
+                          colorrank_global_h=row['color_rank_global_h'], colors_count=row['colors_count'], colors_rgb=row['colors_rgb'], colors_conf=row['colors_conf'],
                           camera1=camera1, camera2=camera2, camera3=camera3, cameraf=cameraf,
-                          created=row[26], updated=row[27])
+                          created=row['created_date_time'], updated=row['updated_date_time'])
 
         return picture
 

@@ -4,12 +4,13 @@ from typing import Any
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
+from PyQt5.QtGui import QColor
 import unittest
 import random
 
 
 class DatabaseTest(unittest.TestCase):
-    DB = 'capra-storage/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
+    DB = 'tests/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
     filepath = 'capra-storage'
     sql_controller = None
     sql_statements = None
@@ -52,14 +53,19 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(picture.altrank_global, 2355)
         self.assertEqual(picture.altrank_global_h, 1970)
 
-        self.assertEqual(picture.color_hsv, '91,18,220')
-        self.assertEqual(picture.color_rgb, '204,219,220')
+        hsvColor = QColor()
+        hsvColor.setHsv(91, 18, 220)
+        self.assertEqual(picture.color_hsv, hsvColor)
+        rgbColor = QColor(204, 219, 220)
+        self.assertEqual(picture.color_rgb, rgbColor)
         self.assertEqual(picture.colorrank_hike, 1776)
         self.assertEqual(picture.colorrank_global, 2785)
         self.assertEqual(picture.colorrank_global_h, 2891)
         self.assertEqual(picture.colors_count, 4)
-        self.assertEqual(picture.colors_rgb, '204,219,220|52,46,17|122,117,75|17,17,15')
-        self.assertEqual(picture.colors_conf, '0.22,0.18,0.16,0.11')
+        colorList = [QColor(204, 219, 220), QColor(52, 46, 17),
+                     QColor(122, 117, 75), QColor(17, 17, 15)]
+        self.assertEqual(picture.colors_rgb, colorList)
+        self.assertEqual(picture.colors_conf, [0.22, 0.18, 0.16, 0.11])
 
         self.assertEqual(picture.camera1, 'capra-storage/hike3/878_cam1.jpg')
         self.assertEqual(picture.camera2, 'capra-storage/hike3/878_cam2.jpg')
