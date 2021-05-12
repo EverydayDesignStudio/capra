@@ -155,15 +155,19 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_next_time_in_global(self.picture, 3657)
         self.assertEqual(pic.picture_id, 1993)
 
-        # moding
+        # moding below
         pic = self.sql_controller.get_next_time_in_global(self.picture, 3659)
         self.assertEqual(pic.picture_id, 1995)
 
         pic = self.sql_controller.get_next_time_in_global(self.picture, 3668)
         self.assertEqual(pic.picture_id, 2004)
 
+        # moding above
         pic = self.sql_controller.get_next_time_in_global(self.picture, 6216)
         self.assertEqual(pic.picture_id, 894)
+
+        pic = self.sql_controller.get_next_time_in_global(self.picture, 6714)
+        self.assertEqual(pic.picture_id, 1392)
 
     def test_get_previous_time_in_global(self):
         # in minute
@@ -183,50 +187,78 @@ class DatabaseTest(unittest.TestCase):
         pic = self.sql_controller.get_previous_time_in_global(self.picture, 1101)
         self.assertEqual(pic.picture_id, 893)
 
-        # wrap around
+        # wrap around above
         pic = self.sql_controller.get_previous_time_in_global(self.picture, 1102)
         self.assertEqual(pic.picture_id, 892)
 
+        # wrap around below
         pic = self.sql_controller.get_previous_time_in_global(self.picture, 1800)
         self.assertEqual(pic.picture_id, 194)
 
-        # moding
+        # moding above
         pic = self.sql_controller.get_previous_time_in_global(self.picture, 3659)
         self.assertEqual(pic.picture_id, 1993)
 
         pic = self.sql_controller.get_previous_time_in_global(self.picture, 3668)
         self.assertEqual(pic.picture_id, 1984)
 
+        # moding below
+        pic = self.sql_controller.get_previous_time_in_global(self.picture, 7116)
+        self.assertEqual(pic.picture_id, 2194)
+
     def test_get_next_time_skip_in_hikes(self):
-        # id	time		hike	index_in_hike			id
-        #                                           (451/2158) * 385 = 80
-        # 1566	1556389800	3		450					--> 3353
+        # id	time		hike	index_in_hike	id  (hike | index)
+        # 1566	1556389800	3		450			--> 3353(4 | 79)
+        # (451/2158) * 385 = 80
         pic = self.sql_controller.get_picture_with_id(1566)
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 3353)
 
-        #										    (80/385) * 892	= 185
-        # 3353	1556399116	4		79					--> 185 (index_in_hike=184)
+        # wrap around
+        # 3353	1556399116	4		79			--> 185(1 | 184)
+        # (80/385) * 892 = 185
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 185)
 
+        # 185   1556323940  1       184         --> 938(2 | 45)
+        # (185/892) * 223 = 46
+        pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 938)
+
+        # 938   1556377380  2       45          --> 1560(3 | 444)
+        # (46/223) * 2158 = 445
+        pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1560)
+
+        # 3000  1556395536  3       1884        --> 3609 (4 | 335)
+        # (1885/2158) * 385 = 336
+        pic = self.sql_controller.get_picture_with_id(3000)
+        pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3609)
+
     def test_get_previous_time_skip_in_hikes(self):
-        # id	time		hike	index_in_hike			picture_id
-        #											(451/2158) * 223 = 47
-        # 1566	1556389800	3		450					<-- 938
+        # id	time		hike	index_in_hike	id  (hike | index)
+        # 1566	1556389800	3		450	        <-- 938 (2 | 45)
+        # (451/2158) * 223 = 46
         pic = self.sql_controller.get_picture_with_id(1566)
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 938)
 
-        #												(46/223) * 892 = 184
-        # 938	1556377380	2		46					<-- 184
+        # 938	1556377380	2		45		    <-- 184 (1 | 183)
+        # (46/223) * 892 = 184
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 184)
 
-        #												(183/892) * 385	= 79
-        # 184	1556323936	1		183					--> 3352
+        # 184	1556323936	1		183		    <-- 3352 (4 | 77)
+        # (184/892) * 385	= 78
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 3352)
+
+        # 3654  1556400320  4       380        <-- 3244 (3 | 2134)
+        # (381/385) * 2158 = 2135
+        pic = self.sql_controller.get_picture_with_id(3654)
+        pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 3250)
 
     def test_get_next_time_skip_in_global(self):
         # id    time        minute      id
