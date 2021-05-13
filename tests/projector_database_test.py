@@ -587,89 +587,211 @@ class DatabaseTest(unittest.TestCase):
     # Color
     # --------------------------------------------------------------------------
     def test_get_next_color_in_hikes(self):
-        # forward
+        # forward by 1
+        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 1)
+        self.assertEqual(pic.colorrank_global_h, 2892)
+
+        # forward by 2
         pic = self.sql_controller.get_next_color_in_hikes(self.picture, 2)
         self.assertEqual(pic.colorrank_global_h, 2893)
 
-        # mod
-        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 9+3658)
-        self.assertEqual(pic.colorrank_global_h, 2900)
-
-        # bottom of the list
+        # wrap to top of list
         pic = self.sql_controller.get_picture_with_id(3369)
         pic = self.sql_controller.get_next_color_in_hikes(pic, 8)
         self.assertEqual(pic.picture_id, 883)
 
+        # mod to row below
+        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 9+3658)
+        self.assertEqual(pic.colorrank_global_h, 2900)
+
+        # mod to row above
+        pic = self.sql_controller.get_next_color_in_hikes(self.picture, 800+3658)
+        self.assertEqual(pic.colorrank_global_h, 33)
+
     def test_get_previous_color_in_hikes(self):
-        # backward
+        # backward by 1
+        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 1)
+        self.assertEqual(pic.colorrank_global_h, 2890)
+
+        # backward by 5
         pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 5)
         self.assertEqual(pic.colorrank_global_h, 2886)
 
-        # mod
-        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 891+3658)
-        self.assertEqual(pic.colorrank_global_h, 2000)
-
-        # top of the list
+        # wrap to bottom of list
         pic = self.sql_controller.get_picture_with_id(341)
         pic = self.sql_controller.get_previous_color_in_hikes(pic, 25)
         self.assertEqual(pic.picture_id, 3482)
         self.assertEqual(pic.colorrank_global_h, 3658)
 
+        # mod to row above
+        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 891+3658)
+        self.assertEqual(pic.colorrank_global_h, 2000)
+
+        # mod to row below
+        pic = self.sql_controller.get_previous_color_in_hikes(self.picture, 2900+3658)
+        self.assertEqual(pic.colorrank_global_h, 3649)
+
     def test_get_next_color_in_global(self):
-        # forward
+        # forward by 1
         pic = self.sql_controller.get_next_color_in_global(self.picture, 1)
         self.assertEqual(pic.colorrank_global, 2786)
 
+        # forward by 10
         pic = self.sql_controller.get_next_color_in_global(self.picture, 10)
         self.assertEqual(pic.colorrank_global, 2795)
 
-        # mod
-        pic = self.sql_controller.get_next_color_in_global(self.picture, 500+3658)
-        self.assertEqual(pic.colorrank_global, 3285)
-
-        # bottom of the list
+        # wrap to top of list
         pic = self.sql_controller.get_picture_with_id(3482)
         pic = self.sql_controller.get_next_color_in_global(pic, 4)
         self.assertEqual(pic.picture_id, 518)
         self.assertEqual(pic.colorrank_global, 1)
 
+        # mod to row below
+        pic = self.sql_controller.get_next_color_in_global(self.picture, 500+3658)
+        self.assertEqual(pic.colorrank_global, 3285)
+
+        # mod to row above
+        pic = self.sql_controller.get_next_color_in_global(self.picture, 900+3658)
+        self.assertEqual(pic.colorrank_global, 27)
+
     def test_get_previous_color_in_global(self):
-        # backward
+        # backward by 1
         pic = self.sql_controller.get_previous_color_in_global(self.picture, 1)
         self.assertEqual(pic.colorrank_global, 2784)
 
+        # backward by 10
         pic = self.sql_controller.get_previous_color_in_global(self.picture, 10)
         self.assertEqual(pic.colorrank_global, 2775)
 
-        # mod
-        pic = self.sql_controller.get_previous_color_in_global(self.picture, 500+3658)
-        self.assertEqual(pic.colorrank_global, 2285)
-
-        # top of the list
+        # wrap to bottom of list
         pic = self.sql_controller.get_picture_with_id(882)
         pic = self.sql_controller.get_previous_color_in_global(pic, 2)
         self.assertEqual(pic.picture_id, 873)
         self.assertEqual(pic.colorrank_global, 3658)
 
-    def test_get_next_color_skip_in_hikes(self):
-        # hike 3 to hike 2 (colors_rank 2 --> 3)
-        pic = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
-        self.assertEqual(pic.picture_id, 1084)
+        # mod to row above
+        pic = self.sql_controller.get_previous_color_in_global(self.picture, 500+3658)
+        self.assertEqual(pic.colorrank_global, 2285)
 
+        # mod to row below
+        pic = self.sql_controller.get_previous_color_in_global(self.picture, 2800+3658)
+        self.assertEqual(pic.colorrank_global, 3643)
+
+    def test_get_next_color_skip_in_hikes(self):
+        # id	time		hike	color_rank_hike 	id (hike | color_rank_hike)
         # wrap around hike 1 to hike 4 (color_rank 4 --> 1)
+        # 94    1556323576  1       772             --> 3508 (4 | 333)
+        # (772/892) * 333
         pic = self.sql_controller.get_picture_with_id(94)
         pic = self.sql_controller.get_next_color_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 3508)
 
-    def test_get_previous_color_skip_in_hikes(self):
-        # hike 3 to hike 4 (colors_rank 2 --> 1)
-        pic = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
-        self.assertEqual(pic.picture_id, 3548)
+        # hike 3 to hike 2 (colors_rank 2 --> 3)
+        # 1994	1556391512	3		1776			--> 1084 (2 | 183)
+        # (1776/2158) * 223
+        pic = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 1084)
 
+        # hike 2 to hike 1 (colors_rank 3 --> 4)
+        # 1109  1556378064  2       26              --> 479 (1 | 104)
+        # (26/223) * 892 = 104
+        pic = self.sql_controller.get_picture_with_id(1109)
+        pic = self.sql_controller.get_next_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 479)
+
+    def test_get_previous_color_skip_in_hikes(self):
+        # id	time		hike	color_rank_hike 	id (hike | color_rank_hike)
         # wrap to hike 4 to hike 1 (color_rank 1 --> 4)
+        # 3388  1556399256  4       2               <-- 879 (1 | 4)
+        # (2/385) * 892 = 4
         pic = self.sql_controller.get_picture_with_id(3388)
         pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
         self.assertEqual(pic.picture_id, 879)
+
+        # hike 3 to hike 4 (colors_rank 2 --> 1)
+        # 1994	1556391512	3		1776			<-- 3548 (4 | 316)
+        # (1776/2158) * 385 = 316
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
+        self.assertEqual(pic.picture_id, 3548)
+
+        # hike 1 to hike 2 (color_rank 4 --> 3)
+        # 882   1556326728  1       2               <-- x (2 | 0)
+        # (2/892) * 223 = 0
+        pic = self.sql_controller.get_picture_with_id(882)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        pic = self.sql_controller.get_picture_with_id(518)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        pic = self.sql_controller.get_picture_with_id(878)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        pic = self.sql_controller.get_picture_with_id(879)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        pic = self.sql_controller.get_picture_with_id(883)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        pic = self.sql_controller.get_picture_with_id(308)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1106)
+
+        # when do we get to 1115 ?
+        pic = self.sql_controller.get_picture_with_id(315)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1115)
+
+        pic = self.sql_controller.get_picture_with_id(310)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1115)
+
+        pic = self.sql_controller.get_picture_with_id(312)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1115)
+
+        pic = self.sql_controller.get_picture_with_id(325)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1115)
+
+        # Next
+        pic = self.sql_controller.get_picture_with_id(332)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1067)
+
+        # End of hike 1 via color that goes to rank 221
+        # (887/892) * 223 = 221
+        pic = self.sql_controller.get_picture_with_id(373)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1023)
+
+        # End of hike 1 via color that goes to rank 222
+        # (888/892) * 223 = 222
+        pic = self.sql_controller.get_picture_with_id(9)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1024)
+
+        pic = self.sql_controller.get_picture_with_id(386)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1024)
+
+        pic = self.sql_controller.get_picture_with_id(1)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1024)
+
+        pic = self.sql_controller.get_picture_with_id(143)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1024)
+
+        # Goes to rank 223
+        # (892/892) * 223 = 223
+        pic = self.sql_controller.get_picture_with_id(873)
+        pic = self.sql_controller.get_previous_color_skip_in_hikes(pic)
+        self.assertEqual(pic.picture_id, 1044)
 
     def test_get_next_color_skip_in_global(self):
         pic = self.sql_controller.get_next_color_skip_in_global(self.picture)
