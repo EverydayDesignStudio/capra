@@ -321,66 +321,92 @@ class DatabaseTest(unittest.TestCase):
     # Altitude
     # --------------------------------------------------------------------------
     def test_get_next_altitude_in_hikes(self):
-        # forward
+        # forward by 1
         pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 1)
         self.assertEqual(pic.altrank_global_h, 1971)
 
-        # mod
-        pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 6+3658)
-        self.assertEqual(pic.picture_id, 1987)
+        # forward by 94
+        pic = self.sql_controller.get_next_altitude_in_hikes(pic, 94)
+        self.assertEqual(pic.altrank_global_h, 2065)
 
-        # bottom of the list
+        # wrap to top of list
         pic = self.sql_controller.get_picture_with_id(3274)
         pic = self.sql_controller.get_next_altitude_in_hikes(pic, 2)
         self.assertEqual(pic.altrank_global_h, 1)
 
+        # mod to row below
+        pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 6+3658)
+        self.assertEqual(pic.picture_id, 1987)
+
+        # mod to row above
+        pic = self.sql_controller.get_next_altitude_in_hikes(self.picture, 3600+3658)
+        self.assertEqual(pic.picture_id, 1912)
+
     def test_get_previous_altitude_in_hikes(self):
-        # backward
+        # backward by 1
         pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 1)
         self.assertEqual(pic.altrank_global_h, 1969)
 
-        # mod
-        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 10+3658)
-        self.assertEqual(pic.altrank_global_h, 1960)
+        # backward by 94
+        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 94)
+        self.assertEqual(pic.altrank_global_h, 1876)
 
-        # top of the list
+        # wrap to bottom of list
         pic = self.sql_controller.get_picture_with_id(592)
         pic = self.sql_controller.get_previous_altitude_in_hikes(pic, 6)
         self.assertEqual(pic.picture_id, 3276)
 
+        # mod to row above
+        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 10+3658)
+        self.assertEqual(pic.altrank_global_h, 1960)
+
+        # mod to row below
+        pic = self.sql_controller.get_previous_altitude_in_hikes(self.picture, 2000+3658)
+        self.assertEqual(pic.altrank_global_h, 3628)
+
     def test_get_next_altitude_in_global(self):
-        # forward
+        # forward by 1
         pic = self.sql_controller.get_next_altitude_in_global(self.picture, 1)
         self.assertEqual(pic.altrank_global, 2356)
 
+        # forward by 3
         pic = self.sql_controller.get_next_altitude_in_global(self.picture, 3)
         self.assertEqual(pic.altrank_global, 2358)
 
-        # mod
-        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 100+3658)
-        self.assertEqual(pic.altrank_global, 2455)
-
-        # bottom of list
+        # wrap to top of list
         pic = self.sql_controller.get_picture_with_id(2976)
         pic = self.sql_controller.get_next_altitude_in_global(pic, 1)
         self.assertEqual(pic.picture_id, 524)
 
+        # mod to row below
+        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 100+3658)
+        self.assertEqual(pic.altrank_global, 2455)
+
+        # mod to row above
+        pic = self.sql_controller.get_next_altitude_in_global(self.picture, 2000+3658)
+        self.assertEqual(pic.altrank_global, 697)
+
     def test_get_previous_altitude_in_global(self):
-        # previous
+        # previous by 1
         pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 1)
         self.assertEqual(pic.altrank_global, 2354)
 
+        # previous by 3
         pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 3)
         self.assertEqual(pic.altrank_global, 2352)
 
-        # mod
-        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 100+3658)
-        self.assertEqual(pic.altrank_global, 2255)
-
-        # top of list
+        # wrap to bottom of list
         pic = self.sql_controller.get_picture_with_id(544)
         pic = self.sql_controller.get_previous_altitude_in_global(pic, 3)
         self.assertEqual(pic.picture_id, 3032)
+
+        # mod to row above
+        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 100+3658)
+        self.assertEqual(pic.altrank_global, 2255)
+
+        # mod to row below
+        pic = self.sql_controller.get_previous_altitude_in_global(self.picture, 2360+3658)
+        self.assertEqual(pic.altrank_global, 3653)
 
     def test_get_next_altitude_skip_in_hikes(self):
         # id	time		hike	index_in_hike	alt_rank_hike	id
