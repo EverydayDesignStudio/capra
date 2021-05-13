@@ -520,24 +520,69 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 3657)
 
     def test_get_next_altitude_skip_in_global(self):
+        # 1994  |   2355 + (3658 * .05) = 2537.9
         pic = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
-        self.assertEqual(pic.altrank_global, 2537)
+        self.assertEqual(pic.altrank_global, 2538)
+        self.assertEqual(pic.picture_id, 2207)
 
-        # bottom
+        # 524   |   1 + (3658 * .05) = 183.9
+        pic = self.sql_controller.get_picture_with_id(524)
+        pic = self.sql_controller.get_next_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 184)
+        self.assertEqual(pic.picture_id, 514)  # 183
+
+        # 3006  | 3475 + (3658 * .05) = 3657.9
+        pic = self.sql_controller.get_picture_with_id(3006)
+        pic = self.sql_controller.get_next_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 3658)
+
+        # wrap around bottom to the top
+        # ------------------------------------
+        # 3059  | 3476 + (3658 * .05) = 3658.9
+        pic = self.sql_controller.get_picture_with_id(3059)
+        pic = self.sql_controller.get_next_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 1)
+
+        # 2973  | 3600 + (3658 * .05) = 3782.9
         pic = self.sql_controller.get_picture_with_id(2973)
         pic = self.sql_controller.get_next_altitude_skip_in_global(pic)
-        self.assertEqual(pic.altrank_global, 124)
-        self.assertEqual(pic.picture_id, 454)
+        self.assertEqual(pic.altrank_global, 125)
+        self.assertEqual(pic.picture_id, 455)
 
     def test_get_previous_altitude_skip_in_global(self):
+        # 1994  |   2355 - (3658 * .05)
+        # 2355 - 183 = 2172
         pic = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
-        self.assertEqual(pic.altrank_global, 2173)
+        self.assertEqual(pic.altrank_global, 2172)
 
-        # top
+        # 3489  | 1800 - (3658 * .05)
+        # 1800 - 183 = 1617
+        pic = self.sql_controller.get_picture_with_id(3489)
+        pic = self.sql_controller.get_previous_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 1617)
+
+        # 2976   |   3658 - (3658 * .05)
+        # 3658 - 183 = 3475
+        pic = self.sql_controller.get_picture_with_id(2976)
+        pic = self.sql_controller.get_previous_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 3475)
+        self.assertEqual(pic.picture_id, 3006)
+
+        # wrap around from top to the bottom
+        # ------------------------------------
+        # 613   |   20 - (3658 * .05) + 3658
+        # 20 - 183 + 3658 = 3495
         pic = self.sql_controller.get_picture_with_id(613)  # 20 rank
         pic = self.sql_controller.get_previous_altitude_skip_in_global(pic)
-        self.assertEqual(pic.altrank_global, 3496)
-        self.assertEqual(pic.picture_id, 3057)
+        self.assertEqual(pic.altrank_global, 3495)
+        self.assertEqual(pic.picture_id, 3056)
+
+        # 513   |   183 - (3658 * .05) + 3658
+        # 183 - 183 + 3658 = 3658
+        pic = self.sql_controller.get_picture_with_id(513)
+        pic = self.sql_controller.get_previous_altitude_skip_in_global(pic)
+        self.assertEqual(pic.altrank_global, 3658)
+        self.assertEqual(pic.picture_id, 2976)
 
     # Color
     # --------------------------------------------------------------------------

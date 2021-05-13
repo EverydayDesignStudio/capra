@@ -209,6 +209,10 @@ class SQLStatements:
         return statement
 
     # Altitude Skip in Hikes
+    # NOTE : round(x + 0.499999999999) is used to get the ceiling
+    # this is used to get a balanced distribution on skips
+    # Otherwise: 0-1.99   ==> 1
+    #            only 223 ==> 223
     def select_next_altitude_skip_in_hikes(self, hike: int, altrank_hike: float) -> str:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
         SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE avg_altitude_rank > (SELECT avg_altitude_rank FROM hikes WHERE hike_id={h})) > 0 \
@@ -265,18 +269,18 @@ class SQLStatements:
     def select_next_altitude_skip_in_global(self, altrank_global: float) -> str:
         skip_perc = 0.05  # variable to change size of the percentage skip
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
-        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global > {a}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
-            THEN (SELECT picture_id FROM pictures WHERE altrank_global >= {a} ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
-            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE altrank_global > {a}) - 1)) \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global > {a}) >= (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global >= {a} ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global ASC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999) - (SELECT count(*) FROM pictures WHERE altrank_global > {a}) - 1)) \
         END);'.format(a=altrank_global, p=skip_perc)
         return statement
 
     def select_previous_altitude_skip_in_global(self, altrank_global: float) -> str:
         skip_perc = 0.05  # variable to change size of the percentage skip
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
-        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global < {a}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
-            THEN (SELECT picture_id FROM pictures WHERE altrank_global <= {a} ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
-            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE altrank_global < {a}) - 1)) \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE altrank_global < {a}) >= (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999)) \
+            THEN (SELECT picture_id FROM pictures WHERE altrank_global <= {a} ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY altrank_global DESC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999) - (SELECT count(*) FROM pictures WHERE altrank_global < {a}) - 1)) \
         END);'.format(a=altrank_global, p=skip_perc)
         return statement
 
