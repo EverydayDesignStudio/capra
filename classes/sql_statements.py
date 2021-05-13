@@ -322,27 +322,31 @@ class SQLStatements:
         return statement
 
     # Color Skip in Hikes
+    # NOTE : round(x + 0.499999999999) is used to get the ceiling
+    # this is used to get a balanced distribution on skips
+    # Otherwise: 0-1.99   ==> 1
+    #            only 223 ==> 223
     def select_next_color_skip_in_hikes(self, hike: int, colorrank_hike: float) -> str:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
         SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE color_rank > (SELECT color_rank FROM hikes WHERE hike_id={h})) > 0 \
             THEN ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/) \
                 ORDER BY color_rank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND color_rank_hike<={c}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
             ELSE ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY color_rank ASC LIMIT 1) \
                 ORDER BY color_rank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND color_rank_hike<={c}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY color_rank ASC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
         END END);'.format(h=hike, c=colorrank_hike)
@@ -354,21 +358,21 @@ class SQLStatements:
             THEN ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank<(SELECT color_rank FROM hikes WHERE hike_id={h}) ORDER BY color_rank DESC LIMIT 1) \
                 ORDER BY color_rank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND color_rank_hike<={c}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank<(SELECT color_rank FROM hikes WHERE hike_id={h}) ORDER BY color_rank DESC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
             ELSE ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY color_rank DESC LIMIT 1) \
                 ORDER BY color_rank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND color_rank_hike<={c}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY color_rank DESC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
         END END);'.format(h=hike, c=colorrank_hike)
