@@ -215,21 +215,21 @@ class SQLStatements:
             THEN ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/) \
                 ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
             ELSE ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank ASC LIMIT 1) \
                 ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank ASC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
         END END);'.format(h=hike, a=altrank_hike)
@@ -241,21 +241,21 @@ class SQLStatements:
             THEN ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank<(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank DESC LIMIT 1) \
                 ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank<(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank DESC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
             ELSE ( \
                 SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank DESC LIMIT 1) \
                 ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
-                    SELECT CAST(( \
+                    SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
                         * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes ORDER BY avg_altitude_rank DESC LIMIT 1)) \
-                    ) AS INT) - 1 \
+                    + 0.499999999999) - 1 \
                 ) \
             ) \
         END END);'.format(h=hike, a=altrank_hike)
