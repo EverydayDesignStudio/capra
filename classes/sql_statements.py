@@ -217,12 +217,12 @@ class SQLStatements:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
         SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE avg_altitude_rank > (SELECT avg_altitude_rank FROM hikes WHERE hike_id={h})) > 0 \
             THEN ( \
-                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/) \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank ASC LIMIT 1 /*also need to order for next, not just prev*/) \
                 ORDER BY altrank_hike ASC LIMIT 1 OFFSET ( \
                     SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND altrank_hike<={a}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
-                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/)) \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE avg_altitude_rank>(SELECT avg_altitude_rank FROM hikes WHERE hike_id={h}) ORDER BY avg_altitude_rank ASC LIMIT 1 /*also need to order for next, not just prev*/)) \
                     + 0.499999999999) - 1 \
                 ) \
             ) \
@@ -330,12 +330,12 @@ class SQLStatements:
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
         SELECT CASE WHEN (SELECT count(*) FROM hikes WHERE color_rank > (SELECT color_rank FROM hikes WHERE hike_id={h})) > 0 \
             THEN ( \
-                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/) \
+                SELECT picture_id FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) ORDER BY color_rank ASC LIMIT 1 /*also need to order for next, not just prev*/) \
                 ORDER BY color_rank_hike ASC LIMIT 1 OFFSET ( \
                     SELECT round( \
                         (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND color_rank_hike<={c}) AS REAL) /*numerator of percentage*/ \
                         /(SELECT count(*) FROM pictures WHERE hike={h})) /*denominator of percentage*/ \
-                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) LIMIT 1 /*order for prev*/)) \
+                        * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike_id FROM hikes WHERE color_rank>(SELECT color_rank FROM hikes WHERE hike_id={h}) ORDER BY color_rank ASC LIMIT 1 /*also need to order for next, not just prev*/)) \
                     + 0.499999999999) - 1 \
                 ) \
             ) \
