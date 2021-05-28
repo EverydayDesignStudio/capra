@@ -266,6 +266,8 @@ class SQLStatements:
         return statement
 
     # Altitude Skip in Global
+    # Also uses the ceiling round, otherwise it would stop at the end of the archive
+    # and it wouldn’t wrap back around the same point on the 20th click
     def select_next_altitude_skip_in_global(self, altrank_global: float) -> str:
         skip_perc = 0.05  # variable to change size of the percentage skip
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
@@ -379,21 +381,23 @@ class SQLStatements:
         return statement
 
     # Color Skip in Global
+    # Also uses the ceiling round, otherwise it would stop at the end of the archive
+    # and it wouldn’t wrap back around the same point on the 20th click
     def select_next_color_skip_in_global(self, colorrank_global: float) -> str:
         skip_perc = 0.05  # variable to change size of the percentage skip
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
-        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
-            THEN (SELECT picture_id FROM pictures WHERE color_rank_global >= {c} ORDER BY color_rank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
-            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global ASC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) - 1)) \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) >= (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global >= {c} ORDER BY color_rank_global ASC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global ASC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999) - (SELECT count(*) FROM pictures WHERE color_rank_global > {c}) - 1)) \
         END);'.format(c=colorrank_global, p=skip_perc)
         return statement
 
     def select_previous_color_skip_in_global(self, colorrank_global: float) -> str:
         skip_perc = 0.05  # variable to change size of the percentage skip
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
-        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) >= (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT)) \
-            THEN (SELECT picture_id FROM pictures WHERE color_rank_global <= {c} ORDER BY color_rank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT))) \
-            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global DESC LIMIT 1 OFFSET (SELECT CAST({p} * (SELECT count(*) FROM pictures) AS INT) - (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) - 1)) \
+        SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) >= (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999)) \
+            THEN (SELECT picture_id FROM pictures WHERE color_rank_global <= {c} ORDER BY color_rank_global DESC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999))) \
+            ELSE (SELECT picture_id FROM pictures ORDER BY color_rank_global DESC LIMIT 1 OFFSET (SELECT round({p} * (SELECT count(*) FROM pictures) + 0.499999999999) - (SELECT count(*) FROM pictures WHERE color_rank_global < {c}) - 1)) \
         END);'.format(c=colorrank_global, p=skip_perc)
         return statement
 

@@ -9,6 +9,118 @@ import unittest
 import random
 
 
+# Tests for the newer larger database version
+class DatabaseTestsMay2021(unittest.TestCase):
+    DB = 'assets/capra_projector_may2021.db'
+    directory = 'capra-storage'
+    sql_controller = None
+    sql_statements = None
+    picture = None
+
+    @classmethod
+    def setUpClass(self):
+        # NOTE - if the database or id is changed, all the tests will break
+        # They are dependent upon that
+        self.sql_controller = SQLController(database=self.DB, directory=self.directory)
+        self.picture = self.sql_controller.get_picture_with_id(11994)
+
+        # For testing directly on the sql statements
+        self.sql_statements = SQLStatements()
+
+    @classmethod
+    def tearDownClass(self):
+        self.sql_controller = None
+
+    def test_get_picture_with_id(self):
+        self.assertEqual(self.picture.picture_id, 11994)
+        self.assertEqual(self.picture.hike_id, 10)
+        self.assertEqual(self.picture.altitude, 2123.5)
+
+    # 20,284 total pictures in database
+    # x  .05
+    #  1,014.2  ->  rounds to 1,015 skip in the global ranks
+
+    def test_get_next_color_skip_in_global(self):
+        self.assertEqual(self.picture.picture_id, 11994)
+        self.assertEqual(self.picture.colorrank_global, 10549)
+        # id        color_rank_global
+        # 11994     10549 + 1015
+        pic = self.sql_controller.get_next_color_skip_in_global(self.picture)
+        self.assertEqual(pic.colorrank_global, 11564)
+        self.assertEqual(pic.picture_id, 1398)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 12579)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 13594)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 19684)
+        self.assertEqual(pic.picture_id, 30037)
+        # wrap around
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 415)
+        self.assertEqual(pic.picture_id, 8493)
+
+        # 4146      20284
+        pic = self.sql_controller.get_picture_with_id(4146)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 1015)
+        self.assertEqual(pic.picture_id, 10321)
+
+        # 4887     19270
+        pic = self.sql_controller.get_picture_with_id(4887)
+        pic = self.sql_controller.get_next_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 1)
+        self.assertEqual(pic.picture_id, 1102)
+
+    def test_get_previous_color_skip_in_global(self):
+        self.assertEqual(self.picture.picture_id, 11994)
+        self.assertEqual(self.picture.colorrank_global, 10549)
+        # id        color_rank_global
+        # 11994     10549 - 1015
+        pic = self.sql_controller.get_previous_color_skip_in_global(self.picture)
+        self.assertEqual(pic.colorrank_global, 9534)
+        self.assertEqual(pic.picture_id, 29239)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 5474)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 2429)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 399)
+        # wrap back around
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 19668)
+        self.assertEqual(pic.picture_id, 25289)
+
+        # 8388      310
+        pic = self.sql_controller.get_picture_with_id(8388)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 19579)
+        self.assertEqual(pic.picture_id, 6668)
+
+        # 1102      1
+        pic = self.sql_controller.get_picture_with_id(1102)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 19270)
+        self.assertEqual(pic.picture_id, 4887)
+
+        # 10321     1015
+        pic = self.sql_controller.get_picture_with_id(10321)
+        pic = self.sql_controller.get_previous_color_skip_in_global(pic)
+        self.assertEqual(pic.colorrank_global, 20284)
+        self.assertEqual(pic.picture_id, 4146)
+
+
 class DatabaseTest(unittest.TestCase):
     DB = 'tests/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
     directory = 'capra-storage'
@@ -803,23 +915,23 @@ class DatabaseTest(unittest.TestCase):
 
     def test_get_next_color_skip_in_global(self):
         pic = self.sql_controller.get_next_color_skip_in_global(self.picture)
-        self.assertEqual(pic.colorrank_global, 2967)
+        self.assertEqual(pic.colorrank_global, 2968)
 
         # bottom
         pic = self.sql_controller.get_picture_with_id(1220)  # 3640
         pic = self.sql_controller.get_next_color_skip_in_global(pic)
-        self.assertEqual(pic.colorrank_global, 164)
-        self.assertEqual(pic.picture_id, 2592)
+        self.assertEqual(pic.colorrank_global, 165)
+        self.assertEqual(pic.picture_id, 2594)
 
     def test_get_previous_color_skip_in_global(self):
         pic = self.sql_controller.get_previous_color_skip_in_global(self.picture)
-        self.assertEqual(pic.colorrank_global, 2603)
+        self.assertEqual(pic.colorrank_global, 2602)
 
         # top
         pic = self.sql_controller.get_picture_with_id(310)  # 10
         pic = self.sql_controller.get_previous_color_skip_in_global(pic)
-        self.assertEqual(pic.colorrank_global, 3486)
-        self.assertEqual(pic.picture_id, 1792)
+        self.assertEqual(pic.colorrank_global, 3485)
+        self.assertEqual(pic.picture_id, 1798)
 
 
 if __name__ == '__main__':
