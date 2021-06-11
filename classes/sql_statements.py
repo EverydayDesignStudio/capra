@@ -413,6 +413,32 @@ class SQLStatements:
         statement = 'UPDATE hikes SET color_rank = {} WHERE hike_id = {}'.format(colRank, hike_id)
         return statement
 
+    # altrank_global_h
+    def get_hikes_by_avg_altrank(self):
+        statement = 'SELECT hike_id, pictures FROM hikes ORDER BY avg_altitude_rank'
+        return statement
+
+    def get_pictures_of_specific_hike_by_altrank(self, hike_id: int):
+        statement = 'SELECT picture_id FROM pictures WHERE hike = {} ORDER BY altrank_hike'.format(hike_id)
+        return statement
+
+    def update_pictures_altrank_global_h(self, rankIndex: int, picture_id: int):
+        statement: 'UPDATE pictures SET altrank_global_h = {} WHERE picture_id = {}'.format(rankIndex, picture_id)
+        return statement
+
+    # color_rank_global_h
+    def get_hikes_by_color_rank(self):
+        statement = 'SELECT hike_id, pictures FROM hikes ORDER BY color_rank'
+        return statement
+
+    def get_pictures_of_specific_hike_by_color_rank(self, hike_id: int):
+        statement = 'SELECT picture_id FROM pictures WHERE hike = {} ORDER BY color_rank_hike'.format(hike_id)
+        return statement
+
+    def update_pictures_color_rank_global_h(self, rankIndex: int, picture_id: int):
+        statement = 'UPDATE pictures SET color_rank_global_h = {} WHERE picture_id = {}'.format(rankIndex, picture_id)
+        return statement
+
 
     ### Color Spectrum
 

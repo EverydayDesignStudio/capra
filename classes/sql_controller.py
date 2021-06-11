@@ -566,14 +566,52 @@ class SQLController:
         res = cursor.fetchall()
         return res
 
+    # avg_altrank_global
     def update_hikes_global_AltRank(self, hike_id: int, altRank: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.update_hikes_globalAltRank(hike_id, altRank))
         self.connection.commit()
 
+    # color_rank_global
     def update_hikes_global_ColRank(self, hike_id: int, colRank: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.update_hikes_globalColRank(hike_id, colRank))
+        self.connection.commit()
+
+    # altrank_global_h
+    def get_hikes_by_avg_altrank(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_by_avg_altrank())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_of_specific_hike_by_altrank(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_altrank(self, hike))
+        rows = cursor.fetchall()
+        return rows
+
+    def update_pictures_altrank_global_h(self, rankIndex: int, picture_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_altrank_global_h(self, rankIndex, picture_id))
+        self.connection.commit()
+
+    # color_rank_global_h
+    def get_hikes_by_color_rank(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_by_color_rank())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_of_specific_hike_by_color_rank(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_color_rank(self, hike))
+        rows = cursor.fetchall()
+        return rows
+
+    def update_pictures_color_rank_global_h(self, rankIndex: int, picture_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_color_rank_global_h(self, rankIndex, picture_id))
         self.connection.commit()
 
 

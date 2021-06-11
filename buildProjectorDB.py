@@ -603,22 +603,20 @@ def main():
     masterTimer = time.time()
 
     while currHike <= latest_src_hikeID:
-    # while currHike <= 31:
 
         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
-
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
+
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
-
-        # if (currHike > 32):
-        #     break;
 
         # 1. skip empty hikes
         if (currExpectedHikeSize == 0):
             print("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
             currHike += 1
             continue
+
+        ### TODO: drop short hikes < 100 pictures
 
         else:
             NEW_DATA = True
@@ -695,6 +693,37 @@ def main():
 
         colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
         generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DROPBOX + BASEPATH_DEST)
+
+        ## update alt and color global_h rankings for Pictures
+        # altrank_global_h
+        altSortedHikes = dbDESTController.get_hikes_by_avg_altrank()
+        rankIndex = 1
+
+        for res in altSortedHikes:
+            hike = res[0]
+            # picsInHike = res[1]       # for debugging
+            rows = dbDESTController.get_pictures_of_specific_hike_by_altrank(hike)
+
+            for row in rows:
+                pID = row[0]
+                dbDESTController.update_pictures_altrank_global_h(rankIndex, pID)
+                rankIndex += 1
+                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
+
+        # color_rank_global_h
+        colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
+        rankIndex = 1
+
+        for res in colorSortedHikes:
+            hike = res[0]
+            # picsInHike = res[1]       # for debugging
+            rows = dbDESTController.get_pictures_of_specific_hike_by_color_rank(hike)
+
+            for row in rows:
+                pID = row[0]
+                dbDESTController.update_pictures_color_rank_global_h(rankIndex, pID)
+                rankIndex += 1
+                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
 
 
         ### global ranks for hikes
