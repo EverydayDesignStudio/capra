@@ -238,7 +238,8 @@ def dominantColorWrapper(currHike, row_src, image1, image2, image3=None, image_p
 
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
-    ### TODO: change this index to row[0] and row[1] if cameraDB is used
+
+    ##### TODO: apply ceiling() for timestamp and altitude to drop the decimals (may 14)
     commit = [row_src[ROWINDEX_TIMESTAMP],
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, index_in_hike, dummyGlobalCounter,
@@ -405,18 +406,16 @@ def buildHike(currHike):
     pics = {}
     commits = {}
 
-    check = 0
-    index_in_hike = 1
+    validRowCount = 0           ### This is the 'corrected' numValidRows (may 14)
+    index_in_hike = 0
     validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
-    maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
     numValidRows = len(validRows)
+    maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
 
     print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
-    print("[{}] NumValidRows: {}".format(timenow(), str(numValidRows)))
+    print("[{}] Expected valid row count: {}".format(timenow(), str(numValidRows)))
 
-    while (check <= numValidRows and index_in_hike <= maxRows):      ### TODO: is there any edge case for this condition?
-    # for index_in_hike in range(numValidRows):
-        # row = validRows[index_in_hike]
+    while (index_in_hike <= maxRows):
         row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
         picPathCam1_src = srcPath + "{}_cam1.jpg".format(index_in_hike)
@@ -446,7 +445,10 @@ def buildHike(currHike):
             index_in_hike += 1
             continue
 
-        if (index_in_hike % 200 == 0):
+        ### TODO: check 0 byte photos and filter them!!
+
+
+        if (index_in_hike <= maxRows and index_in_hike % 200 == 0):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
 
         # update timestamps
@@ -491,7 +493,6 @@ def buildHike(currHike):
                 img_res = img.copy().rotate(90, expand=True)
                 img_res.save(picPathCam3_dest)
 
-
         fileName = "{}_camN".format(index_in_hike)
 
         if (not os.path.exists(picPathCam3_src)):
@@ -503,7 +504,7 @@ def buildHike(currHike):
         domColorsHike_hsv.append(domCol_hsv)
 
         dummyGlobalCounter += 1
-        check += 1
+        validRowCount += 1
         index_in_hike += 1
 
     ### Post-processing
@@ -512,7 +513,7 @@ def buildHike(currHike):
     colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=13, index_in_hike=7)
     altRankList = sort_by_alts(list(commits.copy().values()), alt_index=9, index_in_hike=7)
 
-    for index_in_hike in range(numValidRows):
+    for index_in_hike in range(maxRows+1):
         fileName = "{}_camN".format(index_in_hike)
 
         if index_in_hike not in altRankList or index_in_hike not in colRankList:
@@ -539,7 +540,7 @@ def buildHike(currHike):
         dbDESTController.upsert_picture(*commit)
 
     # make a row for the hike table with postprocessed values
-    avgAlt /= numValidRows
+    avgAlt /= validRowCount
     domColorHike_hsv = []
     domColorHike_hsv = get_dominant_color_1D(domColorsHike_hsv, CLUSTERS)
     roundToHundredth(domColorHike_hsv)
@@ -556,17 +557,17 @@ def buildHike(currHike):
 
     defaultHikePath = "/media/pi/capra-hd/hike" + str(currHike) + "/"
 
-    dbDESTController.upsert_hike(currHike, avgAlt, -currHike,
-                                    startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
-                                    endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
+    dbDESTController.upsert_hike(currHike, round(avgAlt, 2), -currHike,
+                                    round(startTime, 0), hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
+                                    round(endTime, 0), hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
-                                    numValidRows, defaultHikePath)
+                                    validRowCount, defaultHikePath)
 
     # create color spectrum for the current hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
-    print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, check))
+    print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, validRowCount))
 
 
 def compute_checksum(path, currHike):
