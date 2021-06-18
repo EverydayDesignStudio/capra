@@ -216,14 +216,10 @@ def sort_by_colors(data, color_index_hsv, index_in_hike):
     return rankList
 
 
-def dominantColorWrapper(currHike, row_src, image1, image2, image3=None, image_processing_size=None):
+def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image3=None, image_processing_size=None):
     global dummyGlobalCounter
 
-    ### TODO: change this index to row[3] if cameraDB is used
-    index_in_hike = row_src[ROWINDEX_INDEX_IN_HIKE]
-
     color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=image1, image2=image2, image3=image3, image_processing_size=(DIMX, DIMY))
-
     picDatetime = datetime.datetime.fromtimestamp(row_src[ROWINDEX_TIMESTAMP])
 
     #     TIME,
@@ -239,18 +235,13 @@ def dominantColorWrapper(currHike, row_src, image1, image2, image3=None, image_p
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
 
-    ##### TODO: apply ceiling() for timestamp and altitude to drop the decimals (may 14)
-    commit = [row_src[ROWINDEX_TIMESTAMP],
+    commit = [round(row_src[ROWINDEX_TIMESTAMP], 0),
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, dummyGlobalCounter,
-                row_src[ROWINDEX_ALTITUDE], -1, -1, dummyGlobalCounter,
+                currHike, validRowCount, dummyGlobalCounter,
+                round(row_src[ROWINDEX_ALTITUDE], 0), -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 row_src[ROWINDEX_CAMERA1], row_src[ROWINDEX_CAMERA2], row_src[ROWINDEX_CAMERA3], row_src[ROWINDEX_CAMERA2][:-4] + "f" + row_src[ROWINDEX_CAMERA2][-4:]]
-
-    # if (index_in_hike >= 417 and index_in_hike <= 430):
-    #     print("# " + str(index_in_hike))
-    #     print(commit)
 
     return commit, colors_hsv[0]
 
@@ -498,7 +489,7 @@ def buildHike(currHike):
         if (not os.path.exists(picPathCam3_src)):
             picPathCam3_dest = None
         # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=picPathCam1_dest, image2=picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
-        commit, domCol_hsv = dominantColorWrapper(currHike, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+        commit, domCol_hsv = dominantColorWrapper(currHike, validRowCount+1, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
 
         commits[fileName] = commit
         domColorsHike_hsv.append(domCol_hsv)
