@@ -38,20 +38,14 @@ class SQLController:
 
     def _build_picture_from_row(self, row: list) -> Picture:
         '''Builds latest version of the `Picture` object from a row in the database'''
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            camera1 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam1.jpg'
-            camera2 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam2.jpg'
-            camera3 = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam3.jpg'
-            cameraf = self.directory + '/hike' + str(row['hike']) + '/' + str(row['index_in_hike']) + '_cam2f.jpg'
-        elif platform.system() == 'Linux':
-            camera1 = row['camera1']
-            camera2 = row['camera2']
-            camera3 = row['camera3']
-            cameraf = row['camera_landscape']
+        camera1 = self.directory + row['camera1']
+        camera2 = self.directory + row['camera2']
+        camera3 = self.directory + row['camera3']
+        cameraf = self.directory + row['camera_landscape']
 
         # Finalized Database schema
         picture = Picture(picture_id=row['picture_id'], time=row['time'], year=row['year'], month=row['month'], day=row['day'],
-                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'],
+                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'], timerank_global=row['time_rank_global'],
                           altitude=row['altitude'], altrank_hike=row['altrank_hike'], altrank_global=row['altrank_global'], altrank_global_h=row['altrank_global_h'],
                           color_hsv=row['color_hsv'], color_rgb=row['color_rgb'], colorrank_hike=row['color_rank_hike'], colorrank_global=row['color_rank_global'],
                           colorrank_global_h=row['color_rank_global_h'], colors_count=row['colors_count'], colors_rgb=row['colors_rgb'], colors_conf=row['colors_conf'],
