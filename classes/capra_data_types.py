@@ -8,7 +8,7 @@ from PyQt5.QtGui import QColor
 class Picture:
     """Defines object which hold a row from the database table 'pictures'"""
 
-    def __init__(self, picture_id, time, year, month, day, minute, dayofweek, hike_id, index_in_hike, 
+    def __init__(self, picture_id, time, year, month, day, minute, dayofweek, hike_id, index_in_hike, timerank_global,
                  altitude, altrank_hike, altrank_global, altrank_global_h,
                  color_hsv, color_rgb, colorrank_hike, colorrank_global, colorrank_global_h,
                  colors_count, colors_rgb, colors_conf,
@@ -23,6 +23,7 @@ class Picture:
 
         self.hike_id = hike_id
         self.index_in_hike = index_in_hike
+        self.timerank_global = timerank_global
 
         self.altitude = altitude
         self.altrank_hike = altrank_hike
@@ -47,7 +48,7 @@ class Picture:
         self.updated = updated
 
         # Labels for the UI
-        self.uitime = self._parse_hr_min(self.time)
+        self.uitime_hrmm = self._parse_hr_min(self.time)
         self.uitime_sec = self._parse_sec(self.time)
         self.uidate = self._parse_date(self.time)
         self.uihike = self._parse_hike(self.hike_id)
@@ -61,7 +62,7 @@ class Picture:
             :return str: '5:19 PM'
         """
         t = datetime.fromtimestamp(timestamp)
-        s = t.strftime('%-I:%M %p')
+        s = t.strftime('%-I:%M')
         return s
 
     def _parse_sec(self, timestamp: float) -> str:
@@ -72,7 +73,7 @@ class Picture:
             :return str: ':24'
         """
         t = datetime.fromtimestamp(timestamp)
-        s = t.strftime(':%S')
+        s = t.strftime(':%S %p')
         return s
 
     def _parse_date(self, timestamp: float) -> str:
