@@ -34,13 +34,7 @@ BASEPATH_DEST = None
 src_db_name = None
 dest_db_name = None
 
-DBTYPE = 'camera'   # 'camera' or 'projector'
-ROWINDEX_TIMESTAMP = None
-ROWINDEX_ALTITUDE = None
-ROWINDEX_INDEX_IN_HIKE = None
-ROWINDEX_CAMERA1 = None
-ROWINDEX_CAMERA2 = None
-ROWINDEX_CAMERA3 = None
+DBTYPE = 'projector'   # 'camera' or 'projector'
 
 # TODO: set DB and PATH accordingly
 if (DBTYPE == 'projector'):
@@ -50,10 +44,6 @@ if (DBTYPE == 'projector'):
     BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
     dest_db_name = "capra_projector_apr2021_min_test_full.db"
 
-    ROWINDEX_TIMESTAMP = 1
-    ROWINDEX_ALTITUDE = 9
-    ROWINDEX_INDEX_IN_HIKE = 8
-    ROWINDEX_CAMERA1 = 22
 
 else:
     BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
@@ -62,13 +52,7 @@ else:
     BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
     dest_db_name = "capra_projector_apr2021_min_camera_full.db"
 
-    ROWINDEX_TIMESTAMP = 0
-    ROWINDEX_ALTITUDE = 1
-    ROWINDEX_INDEX_IN_HIKE = 3
-    ROWINDEX_CAMERA1 = 4
 
-ROWINDEX_CAMERA2 = ROWINDEX_CAMERA1 + 1
-ROWINDEX_CAMERA3 = ROWINDEX_CAMERA1 + 2
 
 ####################################################
 
@@ -220,7 +204,7 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
     global dummyGlobalCounter
 
     color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=image1, image2=image2, image3=image3, image_processing_size=(DIMX, DIMY))
-    picDatetime = datetime.datetime.fromtimestamp(row_src[ROWINDEX_TIMESTAMP])
+    picDatetime = datetime.datetime.fromtimestamp(row_src['time'])
 
     #     TIME,
     #     year, month, day, minute, dayofweek,
@@ -235,13 +219,13 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
 
-    commit = [round(row_src[ROWINDEX_TIMESTAMP], 0),
+    commit = [round(row_src['time'], 0),
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, validRowCount, dummyGlobalCounter,
-                round(row_src[ROWINDEX_ALTITUDE], 0), -1, -1, dummyGlobalCounter,
+                round(row_src['altitude'], 0), -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
-                row_src[ROWINDEX_CAMERA1], row_src[ROWINDEX_CAMERA2], row_src[ROWINDEX_CAMERA3], row_src[ROWINDEX_CAMERA2][:-4] + "f" + row_src[ROWINDEX_CAMERA2][-4:]]
+                row_src['camera1'], row_src['camera2'], row_src['camera3'], row_src['camera2'][:-4] + "f" + row_src['camera2'][-4:]]
 
     return commit, colors_hsv[0]
 
@@ -443,12 +427,12 @@ def buildHike(currHike):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
 
         # update timestamps
-        if (row_src[ROWINDEX_TIMESTAMP] < startTime):
-            startTime = row_src[ROWINDEX_TIMESTAMP]
-        if (row_src[ROWINDEX_TIMESTAMP] > endTime):
-            endTime = row_src[ROWINDEX_TIMESTAMP]
+        if (row_src['time'] < startTime):
+            startTime = row_src['time']
+        if (row_src['time'] > endTime):
+            endTime = row_src['time']
 
-        avgAlt += int(row_src[ROWINDEX_ALTITUDE])
+        avgAlt += int(row_src['altitude'])
 
         # rotate and resize, copy those to the dest folder
         img = None

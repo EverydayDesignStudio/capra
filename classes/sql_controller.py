@@ -11,6 +11,7 @@ class SQLController:
     def __init__(self, database: str):
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
+        self.connection.row_factory = sqlite3.Row
         self.statements = SQLStatements()
 
     # Helper methods
