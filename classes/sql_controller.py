@@ -426,13 +426,14 @@ class SQLController:
                         color_rank_value: str,
                         color_rank: int,
                         pictures: int,
-                        path: str):
+                        path: str,
+                        created_date_time: str):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude, avg_altitude_rank,
                                                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
                                                         end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
                                                         color_hsv, color_rgb, color_rank_value, color_rank,
-                                                        pictures, path))
+                                                        pictures, path, created_date_time))
         self.connection.commit()
 
     def upsert_picture(self,
@@ -461,13 +462,14 @@ class SQLController:
                             camera1: str,
                             camera2: str,
                             camera3: str,
-                            camera_landscape: str):
+                            camera_landscape: str,
+                            created_date_time: str):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.upsert_picture_row(time, year, month, day, minute, dayofweek,
                                                             hike, index_in_hike, time_rank_global, altitude, altrank_hike, altrank_global, altrank_global_h,
                                                             color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h,
                                                             colors_count, colors_rgb, colors_conf,
-                                                            camera1, camera2, camera3, camera_landscape))
+                                                            camera1, camera2, camera3, camera_landscape, created_date_time))
         self.connection.commit()
 
     def get_size_of_hike(self, hike_id: int) -> int:
@@ -532,7 +534,13 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_path(hike_id))
         row = cursor.fetchone()
-        return row
+        return row[0]
+
+    def get_hike_crated_timestamp(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_created_date_time(hike_id))
+        row = cursor.fetchone()
+        return row[0]
 
 
     ### Global rankings for pictures

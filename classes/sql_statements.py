@@ -278,26 +278,27 @@ class SQLStatements:
                             camera1: str,
                             camera2: str,
                             camera3: str,
-                            camera_landscape: str) -> int:
+                            camera_landscape: str,
+                            created_date_time: str) -> int:
         statement = 'INSERT OR REPLACE INTO pictures \
             (time, \
                 year, month, day, minute, dayofweek, \
                 hike, index_in_hike, time_rank_global, altitude, altrank_hike, altrank_global, altrank_global_h, \
                 color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h, \
                 colors_count, colors_rgb, colors_conf, \
-                camera1, camera2, camera3, camera_landscape) \
+                camera1, camera2, camera3, camera_landscape, created_date_time) \
             VALUES ({}, \
                     {}, {}, {}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, {}, \
                     "{}", "{}", {}, {}, {}, {}, \
                     {}, "{}", "{}", \
-                    "{}", "{}", "{}", "{}")\
+                    "{}", "{}", "{}", "{}", "{}")\
             '.format(time,
                         year, month, day, minute, dayofweek,
                         hike, index_in_hike, time_rank_global, altitude, altrank_hike, altrank_global, altrank_global_h,
                         color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h,
                         colors_count, colors_rgb, colors_conf,
-                        camera1, camera2, camera3, camera_landscape)
+                        camera1, camera2, camera3, camera_landscape, created_date_time)
         return statement
 
     def upsert_hike_row(self,
@@ -321,23 +322,24 @@ class SQLStatements:
                         color_rank_value: str,
                         color_rank: int,
                         pictures: int,
-                        path: str) -> str:
+                        path: str,
+                        created_date_time: str) -> str:
         statement = 'INSERT OR REPLACE INTO hikes \
             (hike_id, avg_altitude, avg_altitude_rank, \
                 start_time, start_year, start_month, start_day, start_minute, start_dayofweek, \
                 end_time, end_year, end_month, end_day, end_minute, end_dayofweek, \
                 color_hsv, color_rgb, color_rank_value, color_rank, \
-                pictures, path) \
+                pictures, path, created_date_time) \
             VALUES ({}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, \
                     {}, {}, {}, {}, {}, {}, \
                     "{}", "{}", "{}", {}, \
-                    {}, "{}")\
+                    {}, "{}", "{}")\
             '.format(hike_id, avg_altitude, avg_altitude_rank,
                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
                         end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
                         color_hsv, color_rgb, color_rank_value, color_rank,
-                        pictures, path)
+                        pictures, path, created_date_time)
         return statement
 
     def get_hike_average_color(self, hike_id: int):
@@ -377,6 +379,10 @@ class SQLStatements:
 
     def get_hike_path(self, hike_id: int) -> str:
         statement = "SELECT path FROM hikes WHERE hike_id == {}".format(hike_id)
+        return statement
+
+    def get_hike_created_date_time(self, hike_id: int) -> str:
+        statement = "SELECT created_date_time FROM hikes WHERE hike_id == {}".format(hike_id)
         return statement
 
 

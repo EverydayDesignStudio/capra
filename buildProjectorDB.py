@@ -241,7 +241,7 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
                 round(row_src['altitude'], 0), -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
-                camera1, camera2, camera3, camera2f]
+                camera1, camera2, camera3, camera2f, row_src['created_date_time']]
 
     return commit, colors_hsv[0]
 
@@ -547,12 +547,13 @@ def buildHike(currHike):
     #     pictures, PATH
 
     defaultHikePath = "/hike{}/".format(str(currHike))
+    created_timestamp = dbDESTController.get_hike_crated_timestamp(currHike)
 
     dbDESTController.upsert_hike(currHike, round(avgAlt, 2), -currHike,
                                     round(startTime, 0), hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
                                     round(endTime, 0), hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
-                                    validRowCount, defaultHikePath)
+                                    validRowCount, defaultHikePath, created_timestamp)
 
     # create color spectrum for the current hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
