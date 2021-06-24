@@ -219,13 +219,29 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2
 
+    h = row_src['hike']
+    camera2 = row_src['camera2']
+    last_bit = camera2.split('/')[-1]
+
+    idx = None
+    if (last_bit == ""):
+        idx = row_src['index_in_hike']
+    else:
+        idx = last_bit.split('_')[0]
+
+    camera1 = "/hike{}/{}_cam1.jpg".format(h, idx)
+    camera2 = "/hike{}/{}_cam2.jpg".format(h, idx)
+    camera3 = "/hike{}/{}_cam3.jpg".format(h, idx)
+    camera2f = "/hike{}/{}_cam2f.jpg".format(h, idx)
+
+
     commit = [round(row_src['time'], 0),
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, validRowCount, dummyGlobalCounter,
                 round(row_src['altitude'], 0), -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
-                row_src['camera1'], row_src['camera2'], row_src['camera3'], row_src['camera2'][:-4] + "f" + row_src['camera2'][-4:]]
+                camera1, camera2, camera3, camera2f]
 
     return commit, colors_hsv[0]
 
@@ -530,7 +546,7 @@ def buildHike(currHike):
     #     color_hsv, color_rgb, color_rank_value, COLOR_RANK,
     #     pictures, PATH
 
-    defaultHikePath = "/media/pi/capra-hd/hike" + str(currHike) + "/"
+    defaultHikePath = "/hike{}/".format(str(currHike))
 
     dbDESTController.upsert_hike(currHike, round(avgAlt, 2), -currHike,
                                     round(startTime, 0), hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
