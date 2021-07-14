@@ -36,6 +36,41 @@ class SQLController:
             picture = self._build_picture_from_row(all_rows[0])
             return picture
 
+    def _execute_query_for_int(self, query) -> int:
+        '''Returns an integer from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        if rows is None or len(rows) == 0:
+            print(query)
+            raise ValueError('No data returned from database from _execute_query_for_int()')
+        else:
+            value = rows[0][0]
+
+        return int(value)
+
+    def _execute_query_for_float(self, query) -> float:
+        '''Returns a float from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        if rows is None or len(rows) == 0:
+            print(query)
+            raise ValueError('No data returned from database from _execute_query_for_float()')
+        else:
+            value = rows[0][0]
+
+        return float(value)
+
+    def _execute_query_for_anything(self, query):
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        return rows
+
     def _build_picture_from_row(self, row: list) -> Picture:
         '''Builds latest version of the `Picture` object from a row in the database'''
         camera1 = self.directory + row['camera1']
@@ -91,6 +126,21 @@ class SQLController:
     def get_least_altitude_picture_in_hike(self, hike_id: float) -> Picture:
         sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
         return self._execute_query(sql)
+
+    # Size
+    # --------------------------------------------------------------------------
+    # TODO - make a helper method for returning a number
+    def get_hike_size(self, current: Picture) -> int:
+        sql = self.statements.select_hike_size(current.hike_id)
+        return self._execute_query_for_int(sql)
+
+    def get_hike_size_with_id(self, hike_id: int) -> int:
+        sql = self.statements.select_hike_size(hike_id)
+        return self._execute_query_for_int(sql)
+
+    def get_archive_size(self) -> int:
+        sql = self.statements.select_archive_size()
+        return self._execute_query_for_int(sql)
 
     # Time
     # --------------------------------------------------------------------------

@@ -12,6 +12,15 @@ class SQLStatements:
         statement = 'SELECT * FROM pictures WHERE picture_id={id}'.format(id=picture_id)
         return statement
 
+    # Size information
+    def select_hike_size(self, hike: int) -> str:
+        statement = 'SELECT count(*) FROM pictures WHERE hike={h}'.format(h=hike)
+        return statement
+
+    def select_archive_size(self) -> str:
+        statement = 'SELECT count(*) FROM pictures'
+        return statement
+
     # --------------------------------------------------------------------------
     # Projector -- New Functions 2020 / 2021
     # --------------------------------------------------------------------------

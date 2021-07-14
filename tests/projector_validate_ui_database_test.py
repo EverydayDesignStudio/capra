@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 
-from typing import Any
-from unittest import result
-from PyQt5.QtGui import *
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 import unittest
-import random
 
 
 class DatabaseValidityTest(unittest.TestCase):
@@ -81,7 +77,7 @@ class DatabaseValidityTest(unittest.TestCase):
             last_colorrank = self.sql_controller._execute_query_for_int(last_colorrank_qry)
 
             if sz_count == sz_hikes_table == last_index == last_altrank == last_colorrank:
-                match = '  '
+                match = '✅'
             else:
                 match = '❌'
 
