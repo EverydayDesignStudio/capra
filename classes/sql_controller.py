@@ -302,6 +302,50 @@ class SQLController:
         return self._execute_query(sql)
 
     # --------------------------------------------------------------------------
+    # UI Calls (2021)
+    # --------------------------------------------------------------------------
+    # Colors
+    def ui_get_colors_for_hike_sortby(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_colors_for_hike_sortby(m, current.hike_id)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            colorlist = list()
+            for r in rows:
+                c = r[0].split(',')
+                color = QColor(int(c[0]), int(c[1]), int(c[2]))
+                # print(color.red())
+
+                colorlist.append(color)
+
+            return colorlist
+
+    def ui_get_colors_for_archive_sortby(self, m: str) -> list:
+        sql = self.statements.ui_select_colors_for_archive_sortby(m)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            colorlist = list()
+            for r in rows:
+                c = r[0].split(',')
+                color = QColor(int(c[0]), int(c[1]), int(c[2]))
+                colorlist.append(color)
+
+            return colorlist
+
+    # --------------------------------------------------------------------------
     # TODO REMOVE - Eventually go through and remove all the old methods that aren't needed anymore
     # likely it will be most of them
     # --------------------------------------------------------------------------
