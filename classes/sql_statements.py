@@ -120,26 +120,30 @@ class SQLStatements:
         return statement
 
     # Time Skip in Hikes
+    # NOTE : round(x + 0.499999999999) is used to get the ceiling
+    # this is used to get a balanced distribution on skips
+    # Otherwise: 0-1.99   ==> 1
+    #            only 223 ==> 223
     def select_next_time_skip_in_hikes(self, hike: int, time: int) -> str:
         skip_ahead = 1  # private variable in case we want to change how big the skip is
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
             SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE hike>{h}) \
                 THEN (									  /* hike + skip */ \
                     SELECT picture_id FROM pictures WHERE hike>=({h}+{s}) ORDER BY time ASC LIMIT 1 OFFSET ( \
-                        SELECT CAST(( \
+                        SELECT round( \
                             (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
                             /(SELECT count(*) FROM pictures WHERE hike={h})) \
-                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>={h}+{s} LIMIT 1)) \
-                        ) AS INT) - 1 \
+                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>={h}+{s} ORDER BY time ASC LIMIT 1)) \
+                        + 0.499999999999) - 1 \
                     ) \
                 ) \
                 ELSE ( \
-                    SELECT picture_id FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 LIMIT 1) ORDER BY time ASC LIMIT 1 OFFSET ( \
-                        SELECT CAST(( \
+                    SELECT picture_id FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 ORDER BY hike ASC LIMIT 1) ORDER BY time ASC LIMIT 1 OFFSET ( \
+                        SELECT round( \
                             (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
                             /(SELECT count(*) FROM pictures WHERE hike={h})) \
-                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 LIMIT 1)) \
-                        ) AS INT) - 1 \
+                            * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike>=0 ORDER BY time ASC LIMIT 1)) \
+                        + 0.499999999999) - 1 \
                     ) \
                 ) \
             END END);'.format(h=hike, t=time, s=skip_ahead)
@@ -149,28 +153,30 @@ class SQLStatements:
         skip_back = 1  # private variable in case we want to change how big the skip is
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \
             SELECT CASE WHEN (SELECT count(*) FROM pictures WHERE hike<{h}) \
-                THEN (									  /* hike + skip */ \
+                THEN (									  /* hike + skip */ /* it requires this extra selection because we want the previous hike, but results need to be returned in ASC order */\
                     SELECT picture_id FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike<={h}-{s} ORDER BY time DESC LIMIT 1) ORDER BY time ASC LIMIT 1 OFFSET ( \
-                        SELECT CAST(( \
+                        SELECT round( \
                             (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
                             /(SELECT count(*) FROM pictures WHERE hike={h})) \
                             * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures WHERE hike<={h}-{s} ORDER BY time DESC LIMIT 1)) \
-                        ) AS INT) - 1 \
+                        + 0.499999999999) - 1 \
                     ) \
                 ) \
                 ELSE ( \
                     SELECT picture_id FROM pictures WHERE hike=(SELECT hike FROM pictures ORDER BY hike DESC LIMIT 1) ORDER BY time ASC LIMIT 1 OFFSET ( \
-                        SELECT CAST(( \
+                        SELECT round( \
                             (CAST((SELECT count(*) FROM pictures WHERE hike={h} AND time<={t}) AS REAL) \
                             /(SELECT count(*) FROM pictures WHERE hike={h})) \
                             * (SELECT count(*) FROM pictures WHERE hike=(SELECT hike FROM pictures ORDER BY hike DESC LIMIT 1)) \
-                        ) AS INT) - 1 \
+                        + 0.499999999999) - 1 \
                     ) \
                 ) \
             END END);'.format(h=hike, t=time, s=skip_back)
         return statement
 
     # Time Skip in Global
+    # Skips every 15 minutes
+    # Currently doesn't use the newer rounding logic with 0.499999999999
     def select_next_time_skip_in_global(self, minute: int, time: int) -> str:
         skip_ahead = 15  # private variable in case we want to change how big the skip is
         statement = 'SELECT * FROM pictures WHERE picture_id = ( \

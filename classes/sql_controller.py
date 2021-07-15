@@ -32,8 +32,12 @@ class SQLController:
             print(query)
             return None
         else:
-            # Picture object was created from database row
-            picture = self._build_picture_from_row(all_rows[0])
+            # TESTING: used for testing the original 4 database
+            picture = self._test_build_picture_from_row(all_rows[0])
+
+            # PRODUCTION: create Picture object from database row
+            # picture = self._build_picture_from_row(all_rows[0])
+
             return picture
 
     def _execute_query_for_int(self, query) -> int:
@@ -70,6 +74,25 @@ class SQLController:
         rows = cursor.fetchall()
 
         return rows
+
+    def _test_build_picture_from_row(self, row: list) -> Picture:
+        """Builds old (winter 2021 verion) of Picture object from an old `pictures` row
+        ::
+
+            :param row: from `pictures` table
+            :return: Picture (old winter 2021 version)
+        """
+
+        # Finalized Database schema
+        picture = Picture(picture_id=row['picture_id'], time=row['time'], year=row['year'], month=row['month'], day=row['day'],
+                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'], timerank_global='--',
+                          altitude=row['altitude'], altrank_hike=row['altrank_hike'], altrank_global=row['altrank_global'], altrank_global_h=row['altrank_global_h'],
+                          color_hsv=row['color_hsv'], color_rgb=row['color_rgb'], colorrank_hike=row['color_rank_hike'], colorrank_global=row['color_rank_global'],
+                          colorrank_global_h=row['color_rank_global_h'], colors_count=row['colors_count'], colors_rgb=row['colors_rgb'], colors_conf=row['colors_conf'],
+                          camera1=row['camera1'], camera2=row['camera2'], camera3=row['camera3'], cameraf=row['camera_landscape'],
+                          created=row['created_date_time'], updated=row['updated_date_time'])
+
+        return picture
 
     def _build_picture_from_row(self, row: list) -> Picture:
         """Build Picture object from `pictures` row

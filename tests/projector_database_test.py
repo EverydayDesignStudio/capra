@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 
-from typing import Any
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from PyQt5.QtGui import QColor
 import unittest
-import random
+
+print('⚠️  NOTE: To get these tests to run, you have to adjust the _execute_query() \n   \
+in sql_controller.py to use _test_build_picture_from_row() instead.\n   \
+This is due to updates that took place to the database, after the testing in this file was completed.\n')
 
 
-# Tests for the newer larger database version
-class DatabaseTestsMay2021(unittest.TestCase):
-    DB = 'assets/capra_projector_may2021.db'
+# Tests for the merged database - May 2021
+# Never got around to writing updated tests
+# It would be useful, but also a lot of extra work, to write tests for
+# the database logic on a large (> 10 hikes) and completely merged Database
+class DatabaseMergedMayTests(unittest.TestCase):
+    DB = 'tests/capra_projector_apr2021_min_test_full_merged.db'
     directory = 'capra-storage'
     sql_controller = None
     sql_statements = None
@@ -27,9 +32,24 @@ class DatabaseTestsMay2021(unittest.TestCase):
         # For testing directly on the sql statements
         self.sql_statements = SQLStatements()
 
+
+# Tests for the newer larger database version
+class DatabaseMay2021Tests(unittest.TestCase):
+    DB = 'tests/capra_projector_may2021.db'
+    directory = 'capra-storage'
+    sql_controller = None
+    sql_statements = None
+    picture = None
+
     @classmethod
-    def tearDownClass(self):
-        self.sql_controller = None
+    def setUpClass(self):
+        # NOTE - if the database or id is changed, all the tests will break
+        # They are dependent upon that
+        self.sql_controller = SQLController(database=self.DB, directory=self.directory)
+        self.picture = self.sql_controller.get_picture_with_id(11994)
+
+        # For testing directly on the sql statements
+        self.sql_statements = SQLStatements()
 
     def test_get_picture_with_id(self):
         self.assertEqual(self.picture.picture_id, 11994)
@@ -121,7 +141,7 @@ class DatabaseTestsMay2021(unittest.TestCase):
         self.assertEqual(pic.picture_id, 4146)
 
 
-class DatabaseTest(unittest.TestCase):
+class DatabaseOriginal4Tests(unittest.TestCase):
     DB = 'tests/capra_projector_jan2021_min_test.db'  # no / infront makes the path relative
     directory = 'capra-storage'
     sql_controller = None
@@ -137,10 +157,6 @@ class DatabaseTest(unittest.TestCase):
 
         # For testing directly on the sql statements
         self.sql_statements = SQLStatements()
-
-    @classmethod
-    def tearDownClass(self):
-        self.sql_controller = None
 
     def test_get_picture_with_id(self):
         self.assertEqual(self.picture.picture_id, 1994)
@@ -179,10 +195,10 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(picture.colors_rgb, colorList)
         self.assertEqual(picture.colors_conf, [0.22, 0.18, 0.16, 0.11])
 
-        self.assertEqual(picture.camera1, 'capra-storage/hike3/878_cam1.jpg')
-        self.assertEqual(picture.camera2, 'capra-storage/hike3/878_cam2.jpg')
-        self.assertEqual(picture.camera3, 'capra-storage/hike3/878_cam3.jpg')
-        self.assertEqual(picture.cameraf, 'capra-storage/hike3/878_cam2f.jpg')
+        self.assertEqual(picture.camera1, '/media/pi/capra-hd/hike3/878_cam1.jpg')
+        self.assertEqual(picture.camera2, '/media/pi/capra-hd/hike3/878_cam2.jpg')
+        self.assertEqual(picture.camera3, '/media/pi/capra-hd/hike3/878_cam3.jpg')
+        self.assertEqual(picture.cameraf, '/media/pi/capra-hd/hike3/878_cam2f.jpg')
         self.assertEqual(picture.created, '2021-02-16 09:39:15')
         self.assertEqual(picture.updated, '2021-02-16 09:39:15')
 
@@ -319,58 +335,58 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(pic.picture_id, 2194)
 
     def test_get_next_time_skip_in_hikes(self):
-        # id	time		hike	index_in_hike	id  (hike | index)
-        # 1566	1556389800	3		450			--> 3353(4 | 79)
-        # (451/2158) * 385 = 80
+        # id	time		hike	index_in_hike	(hike | index) = id
+        # 1566	1556389800	3		450			--> (4 | 80) = 3354
+        # (451/2158) * 385 = 80.46 (ceiling then subtract 1)
         pic = self.sql_controller.get_picture_with_id(1566)
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 3353)
+        self.assertEqual(pic.picture_id, 3354)
 
         # wrap around
-        # 3353	1556399116	4		79			--> 185(1 | 184)
-        # (80/385) * 892 = 185
+        # 3354	1556399120	4		80			--> (1 | 187) = 188
+        # (81/385) * 892 = 187.66
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 185)
+        self.assertEqual(pic.picture_id, 188)
 
-        # 185   1556323940  1       184         --> 938(2 | 45)
-        # (185/892) * 223 = 46
+        # 188   1556323952  1       187         --> (2 | 46) = 939
+        # (188/892) * 223 = 47.0
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 938)
+        self.assertEqual(pic.picture_id, 939)
 
-        # 938   1556377380  2       45          --> 1560(3 | 444)
-        # (46/223) * 2158 = 445
+        # 939   1556377384  2       46          --> (3 | 454) = 1570
+        # (47/223) * 2158 = 454.8
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 1560)
+        self.assertEqual(pic.picture_id, 1570)
 
-        # 3000  1556395536  3       1884        --> 3609 (4 | 335)
-        # (1885/2158) * 385 = 336
+        # 3000  1556395536  3       1884        --> (4 | 336) = 3610
+        # (1885/2158) * 385 = 336.29
         pic = self.sql_controller.get_picture_with_id(3000)
         pic = self.sql_controller.get_next_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 3609)
+        self.assertEqual(pic.picture_id, 3610)
 
     def test_get_previous_time_skip_in_hikes(self):
-        # id	time		hike	index_in_hike	id  (hike | index)
-        # 1566	1556389800	3		450	        <-- 938 (2 | 45)
-        # (451/2158) * 223 = 46
+        # id	time		hike	index_in_hike   (hike | index) = id
+        # 1566	1556389800	3		450	        --> (2 | 46) = 939
+        # (451/2158) * 223 = 46.6
         pic = self.sql_controller.get_picture_with_id(1566)
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 938)
+        self.assertEqual(pic.picture_id, 939)
 
-        # 938	1556377380	2		45		    <-- 184 (1 | 183)
-        # (46/223) * 892 = 184
+        # 939	1556377384	2		46		    --> (1 | 187) = 188
+        # (47/223) * 892 = 188.0
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 184)
+        self.assertEqual(pic.picture_id, 188)
 
-        # 184	1556323936	1		183		    <-- 3352 (4 | 77)
-        # (184/892) * 385	= 78
+        # 188	1556323952	1		187		    --> (4 | 81) = 3355
+        # (188/892) * 385	= 81.14
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 3352)
+        self.assertEqual(pic.picture_id, 3355)
 
-        # 3654  1556400320  4       380        <-- 3244 (3 | 2134)
-        # (381/385) * 2158 = 2135
+        # 3654  1556400320  4       380        --> (3 | 2135) = 3251
+        # (381/385) * 2158 = 2135.58
         pic = self.sql_controller.get_picture_with_id(3654)
         pic = self.sql_controller.get_previous_time_skip_in_hikes(pic)
-        self.assertEqual(pic.picture_id, 3250)
+        self.assertEqual(pic.picture_id, 3251)
 
     def test_get_next_time_skip_in_global(self):
         # id    time        minute      id
