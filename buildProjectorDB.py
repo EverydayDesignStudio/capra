@@ -130,9 +130,9 @@ def formatColors(colors):
     return res[:-1]
 
 
-def roundToHundredth(lst):
+def roundToInt(lst):
     for i in range(len(lst)):
-        lst[i] = round(float(lst[i]), 2)
+        lst[i] = round(float(lst[i]), 0)
     return lst
 
 
@@ -534,7 +534,7 @@ def buildHike(currHike):
     avgAlt /= validRowCount
     domColorHike_hsv = []
     domColorHike_hsv = get_dominant_color_1D(domColorsHike_hsv, CLUSTERS)
-    roundToHundredth(domColorHike_hsv)
+    roundToInt(domColorHike_hsv)
 
     hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
     hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
