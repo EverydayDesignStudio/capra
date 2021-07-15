@@ -72,7 +72,13 @@ class SQLController:
         return rows
 
     def _build_picture_from_row(self, row: list) -> Picture:
-        '''Builds latest version of the `Picture` object from a row in the database'''
+        """Build Picture object from `pictures` row
+        ::
+
+            :param row: from `pictures` table
+            :return: Picture (custom object)
+        """
+
         camera1 = self.directory + row['camera1']
         camera2 = self.directory + row['camera2']
         camera3 = self.directory + row['camera3']
@@ -89,12 +95,49 @@ class SQLController:
 
         return picture
 
-    # Initializing queries - used to get the initial row from the database
-    # TODO - write tests for all of these functions
+    def _build_hike_from_row(self, row: list) -> Hike:
+        """Build Hike object from `hikes` row
+        ::
+
+            :param row: from `hikes` table
+            :return: Hike (custom object)
+        """
+
+        hikepath = self.directory + row['path']
+
+        # Finalized Database schema
+        hike = Hike(hike_id=row['hike_id'], avg_altitude=row['avg_altitude'], avg_altrank=row['avg_altitude_rank'],
+                    start_time=row['start_time'], start_year=row['start_year'], start_month=row['start_month'], start_day=row['start_day'], start_minute=row['start_minute'], start_dayofweek=row['start_dayofweek'],
+                    end_time=row['end_time'], end_year=row['end_year'], end_month=row['end_month'], end_day=row['end_day'], end_minute=row['end_minute'], end_dayofweek=row['end_dayofweek'],
+                    color_rgb=row['color_rgb'], color_rank=row['color_rank'], num_pictures=row['pictures'], path=hikepath, created=row['created_date_time'], updated=row['updated_date_time'])
+
+        return hike
+
+    # Selecting by ID and index
+    # --------------------------------------------------------------------------
     def get_picture_with_id(self, id: int) -> Picture:
         sql = self.statements.select_picture_by_id(id)
         return self._execute_query(sql)
 
+    def get_hike_with_id(self, id: int) -> Hike:
+        sql = self.statements.select_hike_by_id(id)
+        rows = self._execute_query_for_anything(sql)
+
+        if not rows:
+            print("ERROR UPON QUERYING FOR HIKE:")
+            print(sql)
+            return None
+        else:
+            # Hike object was created from database row
+            hike = self._build_hike_from_row(rows[0])
+            return hike
+
+    def get_current_hike(self, current: Picture) -> Hike:
+        return self.get_hike_with_id(current.hike_id)
+
+    # TODO - write tests for all of these functions
+    # Initializing queries - used to get the initial row from the database
+    # --------------------------------------------------------------------------
     def get_first_time_picture(self) -> Picture:
         sql = self.statements.select_by_time_first_picture()
         return self._execute_query(sql)
@@ -127,9 +170,8 @@ class SQLController:
         sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
         return self._execute_query(sql)
 
-    # Size
+    # Sizes
     # --------------------------------------------------------------------------
-    # TODO - make a helper method for returning a number
     def get_hike_size(self, current: Picture) -> int:
         sql = self.statements.select_hike_size(current.hike_id)
         return self._execute_query_for_int(sql)
@@ -259,8 +301,11 @@ class SQLController:
         sql = self.statements.select_previous_color_skip_in_global(current.colorrank_global)
         return self._execute_query(sql)
 
-    # TODO REMOVE - go through and remove all the old methods that aren't needed anymore
+    # --------------------------------------------------------------------------
+    # TODO REMOVE - Eventually go through and remove all the old methods that aren't needed anymore
     # likely it will be most of them
+    # --------------------------------------------------------------------------
+
     # Projector
     # --------------------------------------------------------------------------
     def get_next_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
@@ -282,14 +327,6 @@ class SQLController:
                 # TODO return self.next_altitude_picture_in_hike(current_picture)
                 print('Color in hikes is not implemented yet')
                 return current_picture
-
-    # Helper methods
-    def _build_hike_from_row(self, row: list) -> Hike:
-        hike = Hike(hike_id=row[0], avg_altitude=row[1],
-                    avg_brightness=row[2], avg_hue=row[3], avg_hue_lumosity=row[4],
-                    start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
-
-        return hike
 
     # Helper method for returning expected number
     # If nothing is returned from db, return 0
@@ -482,23 +519,10 @@ class SQLController:
         else:  # there is a previous picture in hike
             return self._build_picture_from_row(all_rows[0])
 
-    # Hikes
+
+    # NOTE : Everything down is verified as needed, don't touch
+
     # --------------------------------------------------------------------------
-    def get_size_of_hike(self, current_picture: Picture) -> int:
-        cursor = self.connection.cursor()
-        h = current_picture.hike_id
-        cursor.execute(self.statements.select_size_of_hike(hike_id=h))
-        row = cursor.fetchone()
-        size = int(row[0])
-        return size
-
-    def get_current_hike(self, current_picture: Picture) -> Hike:
-        cursor = self.connection.cursor()
-        h = current_picture.hike_id
-        cursor.execute(self.statements.select_hike_by_id(hike_id=h))
-        all_rows = cursor.fetchall()
-        return self._build_hike_from_row(all_rows[0])
-
     # Camera
     # --------------------------------------------------------------------------
     def _get_time_since_last_hike(self) -> float:

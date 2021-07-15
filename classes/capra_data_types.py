@@ -5,55 +5,8 @@ from PyQt5.QtGui import QColor
 # with the projector
 
 
-class Picture:
-    """Defines object which hold a row from the database table 'pictures'"""
-
-    def __init__(self, picture_id, time, year, month, day, minute, dayofweek, hike_id, index_in_hike, timerank_global,
-                 altitude, altrank_hike, altrank_global, altrank_global_h,
-                 color_hsv, color_rgb, colorrank_hike, colorrank_global, colorrank_global_h,
-                 colors_count, colors_rgb, colors_conf,
-                 camera1, camera2, camera3, cameraf, created, updated):
-        self.picture_id = picture_id
-        self.time = time
-        self.year = year
-        self.month = month
-        self.day = day
-        self.minute = minute
-        self.dayofweek = dayofweek
-
-        self.hike_id = hike_id
-        self.index_in_hike = index_in_hike
-        self.timerank_global = timerank_global
-
-        self.altitude = altitude
-        self.altrank_hike = altrank_hike
-        self.altrank_global = altrank_global
-        self.altrank_global_h = altrank_global_h
-
-        self.color_hsv = self._parse_color_HSV(color_hsv)
-        self.color_rgb = self._parse_color(color_rgb)
-        self.colorrank_hike = colorrank_hike
-        self.colorrank_global = colorrank_global
-        self.colorrank_global_h = colorrank_global_h
-        self.colors_count = colors_count
-        self.colors_rgb = self._parse_color_list(colors_rgb)
-        self.colors_conf = self._parse_percent_list(colors_conf)
-
-        self.camera1 = camera1
-        self.camera2 = camera2
-        self.camera3 = camera3
-        self.cameraf = cameraf
-
-        self.created = created
-        self.updated = updated
-
-        # Labels for the UI
-        self.uitime_hrmm = self._parse_hr_min(self.time)
-        self.uitime_sec = self._parse_sec(self.time)
-        self.uidate = self._parse_date(self.time)
-        self.uihike = self._parse_hike(self.hike_id)
-        self.uialtitude = str(int(self.altitude))
-
+class CapraDataType:
+    """Superclass for shared functionality between Picture and Hike objects"""
     def _parse_hr_min(self, timestamp: float) -> str:
         """Parses timestamp into string
         ::
@@ -148,6 +101,57 @@ class Picture:
         percents = list(map(float, percents))
         return percents
 
+
+class Picture(CapraDataType):
+    """Defines object which hold a row from the database table 'pictures'"""
+
+    def __init__(self, picture_id, time, year, month, day, minute, dayofweek, hike_id, index_in_hike, timerank_global,
+                 altitude, altrank_hike, altrank_global, altrank_global_h,
+                 color_hsv, color_rgb, colorrank_hike, colorrank_global, colorrank_global_h,
+                 colors_count, colors_rgb, colors_conf,
+                 camera1, camera2, camera3, cameraf, created, updated):
+        super().__init__()
+        self.picture_id = picture_id
+        self.time = time
+        self.year = year
+        self.month = month
+        self.day = day
+        self.minute = minute
+        self.dayofweek = dayofweek
+
+        self.hike_id = hike_id
+        self.index_in_hike = index_in_hike
+        self.timerank_global = timerank_global
+
+        self.altitude = altitude
+        self.altrank_hike = altrank_hike
+        self.altrank_global = altrank_global
+        self.altrank_global_h = altrank_global_h
+
+        self.color_hsv = self._parse_color_HSV(color_hsv)
+        self.color_rgb = self._parse_color(color_rgb)
+        self.colorrank_hike = colorrank_hike
+        self.colorrank_global = colorrank_global
+        self.colorrank_global_h = colorrank_global_h
+        self.colors_count = colors_count
+        self.colors_rgb = self._parse_color_list(colors_rgb)
+        self.colors_conf = self._parse_percent_list(colors_conf)
+
+        self.camera1 = camera1
+        self.camera2 = camera2
+        self.camera3 = camera3
+        self.cameraf = cameraf
+
+        self.created = created
+        self.updated = updated
+
+        # Labels for the UI
+        self.uitime_hrmm = self._parse_hr_min(self.time)
+        self.uitime_sec = self._parse_sec(self.time)
+        self.uidate = self._parse_date(self.time)
+        self.uihike = self._parse_hike(self.hike_id)
+        self.uialtitude = str(int(self.altitude))
+
     def print_obj_mvp(self):
         print('({id}, {t}, {yr}, {mth}, {day}, {min}, {dow}, {hike_id}, {index}, {alt}, {altr}, {hsv}, {rgb}, {crh}, {crg}, {c1}, {c2}, {c3}, {cf})\
             '.format(id=self.picture_id, t=self.time, yr=self.year, mth=self.month, day=self.day,
@@ -156,33 +160,60 @@ class Picture:
                      crh=self.colorrank_hike, crg=self.colorrank_global, c1=self.camera1, c2=self.camera2, c3=self.camera3, cf=self.cameraf))
 
     def print_obj(self):
-        print('({id}, {t}, {alt} | {hike_id}, {index} | {cf})\n\
+        print('id\ttime\t\taltitude\thike_id\tindex\taltrank_hike\tcolorrank_hike\tpath')
+        print('{id}\t{t}\t{alt}\t\t{hike_id}\t{index}\t{ar}\t\t{cr}\t{pth}\n\
             '.format(id=self.picture_id, t=self.time, alt=self.altitude,
-                     hike_id=self.hike_id, index=self.index_in_hike, cf=self.cameraf))
+                     hike_id=self.hike_id, index=self.index_in_hike, ar=self.altrank_hike, cr=self.colorrank_hike, pth=self.cameraf))
 
 
-# Defines a hike object
+class Hike(CapraDataType):
+    """Defines object which hold a row from the database table 'hikes'"""
 
+    def __init__(self, hike_id, avg_altitude, avg_altrank,
+                 start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
+                 end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                 color_rgb, color_rank,
+                 num_pictures, path, created, updated):
+        super().__init__()
 
-class Hike:
-    def __init__(self, hike_id, avg_altitude,
-                 avg_brightness, avg_hue, avg_hue_lumosity,
-                 start_time, end_time, pictures_num, path):
         self.hike_id = hike_id
-        self.average_altitude = avg_altitude
-        self.average_brightness = avg_brightness
-        self.average_hue = avg_hue
-        self.average_hue_lumosity = avg_hue_lumosity
+        self.avg_altitude = avg_altitude
+        self.avg_altrank = avg_altrank
+
         self.start_time = start_time
+        self.start_year = start_year
+        self.start_month = start_month
+        self.start_day = start_day
+        self.start_minute = start_minute
+        self.start_dayofweek = start_dayofweek
         self.end_time = end_time
-        self.pictures_num = pictures_num
+        self.end_year = end_year
+        self.end_month = end_month
+        self.end_day = end_day
+        self.end_minute = end_minute
+        self.end_dayofweek = end_dayofweek
+
+        self.color_rgb = self._parse_color(color_rgb)
+        self.color_rank = color_rank
+        self.num_pictures = num_pictures
         self.path = path
 
-    def print_obj(self):
-        print('(id:{id}, alt:{alt}, bright:{br}, hue:{hue}, hue+lum:{hlum}, start:{st}, end:{et}, pictures:{n}, path:{p})\
-            '.format(id=self.hike_id, alt=self.average_altitude, br=self.average_brightness,
-                     hue=self.average_hue, hlum=self.average_hue_lumosity, 
-                     st=self.start_time, et=self.end_time, n=self.pictures_num, p=self.path))
+        self.created = created
+        self.updated = updated
 
-    def get_hike_time(self) -> float:
-        return self.end_time - self.start_time
+        self.uistarttime_hrmm = self._parse_hr_min(self.start_time)
+        self.uistartdate = self._parse_date(self.start_time)
+        self.uihike = self._parse_hike(self.hike_id)
+        self.uialtitude = str(int(self.avg_altitude))
+
+        def print_obj(self):
+            print('Hike ID\tstart time\t\tavg_alt\tavg_altrank\tcolor\tcolor_rank\tpictures\tpath')
+            print('{id}\t{t}\t{avg_alt}\t{avg_altrank}\t{color}\t{color_rank}\t{pic}\t{path}\n\
+                '.format(id=self.hike_id, t=self.start_time, avg_alt=self.avg_altitude, avg_altrank=self.avg_altrank,
+                         color=self.color_rgb, color_rank=self.color_rank, pic=self.num_pictures, path=self.path))
+
+        def get_hike_length_seconds(self) -> float:
+            return round(self.end_time - self.start_time, 0)
+
+        def get_hike_length_minutes(self) -> float:
+            return round((self.end_time - self.start_time)/60, 1)

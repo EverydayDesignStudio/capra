@@ -2,17 +2,66 @@ class SQLStatements:
     '''Holds all SQL statements for the program\n
     The only class that should ever interact with this is SQLController'''
 
-    # Select by ID and index
+    # REMOVE - check for usage, eventually remove
     def select_picture_by_hike_ids(self, hike_id: int, index_in_hike: int) -> str:
         statement = 'SELECT * FROM pictures WHERE hike={id} AND \
             index_in_hike={index}'.format(id=hike_id, index=index_in_hike)
         return statement
 
+    # Selecting by ID and index
+    # --------------------------------------------------------------------------
     def select_picture_by_id(self, picture_id: int) -> str:
         statement = 'SELECT * FROM pictures WHERE picture_id={id}'.format(id=picture_id)
         return statement
 
+    def select_hike_by_id(self, hike_id: float) -> str:
+        statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
+        return statement
+
+    # Initialization Statements - initially written 2019
+    # --------------------------------------------------------------------------
+    # Time - first & last across hikes
+    def select_by_time_first_picture(self) -> str:
+        statement = 'SELECT * FROM pictures ORDER BY time ASC LIMIT 1'
+        return statement
+
+    def select_by_time_last_picture(self) -> str:
+        statement = 'SELECT * FROM pictures ORDER BY time DESC LIMIT 1'
+        return statement
+
+    # Time - first & last in a hike
+    def select_by_time_first_picture_in_hike(self, hike_id: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} \
+            ORDER BY time ASC LIMIT 1'.format(id=hike_id)
+        return statement
+
+    def select_by_time_last_picture_in_hike(self, hike_id: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} \
+            ORDER BY time DESC LIMIT 1'.format(id=hike_id)
+        return statement
+
+    # Altitude - greatest & least across hikes
+    def select_by_altitude_greatest_picture(self) -> str:
+        statement = 'SELECT * FROM pictures ORDER BY altitude DESC LIMIT 1'
+        return statement
+
+    def select_by_altitude_least_picture(self) -> str:
+        statement = 'SELECT * FROM pictures ORDER BY altitude ASC LIMIT 1'
+        return statement
+
+    # Altitude - greatest and least in a hike
+    def select_by_altitude_greatest_picture_in_hike(self, hike_id: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} \
+            ORDER BY altitude DESC LIMIT 1'.format(id=hike_id)
+        return statement
+
+    def select_by_altitude_least_picture_in_hike(self, hike_id: float) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} \
+            ORDER BY altitude ASC LIMIT 1'.format(id=hike_id)
+        return statement
+
     # Size information
+    # --------------------------------------------------------------------------
     def select_hike_size(self, hike: int) -> str:
         statement = 'SELECT count(*) FROM pictures WHERE hike={h}'.format(h=hike)
         return statement
@@ -411,17 +460,11 @@ class SQLStatements:
         return statement
 
     # --------------------------------------------------------------------------
-    # Old Projector Functions
+    # UI Calls (2021)
     # --------------------------------------------------------------------------
-    # ******************************     Time     ******************************
 
-    # Time - first & last across hikes
-    def select_by_time_first_picture(self) -> str:
-        statement = 'SELECT * FROM pictures ORDER BY time ASC LIMIT 1'
         return statement
 
-    def select_by_time_last_picture(self) -> str:
-        statement = 'SELECT * FROM pictures ORDER BY time DESC LIMIT 1'
         return statement
 
     # Time - next & previous across hikes
@@ -433,17 +476,6 @@ class SQLStatements:
     def select_by_time_previous_picture(self, time: float) -> str:
         statement = 'SELECT * FROM pictures WHERE time<{t} \
             ORDER BY time DESC LIMIT 1'.format(t=time)
-        return statement
-
-    # Time - first & last in a hike
-    def select_by_time_first_picture_in_hike(self, hike_id: float) -> str:
-        statement = 'SELECT * FROM pictures WHERE hike={id} \
-            ORDER BY time ASC LIMIT 1'.format(id=hike_id)
-        return statement
-
-    def select_by_time_last_picture_in_hike(self, hike_id: float) -> str:
-        statement = 'SELECT * FROM pictures WHERE hike={id} \
-            ORDER BY time DESC LIMIT 1'.format(id=hike_id)
         return statement
 
     # Time - next & previous in a hike
@@ -458,15 +490,6 @@ class SQLStatements:
         return statement
 
     # ****************************     Altitude     ****************************
-
-    # Altitude - greatest & least across hikes
-    def select_by_altitude_greatest_picture(self) -> str:
-        statement = 'SELECT * FROM pictures ORDER BY altitude DESC LIMIT 1'
-        return statement
-
-    def select_by_altitude_least_picture(self) -> str:
-        statement = 'SELECT * FROM pictures ORDER BY altitude ASC LIMIT 1'
-        return statement
 
     # Altitude - count of same altitude across hikes
     def find_size_by_altitude_greater_time(self, altitude: float, time: float) -> str:
@@ -499,17 +522,6 @@ class SQLStatements:
     def select_by_equal_altitude_previous_picture(self, altitude: float, time: float) -> str:
         statement = 'SELECT * FROM pictures WHERE altitude={alt} AND \
             time<{t} ORDER BY altitude DESC, time DESC LIMIT 1'.format(alt=altitude, t=time)
-        return statement
-
-    # Altitude - greatest and least in a hike
-    def select_by_altitude_greatest_picture_in_hike(self, hike_id: float) -> str:
-        statement = 'SELECT * FROM pictures WHERE hike={id} \
-            ORDER BY altitude DESC LIMIT 1'.format(id=hike_id)
-        return statement
-
-    def select_by_altitude_least_picture_in_hike(self, hike_id: float) -> str:
-        statement = 'SELECT * FROM pictures WHERE hike={id} \
-            ORDER BY altitude ASC LIMIT 1'.format(id=hike_id)
         return statement
 
     # Altitude - count of same altitude in a hike
@@ -559,10 +571,6 @@ class SQLStatements:
     # Hike
     def select_size_of_hike(self, hike_id: float) -> str:
         statement = 'SELECT pictures FROM hikes WHERE hike_id={id}'.format(id=hike_id)
-        return statement
-
-    def select_hike_by_id(self, hike_id: float) -> str:
-        statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
         return statement
 
     # --------------------------------------------------------------------------
