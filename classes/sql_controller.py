@@ -345,6 +345,15 @@ class SQLController:
 
             return colorlist
 
+    # Time
+    def ui_get_time_percentage_in_hike_with_mode(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_time_percentage_in_hike_with_mode(m, current.picture_id, current.hike_id)
+        return round(self._execute_query_for_float(sql), 4)
+
+    def ui_get_time_percentage_in_archive_with_mode(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_time_percentage_in_archive_with_mode(m, current.picture_id)
+        return round(self._execute_query_for_float(sql), 4)
+
     # --------------------------------------------------------------------------
     # TODO REMOVE - Eventually go through and remove all the old methods that aren't needed anymore
     # likely it will be most of them

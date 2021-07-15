@@ -507,6 +507,44 @@ class SQLStatements:
 	    FROM pictures WHERE mod_val < 1.0 ORDER BY {o} LIMIT {l};'.format(sz=size, l=limit, o=ordering)
 
         return statement
+    
+    # Time Bar Percentage in hikes
+    def ui_select_time_percentage_in_hike_with_mode(self, mode: str, picture_id: int, hike: int) -> str:
+        if mode == 'alt':
+            ordering = 'altrank_hike'
+        elif mode == 'color':
+            ordering = 'color_rank_hike'
+        elif mode == 'time':
+            ordering = 'index_in_hike'
+        else:
+            raise ValueError('Expected a str parameter which was not given.')
+
+        statement = 'SELECT CAST((SELECT {o} FROM pictures WHERE picture_id={p}) AS REAL)/(SELECT count(*) FROM pictures \
+        WHERE hike={h});'.format(o=ordering, p=picture_id, h=hike)
+
+        return statement
+
+    # Time Bar Percentage in archive
+    def ui_select_time_percentage_in_archive_with_mode(self, mode: str, picture_id: int) -> str:
+        if mode == 'alt':
+            ordering = 'altrank_global'
+        elif mode == 'color':
+            ordering = 'color_rank_global'
+        elif mode == 'time':
+            ordering = 'time_rank_global'  # minute rank (not chronological)
+        else:
+            raise ValueError('Expected a str parameter which was not given.')
+
+        statement = 'SELECT CAST((SELECT {o} FROM pictures WHERE picture_id={p}) AS REAL)/(SELECT count(*) FROM pictures \
+        );'.format(o=ordering, p=picture_id)
+
+        return statement
+
+    # --------------------------------------------------------------------------
+    # Old Projector Functions
+    # --------------------------------------------------------------------------
+    # ******************************     Time     ******************************
+
     # Time - next & previous across hikes
     def select_by_time_next_picture(self, time: float) -> str:
         statement = 'SELECT * FROM pictures WHERE time>{t} \
