@@ -462,27 +462,32 @@ def buildHike(currHike):
 
         #    2. resize to 427x720 and rotate 90 deg
         ## TODO: refine color - saturation --> talk with Sam
-        if (not os.path.exists(picPathCam1_dest) or
-            not os.path.exists(picPathCam2_dest) or
-            not os.path.exists(picPathCam2f_dest) or
-            not os.path.exists(picPathCam3_dest)):
+        try:
+            if (not os.path.exists(picPathCam1_dest) or
+                not os.path.exists(picPathCam2_dest) or
+                not os.path.exists(picPathCam2f_dest) or
+                not os.path.exists(picPathCam3_dest)):
 
-            img = Image.open(picPathCam1_src)
-            img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            img_res.save(picPathCam1_dest)
-
-            img = Image.open(picPathCam2_src)
-            img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-            img_res.save(picPathCam2_dest)
-
-            if (os.path.exists(picPathCam3_src)):
-                img = Image.open(picPathCam3_src)
+                img = Image.open(picPathCam1_src)
                 img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                img_res.save(picPathCam3_dest)
-            else:
-                img = Image.open(WHITE_IMAGE)
-                img_res = img.copy().rotate(90, expand=True)
-                img_res.save(picPathCam3_dest)
+                img_res.save(picPathCam1_dest)
+
+                img = Image.open(picPathCam2_src)
+                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                img_res.save(picPathCam2_dest)
+
+                if (os.path.exists(picPathCam3_src)):
+                    img = Image.open(picPathCam3_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam3_dest)
+                else:
+                    img = Image.open(WHITE_IMAGE)
+                    img_res = img.copy().rotate(90, expand=True)
+                    img_res.save(picPathCam3_dest)
+        except:
+            print("!! Hike {} @ row {} has truncated pictures. Skipping a row..".format(currHike, index_in_hike))
+            index_in_hike += 1
+            continue
 
         fileName = "{}_camN".format(index_in_hike)
 
