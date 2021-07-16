@@ -215,26 +215,26 @@ class DatabaseTest(unittest.TestCase):
         self.assertEqual(colors[94], QColor(141, 143, 149))
 
     # Time Bar
-    def test_ui_get_time_percent_for_hike(self):
+    def test_ui_get_percent_for_hike(self):
         self.assertEqual(self.picture.picture_id, 11994)
         self.assertEqual(self.picture.hike_id, 10)
 
-        percent = self.sql_controller.ui_get_time_percentage_in_hike_with_mode('alt', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
         self.assertEqual(percent, 0.7939)
-        percent = self.sql_controller.ui_get_time_percentage_in_hike_with_mode('color', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
         self.assertEqual(percent, 0.1022)
-        percent = self.sql_controller.ui_get_time_percentage_in_hike_with_mode('time', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
         self.assertEqual(percent, 0.8422)
 
-    def test_ui_get_time_percent_for_archive(self):
+    def test_ui_get_percent_for_archive(self):
         self.assertEqual(self.picture.picture_id, 11994)
         self.assertEqual(self.picture.hike_id, 10)
 
-        percent = self.sql_controller.ui_get_time_percentage_in_archive_with_mode('alt', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
         self.assertEqual(percent, 0.9759)
-        percent = self.sql_controller.ui_get_time_percentage_in_archive_with_mode('color', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
         self.assertEqual(percent, 0.1585)
-        percent = self.sql_controller.ui_get_time_percentage_in_archive_with_mode('time', self.picture)
+        percent = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
         self.assertEqual(percent, 0.3840)
 
 

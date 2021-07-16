@@ -513,9 +513,10 @@ class SQLStatements:
 	    FROM pictures WHERE mod_val < 1.0 ORDER BY {o} LIMIT {l};'.format(sz=size, l=limit, o=ordering)
 
         return statement
-    
-    # Time Bar Percentage in hikes
-    def ui_select_time_percentage_in_hike_with_mode(self, mode: str, picture_id: int, hike: int) -> str:
+
+    # Time Bar & Indicators Percentage in hikes 
+    # (also needed for the indicators on the other modes)
+    def ui_select_percentage_in_hike_with_mode(self, mode: str, picture_id: int, hike: int) -> str:
         if mode == 'alt':
             ordering = 'altrank_hike'
         elif mode == 'color':
@@ -530,8 +531,9 @@ class SQLStatements:
 
         return statement
 
-    # Time Bar Percentage in archive
-    def ui_select_time_percentage_in_archive_with_mode(self, mode: str, picture_id: int) -> str:
+    # Time Bar & Indicators Percentage in archive 
+    # (also needed for the indicators on the other modes)
+    def ui_select_percentage_in_archive_with_mode(self, mode: str, picture_id: int) -> str:
         if mode == 'alt':
             ordering = 'altrank_global'
         elif mode == 'color':

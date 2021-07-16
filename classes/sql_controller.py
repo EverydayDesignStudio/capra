@@ -368,13 +368,14 @@ class SQLController:
 
             return colorlist
 
-    # Time
-    def ui_get_time_percentage_in_hike_with_mode(self, m: str, current: Picture) -> list:
-        sql = self.statements.ui_select_time_percentage_in_hike_with_mode(m, current.picture_id, current.hike_id)
+    # Time & Indicator Percentage
+    # (also needed for the indicators on the other modes)
+    def ui_get_percentage_in_hike_with_mode(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_percentage_in_hike_with_mode(m, current.picture_id, current.hike_id)
         return round(self._execute_query_for_float(sql), 4)
 
-    def ui_get_time_percentage_in_archive_with_mode(self, m: str, current: Picture) -> list:
-        sql = self.statements.ui_select_time_percentage_in_archive_with_mode(m, current.picture_id)
+    def ui_get_percentage_in_archive_with_mode(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_percentage_in_archive_with_mode(m, current.picture_id)
         return round(self._execute_query_for_float(sql), 4)
 
     # --------------------------------------------------------------------------
