@@ -12,6 +12,7 @@ from PyQt5.QtCore import *
 from PIL import Image, ImageQt  # Pillow image functions
 # from PIL.ImageQt import ImageQt
 
+import math
 import sys
 import time
 
@@ -20,8 +21,36 @@ import time
 # UI Super Classes
 # -----------------------------------------------------------------------------
 
+
+class UIWidget(QWidget):
+    """Super class for universal animations of QWidgets"""
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.anim = QPropertyAnimation()
+        self.fadeEffect = QGraphicsOpacityEffect()
+
+    def fadeOut(self, duration: int):
+        """Fades out the label over passed in duration (milliseconds)"""
+        self.setGraphicsEffect(self.fadeEffect)
+        self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(duration)
+        self.anim.start()
+        self.update()
+
+    def show(self):
+        self.anim.stop()
+        self.fadeEffect.setOpacity(1.0)
+
+    def myHide(self):
+        self.fadeEffect.setOpacity(0.0)
+
+
 class UILabel(QLabel):
-    """Super class for universal animations of QLabels"""
+    """Super class for universal animations of
+    QLabels that are placed directly onto the window"""
     def __init__(self, window):
         super().__init__(window)
 
@@ -43,7 +72,7 @@ class UILabel(QLabel):
         self.fadeEffect.setOpacity(1.0)
 
 
-# UI Components
+# UI Text & Image Components
 # -----------------------------------------------------------------------------
 
 # Labels for the information at the top of the screen
@@ -62,7 +91,7 @@ class UILabelTop(UILabel):
         self.setMargin(65)
         # self.setIndent(100)
 
-        self.setFont(QFont('Atlas Grotesk', 28, 400))
+        self.setFont(QFont('Atlas Grotesk', 24, 400))
         self.setStyleSheet("color: rgba(255,255,255,255)")
         self.setGraphicsEffect(UIEffectTextDropShadow())
 
@@ -195,7 +224,7 @@ class UIModeOverlay(QLabel):
         # self.move(0, 0)
         self.setAlignment(Qt.AlignCenter)
         # self.setStyleSheet("border: 3px solid pink; background-color: rgba(0, 0, 0, 100);")
-        self.setStyleSheet("background-color: rgba(0, 0, 0, 50);")
+        self.setStyleSheet("background-color: rgba(0, 0, 0, 25);")
 
         # TODO - remove this because its so janky
         fadeEffect = QGraphicsOpacityEffect()
@@ -264,6 +293,16 @@ class UIEffectTextDropShadow(QGraphicsDropShadowEffect):
         super(QGraphicsDropShadowEffect, self).__init__()
         self.setBlurRadius(20)
         color = QColor(0, 0, 0, 50)  # r,g,b,a | opaque = 255
+        self.setColor(color)
+        self.setOffset(0, 2)
+
+
+# Drop shadow for bottom UI elements
+class UIEffectDropShadow(QGraphicsDropShadowEffect):
+    def __init__(self):
+        super(QGraphicsDropShadowEffect, self).__init__()
+        self.setBlurRadius(20)
+        color = QColor(0, 0, 0, 150)  # r,g,b,a | opaque = 255
         self.setColor(color)
         self.setOffset(0, 2)
 
