@@ -993,145 +993,49 @@ class MainWindow(QMainWindow):
     # Keyboard Presses
     # -------------------------------------------------------------------------
     def keyPressEvent(self, event):
-        mode = Status().get_mode()
-        scope = Status().get_scope()
-
+        # Closing App
         if event.key() == Qt.Key_Escape:
             self.close()
 
         # Scroll Wheel
-        elif event.key() == Qt.Key_Left:
-            currentHike = self.picture.hike_id
-            if scope == StatusScope.HIKE:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, self.scrollspeed)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_previous_altitude_in_hikes(self.picture, self.scrollspeed)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_previous_color_in_hikes(self.picture, self.scrollspeed)
-
-                if self.picture.hike_id != currentHike:
-                    print('🧨🧨🧨 PREVIOUS - NEW HIKE! 🧨🧨🧨')
-                    # self.updateScreenHikesNewHike()
-                # else:
-                    # self.updateScreenHikesNewPictures()
-            elif scope == StatusScope.GLOBAL:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_previous_time_in_global(self.picture, self.scrollspeed)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_previous_altitude_in_global(self.picture, self.scrollspeed)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_previous_color_in_global(self.picture, self.scrollspeed)
-
-                # self.updateScreenArchive()  # TODO - still needs to be coded
-            self.updateScreen()
-
         elif event.key() == Qt.Key_Right:
-            currentHike = self.picture.hike_id
-            if scope == StatusScope.HIKE:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, self.scrollspeed)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_next_altitude_in_hikes(self.picture, self.scrollspeed)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_next_color_in_hikes(self.picture, self.scrollspeed)
+            self.control_next()
+        elif event.key() == Qt.Key_Left:
+            self.control_previous()
 
-                if self.picture.hike_id != currentHike:
-                    print('🧨🧨🧨 NEXT - NEW HIKE! 🧨🧨🧨')
-                    # self.updateScreenHikesNewHike()
-                # else:
-                    # self.updateScreenHikesNewPictures()
-            elif scope == StatusScope.GLOBAL:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_next_time_in_global(self.picture, self.scrollspeed)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_next_altitude_in_global(self.picture, self.scrollspeed)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_next_color_in_global(self.picture, self.scrollspeed)
-
-                # self.updateScreenArchive()  # TODO - function still needs to be coded
-            self.updateScreen()
-
-        # Increase/Decrease speed
-        elif event.key() == Qt.Key_Equal:
-            print('++ Scroll Speed')
-            self.scrollspeed = int(self.scrollspeed * 2)
-            if self.scrollspeed > 256:
-                self.scrollspeed = 256
-            self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
-            # print(self.scrollspeed)
-
-        elif event.key() == Qt.Key_Minus:
-            print('-- Scroll Speed')
-            self.scrollspeed = int(self.scrollspeed / 2)
-            if self.scrollspeed < 1:
-                self.scrollspeed = 1
-            self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
-            # print(self.scrollspeed)
-
-        # Change Scope - Scrollwheel press
-        elif event.key() == Qt.Key_Shift:
-            print('Shift Archive / Hike')
-            self.changeScope()
-            self.updateScreen()
-
-        # Next/Previous Buttons
+        # Skip Buttons
         elif event.key() == Qt.Key_Up:
-            # print('Next Button')
-            if scope == StatusScope.HIKE:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_next_time_skip_in_hikes(self.picture)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
-            elif scope == StatusScope.GLOBAL:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_next_time_skip_in_global(self.picture)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
-            self.updateScreen()
-
+            self.control_skip_next()
         elif event.key() == Qt.Key_Down:
-            # print('Previous Button')
-            if scope == StatusScope.HIKE:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_previous_time_skip_in_hikes(self.picture)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
-            elif scope == StatusScope.GLOBAL:
-                if mode == StatusMode.TIME:
-                    self.picture = self.sql_controller.get_previous_time_skip_in_global(self.picture)
-                elif mode == StatusMode.ALTITUDE:
-                    self.picture = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
-                elif mode == StatusMode.COLOR:
-                    self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
-            self.updateScreen()
+            self.control_skip_previous()
 
         # Change Mode - Time, Altitude, Color
         elif event.key() == Qt.Key_M:
-            print('Mode change')
-            self.changeMode()
-            self.updateScreen()
+            self.control_mode()
+
+        # Change Scope - Scrollwheel press
+        elif event.key() == Qt.Key_Shift:
+            self.control_scope()
 
         # Play/Pause
         elif event.key() == Qt.Key_Space:
-            print('Space - Play/Pause')
+            self.control_play_pause()
 
         # Change Orientation
         elif event.key() == Qt.Key_L:
-            print('setLandscape')
-            self.setLandscape()
+            self.control_landscape()
         elif event.key() == Qt.Key_V:
-            print('setVertical')
-            self.setVertical()
+            self.control_vertical()
+
+        # Increase/Decrease speed
+        elif event.key() == Qt.Key_Equal:
+            self.control_speed_faster()
+        elif event.key() == Qt.Key_Minus:
+            self.control_speed_slower()
+
+        # Testing
         elif event.key() == Qt.Key_F:
             print(f"Id: {self.picture.picture_id} | Hike: {self.picture.hike_id}")
-
             # print('time to fade!')
             # self.vlabelCenter.fadeOut(1000)
             # self.palette.fadeOut(2000)
@@ -1142,6 +1046,141 @@ class MainWindow(QMainWindow):
             self.loopThroughAllPictures()
         else:
             print(event.key())
+
+    # Helper Functions for keyboard / hardware controls
+    # -------------------------------------------------------------------------
+    def control_mode(self):
+        print('Mode change')
+        self.changeMode()
+        self.updateScreen()
+
+    def control_scope(self):
+        print('Shift Archive / Hike')
+        self.changeScope()
+        self.updateScreen()
+
+    def control_next(self):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        currentHike = self.picture.hike_id
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, self.scrollspeed)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_in_hikes(self.picture, self.scrollspeed)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_in_hikes(self.picture, self.scrollspeed)
+
+            if self.picture.hike_id != currentHike:
+                print('🧨🧨🧨 NEXT - NEW HIKE! 🧨🧨🧨')
+                # self.updateScreenHikesNewHike()
+            # else:
+                # self.updateScreenHikesNewPictures()
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_in_global(self.picture, self.scrollspeed)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_in_global(self.picture, self.scrollspeed)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_in_global(self.picture, self.scrollspeed)
+
+            # self.updateScreenArchive()  # TODO - function still needs to be coded
+        self.updateScreen()
+
+    def control_previous(self):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        currentHike = self.picture.hike_id
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, self.scrollspeed)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_in_hikes(self.picture, self.scrollspeed)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_in_hikes(self.picture, self.scrollspeed)
+
+            if self.picture.hike_id != currentHike:
+                print('🧨🧨🧨 PREVIOUS - NEW HIKE! 🧨🧨🧨')
+                # self.updateScreenHikesNewHike()
+            # else:
+                # self.updateScreenHikesNewPictures()
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_in_global(self.picture, self.scrollspeed)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_in_global(self.picture, self.scrollspeed)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_in_global(self.picture, self.scrollspeed)
+
+            # self.updateScreenArchive()  # TODO - still needs to be coded
+        self.updateScreen()
+
+    def control_skip_next(self):
+        # print('Next Button')
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_skip_in_hikes(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_skip_in_global(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
+        self.updateScreen()
+
+    def control_skip_previous(self):
+        # print('Previous Button')
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_skip_in_hikes(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_skip_in_global(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
+        self.updateScreen()
+
+    def control_play_pause(self):
+        print('Space - Play/Pause')
+
+    def control_landscape(self):
+        print('setLandscape')
+        self.setLandscape()
+
+    def control_vertical(self):
+        print('setVertical')
+        self.setVertical()
+
+    def control_speed_slower(self):
+        print('-- Scroll Speed')
+        self.scrollspeed = int(self.scrollspeed / 2)
+        if self.scrollspeed < 1:
+            self.scrollspeed = 1
+        self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
+        # print(self.scrollspeed)
+
+    def control_speed_faster(self):
+        print('++ Scroll Speed')
+        self.scrollspeed = int(self.scrollspeed * 2)
+        if self.scrollspeed > 256:
+            self.scrollspeed = 256
+        self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
+        # print(self.scrollspeed)
 
     # Testing
     # -------------------------------------------------------------------------
