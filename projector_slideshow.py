@@ -745,19 +745,15 @@ class MainWindow(QMainWindow):
 
     def changeMode(self):
         print('changeMode()')
-
         Status().next_mode()
 
         mode = Status().get_mode()
         if mode == StatusMode.TIME:
             self.modeOverlay.setTime()
-            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
         elif mode == StatusMode.ALTITUDE:
             self.modeOverlay.setAltitude()
-            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
         elif mode == StatusMode.COLOR:
             self.modeOverlay.setColor()
-            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
 
     def changeScope(self):
         # print('changeScope()')
@@ -793,6 +789,7 @@ class MainWindow(QMainWindow):
     # A slow and inefficient, but good base case for updating the UI on the screen
     def updateScreen(self):
         # self.picture.print_obj()
+        # self.printCurrentMemoryUsage()
         self.updateImages()
         self.updateUITop()
         self.updateUIBottom()
@@ -834,10 +831,8 @@ class MainWindow(QMainWindow):
         scope = Status().get_scope()
 
         if scope == StatusScope.HIKE:
-            # self.leftLabel.setPrimaryText(self.picture.uihike)
             self.leftLabel.setPrimaryText("Hikes")
         elif scope == StatusScope.GLOBAL:
-            # self.leftLabel.setPrimaryText(f"Global - {self.picture.uihike}")
             self.leftLabel.setPrimaryText("Archive")
         self.leftLabel.show()
 
@@ -850,7 +845,7 @@ class MainWindow(QMainWindow):
             self.centerLabel.setSecondaryText('M')
             self.vlabelCenter.setText(f'{self.picture.uialtitude} M')
         elif mode == StatusMode.COLOR:
-            # TODO - eventually the color bar will be here, so it'll be blank
+            # TODO - eventually the color palette will be here, so it'll be blank
             # self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
             # self.centerLabel.setSecondaryText(self.picture.uitime_sec)
             # self.vlabelCenter.setText(self.picture.uitime_hrmm)
@@ -902,50 +897,40 @@ class MainWindow(QMainWindow):
         mode = Status().get_mode()
 
         if scope == StatusScope.HIKE:
-            # rank_timebar = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
             rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
             if mode == StatusMode.TIME:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
                 self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
-                # rank_colorbar_altgraph = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
                 rank_colorbar_altgraph = rank_timebar
                 self.timebar.trigger_refresh(rank_timebar, True)
             elif mode == StatusMode.ALTITUDE:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
                 self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
-                # rank_colorbar_altgraph = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
                 rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
                 self.timebar.trigger_refresh(rank_timebar, False)
             elif mode == StatusMode.COLOR:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
                 self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
-                # rank_colorbar_altgraph = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
                 rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
                 self.timebar.trigger_refresh(rank_timebar, False)
         elif scope == StatusScope.GLOBAL:
-            # TODO - finish this implementation
-            # rank_timebar = int(self.picture.timerank_global)/self.sql_controller.get_archive_size()
             rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
             if mode == StatusMode.TIME:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
                 self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
-                # rank_colorbar_altgraph = int(self.picture.timerank_global)/self.sql_controller.get_archive_size()
                 rank_colorbar_altgraph = rank_timebar
                 self.timebar.trigger_refresh(rank_timebar, True)
             elif mode == StatusMode.ALTITUDE:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
                 self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
-                # rank_colorbar_altgraph = int(self.picture.altrank_global)/self.sql_controller.get_archive_size()
                 rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
                 self.timebar.trigger_refresh(rank_timebar, False)
             elif mode == StatusMode.COLOR:
                 self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
                 self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
-                # rank_colorbar_altgraph = int(self.picture.colorrank_global)/self.sql_controller.get_archive_size()
                 rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
                 self.timebar.trigger_refresh(rank_timebar, False)
 
-        # NOTE - this is the reason why the ranks *were* messed up, because its using indexes that aren't necessarily 1-n
         self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
         self.colorbar.trigger_refresh(self.colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
         self.altitudegraph.trigger_refresh(self.altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
@@ -1011,7 +996,6 @@ class MainWindow(QMainWindow):
         mode = Status().get_mode()
         scope = Status().get_scope()
 
-        global rotaryCounter
         if event.key() == Qt.Key_Escape:
             self.close()
 
@@ -1040,12 +1024,8 @@ class MainWindow(QMainWindow):
                     self.picture = self.sql_controller.get_previous_color_in_global(self.picture, self.scrollspeed)
 
                 # self.updateScreenArchive()  # TODO - still needs to be coded
-
-            # self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, 1)
-
-            # self.picture.print_obj()
-            # self.printCurrentMemoryUsage()
             self.updateScreen()
+
         elif event.key() == Qt.Key_Right:
             currentHike = self.picture.hike_id
             if scope == StatusScope.HIKE:
@@ -1070,12 +1050,8 @@ class MainWindow(QMainWindow):
                     self.picture = self.sql_controller.get_next_color_in_global(self.picture, self.scrollspeed)
 
                 # self.updateScreenArchive()  # TODO - function still needs to be coded
-
-            # self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, 1)
-
-            # self.picture.print_obj()
-            # self.printCurrentMemoryUsage()
             self.updateScreen()
+
         # Increase/Decrease speed
         elif event.key() == Qt.Key_Equal:
             print('++ Scroll Speed')
@@ -1084,6 +1060,7 @@ class MainWindow(QMainWindow):
                 self.scrollspeed = 256
             self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
             # print(self.scrollspeed)
+
         elif event.key() == Qt.Key_Minus:
             print('-- Scroll Speed')
             self.scrollspeed = int(self.scrollspeed / 2)
@@ -1091,12 +1068,12 @@ class MainWindow(QMainWindow):
                 self.scrollspeed = 1
             self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
             # print(self.scrollspeed)
+
         # Change Scope - Scrollwheel press
         elif event.key() == Qt.Key_Shift:
             print('Shift Archive / Hike')
             self.changeScope()
             self.updateScreen()
-            # self.updateUITop()
 
         # Next/Previous Buttons
         elif event.key() == Qt.Key_Up:
@@ -1104,14 +1081,10 @@ class MainWindow(QMainWindow):
             if scope == StatusScope.HIKE:
                 if mode == StatusMode.TIME:
                     self.picture = self.sql_controller.get_next_time_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
                 elif mode == StatusMode.ALTITUDE:
                     self.picture = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
                 elif mode == StatusMode.COLOR:
-                    # TODO -- issue here
                     self.picture = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
             elif scope == StatusScope.GLOBAL:
                 if mode == StatusMode.TIME:
                     self.picture = self.sql_controller.get_next_time_skip_in_global(self.picture)
@@ -1119,7 +1092,6 @@ class MainWindow(QMainWindow):
                     self.picture = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
                 elif mode == StatusMode.COLOR:
                     self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
-            # self.updateScreenHikesNewHike()
             self.updateScreen()
 
         elif event.key() == Qt.Key_Down:
@@ -1127,13 +1099,10 @@ class MainWindow(QMainWindow):
             if scope == StatusScope.HIKE:
                 if mode == StatusMode.TIME:
                     self.picture = self.sql_controller.get_previous_time_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
                 elif mode == StatusMode.ALTITUDE:
                     self.picture = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
                 elif mode == StatusMode.COLOR:
                     self.picture = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
-                    # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
             elif scope == StatusScope.GLOBAL:
                 if mode == StatusMode.TIME:
                     self.picture = self.sql_controller.get_previous_time_skip_in_global(self.picture)
@@ -1141,7 +1110,6 @@ class MainWindow(QMainWindow):
                     self.picture = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
                 elif mode == StatusMode.COLOR:
                     self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
-            # self.updateScreenHikesNewHike()
             self.updateScreen()
 
         # Change Mode - Time, Altitude, Color
