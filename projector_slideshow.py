@@ -501,9 +501,9 @@ class MainWindow(QMainWindow):
         self.pictureVertical2 = UIImage(self.picture.camera2)
         self.pictureVertical3 = UIImage(self.picture.camera3)
 
-        verticallayout.addWidget(self.pictureVertical1)
-        verticallayout.addWidget(self.pictureVertical2)
         verticallayout.addWidget(self.pictureVertical3)
+        verticallayout.addWidget(self.pictureVertical2)
+        verticallayout.addWidget(self.pictureVertical1)
 
         # verticallayout.addWidget(UIImage(self.picture.camera1))
         # verticallayout.addWidget(UIImage(self.picture.camera2))
@@ -521,6 +521,7 @@ class MainWindow(QMainWindow):
     # Setup the custom UI components that are on top of the slideshow
     def setupUI(self):
         # Top UI elements
+        # ---------------------------------------------------------------------
         self.topUnderlay = UIUnderlay(self)
         self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
         self.centerLabel = UILabelTopCenter(self, '', '')
@@ -529,9 +530,59 @@ class MainWindow(QMainWindow):
         # Mode UI element
         self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png', mode)
 
-        # TODO - timeline elements
+        # Portrait UI
+        # ---------------------------------------------------------------------
+        self.portraitUIContainerTop = UIContainer(self, QHBoxLayout(), Qt.AlignRight)
+        self.vlabelCenter = PortraitTopLabel("Altitude")
+        self.vlabelCenter.setGraphicsEffect(UIEffectDropShadow())
+        self.portraitUIContainerTop.layout.addWidget(self.vlabelCenter)
+        self.portraitUIContainerTop.hide()
+
+        # Time, Color, Altitude Graphs
+        # ---------------------------------------------------------------------
+        spacer = QSpacerItem(0, 25)
+        self.bottomUIContainer = UIContainer(self, QVBoxLayout(), Qt.AlignBottom)
+
+        rank = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+        print(f'Rank New: {rank}')
+
+        # Speed Indicator
+        self.scrollSpeedLabel = UILabelTop(self, f'{self.scrollspeed}x', Qt.AlignLeft)
+        self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
+
+        # Color Palette
+        self.palette = ColorPalette(self.picture.colors_rgb, self.picture.colors_conf, True)
+        self.palette.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.palette)
+        self.bottomUIContainer.layout.addItem(spacer)
+
+        # Altitude Graph
+        self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+        print(self.altitudelist)
+        self.altitudegraph = AltitudeGraph(self.altitudelist, True, rank, self.picture.altitude)
+        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.altitudegraph)
+        # self.bottomUIContainer.layout.addItem(spacer)
+
+        # Color Bar
+        self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+        # TODO - Need data from the hike element, likely need to get the Hike on each new picture (??)
+        self.colorbar = ColorBar(self.colorlist, True, rank, self.picture.color_rgb)
+        self.colorbar.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.colorbar)
+
+        # Time Bar
+        self.timebar = TimeBar(QColor(62, 71, 47), rank, True)
+        self.timebar.myHide()
+        self.timebar.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.timebar)
+
+        # Spacer at bottom
+        self.bottomUIContainer.layout.addItem(spacer)
 
         # Setups up a UI timer for controlling the fade out of UI elements
+        # ---------------------------------------------------------------------
         self.timerFadeOutUI = QTimer()
         self.timerFadeOutUI.setSingleShot(True)
         self.timerFadeOutUI.timeout.connect(self._fadeOutUI)
