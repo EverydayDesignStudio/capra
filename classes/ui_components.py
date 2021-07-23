@@ -318,9 +318,6 @@ class UIContainer(QWidget):
         # painter.fillRect(rect, brush)
 
 
-# class PortraitTopLabel(QWidget):
-# class PortraitTopLabel(QLabel):
-# class PortraitTopLabel(UILabel):
 class PortraitTopLabel(UIWidget):
     def __init__(self, text: str) -> None:
         super().__init__()
@@ -328,38 +325,23 @@ class PortraitTopLabel(UIWidget):
         self.setFixedHeight(720)
         self.setFixedWidth(250)
 
-    # self.setFont(QFont('Atlas Grotesk', 24, 400))
-    # self.setStyleSheet("color: rgba(255,255,255,255)")
-    # self.setGraphicsEffect(UIEffectTextDropShadow())
-
     def setText(self, str):
-        # print(str)
         self.text = str
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
-        # painter.save()
 
         # bg
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
-        # brush.setColor(QColor(255, 0, 120, 50))
-        # brush.setColor(QColor(0, 0, 0, 50))
-        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
-        # painter.fillRect(rect, brush)
 
-        # translate
-        # JAR
-        # painter.translate(150, 50)
         painter.translate(painter.device().width(), 0)
         painter.rotate(90)
 
         # text
-        # painter = QPainter(self.label.pixmap())
         pen = QPen()
-        # pen.setWidth(0)
         pen.setColor(QColor('white'))
         painter.setPen(pen)
         font = QFont()
@@ -367,16 +349,12 @@ class PortraitTopLabel(UIWidget):
         font.setBold(True)
         font.setPointSize(24)
         painter.setFont(font)
-        # x, y -- but visualize it as portrait
 
-        pt = QPoint(200, 50)
         rec = QRect(QPoint(300, 50), QSize(100, 25))
         painter.drawText(rec, 0, self.text)
         # painter.drawText(pt, "Starting")
         # painter.drawText(200, 20, 0, "Starting")
 
-        # painter.drawText(100, 100, self.text)
-        # painter.drawText(200, 100, "Another Text")
         painter.end()
 
 
