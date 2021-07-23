@@ -358,6 +358,316 @@ class PortraitTopLabel(UIWidget):
         painter.end()
 
 
+class ColorPalette(UIWidget):
+    def __init__(self, colorList: list, confidentList: list, visible: bool) -> None:
+        super().__init__()
+        # self.resize(window.width(), window.height())
+
+        self.setFixedHeight(40)
+        self.setFixedWidth(160)
+        # self.layout = QVBoxLayout()
+        # self.layout.setContentsMargins(0, 0, 0, 0)
+        # self.layout.setAlignment(Qt.AlignCenter)
+
+        self.colorList = colorList
+        self.confidentList = confidentList
+        self.visible = visible
+
+    def paintEvent(self, e):
+        # print('painting Color Palette')
+        if self.visible:
+            painter = QPainter(self)
+            brush = QBrush()
+            brush.setStyle(Qt.SolidPattern)
+            painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+            # grab width & height of the whole painter
+            widgetw = painter.device().width()
+            widgeth = painter.device().height()
+
+            brush.setColor(QColor(0, 0, 0, 150))
+            rect = QRect(0, 0, widgetw, widgeth)
+            painter.fillRect(rect, brush)
+
+            # bg
+            # pen = QPen()
+            # pen.setWidth(10)
+            # pen.setColor(QColor(0, 0, 0))
+            # painter.setPen(pen)
+            # brush.setColor(QColor("pink"))
+            # painter.drawRect(0, 0, widgetw, widgeth)
+            # rect = QRect(0, 0, widgetw, widgeth)
+            # painter.fillRect(rect, brush)
+
+            total = sum(self.confidentList)
+            x = 0
+            for i, color in enumerate(self.colorList):
+                brush.setColor(color)
+                perc = self.confidentList[i]
+                w = round((perc / total) * widgetw, 0)
+                rect = QRect(x, 0, w, widgeth)
+                x += w
+                painter.fillRect(rect, brush)
+            # print('{x}\n\n'.format(x=x))
+
+    def trigger_refresh(self, colorList: list, confidentList: list, visible: bool):
+        self.colorList = colorList
+        self.confidentList = confidentList
+        self.visible = visible
+        self.update()
+
+
+class AltitudeGraph(UIWidget):
+    '''Altitude Graph which builds a graph of points from list of altitude values.'''
+    def __init__(self, altitudeList: list, isAltMode: bool, percent: float, currentAlt: float) -> None:
+        super().__init__()
+        self.setFixedHeight(160)
+        self.bgcolor = QColor('#ff00ff')
+
+        self.altitudeList = altitudeList
+        self.indicator = isAltMode
+        self.percent = percent
+        self.currentAlt = currentAlt
+
+    def paintEvent(self, e):
+        DOT_DIAM = 4
+        IND_DIAM = DOT_DIAM + 6
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        W = painter.device().width()
+        H = painter.device().height() - 20
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        # bg
+        # brush.setColor(self.bgcolor)
+        # rect = QRect(0, 0, w, h)
+        # painter.fillRect(rect, brush)
+
+        # Setup for painting the dots
+        pen.setWidth(1)
+        pen.setColor(QColor(255, 255, 255))
+        painter.setPen(pen)
+
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(QColor(255, 255, 255))
+        painter.setBrush(brush)
+
+        STEP = W / len(self.altitudeList)
+        FIRST_STEP = STEP/2 - DOT_DIAM/2
+        MINV = min(self.altitudeList)
+        MAXV = max(self.altitudeList)
+
+        # Draw the Graph
+        i = 0
+        for a in self.altitudeList:
+            x = round(FIRST_STEP + STEP * i, 1)
+            y = 10 + round(H - DOT_DIAM - ((a - MINV)/(MAXV-MINV))*(H-DOT_DIAM), 1)
+            painter.drawEllipse(x, y, DOT_DIAM, DOT_DIAM)
+            i += 1
+
+        # Draw the Indicator
+        pen.setWidth(3)
+        pen.setColor(QColor(255, 255, 255))
+        painter.setPen(pen)
+        brush.setColor(QColor(100, 100, 100))
+        painter.setBrush(brush)
+
+        x = round(self.percent * W - IND_DIAM/2, 1)
+        y = 10 + round(H - IND_DIAM - ((self.currentAlt - MINV)/(MAXV-MINV))*(H-IND_DIAM), 1)
+        painter.drawEllipse(x, y, IND_DIAM, IND_DIAM)
+
+    def trigger_refresh(self, altitudeList: list, isAltMode: bool, percent: float, currentAlt: float):
+        self.altitudeList = altitudeList
+        self.indicator = isAltMode
+        self.percent = percent
+        self.currentAlt = currentAlt
+        self.update()
+
+
+class ColorBar(UIWidget):
+    '''Defines the color bar at bottom of the screen
+    Accepts a list of colors, percent, and indicator color'''
+    def __init__(self, colorList: list, indicator: bool, percent: float, indicatorColor: QColor) -> None:
+        super().__init__()
+        self.setFixedHeight(40)
+        self.bgcolor = QColor('#ffffff')
+
+        self.colorList = colorList
+        self.indicator = indicator
+        self.percent = percent
+        self.indicatorColor = indicatorColor
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        # grab width & height of the whole painter
+        w = painter.device().width()
+        h = painter.device().height()
+
+        # Set the values for the widget
+        height = 20
+        yline = h/2 - height/2
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        x1 = 0
+        BOXW = round(w / len(self.colorList))
+
+        for color in self.colorList:
+            brush.setColor(color)
+            rect = QRect(x1, yline, BOXW, height)
+            x1 += BOXW
+            painter.fillRect(rect, brush)
+
+        # Indicator
+        if self.indicator:
+            brush.setColor(self.indicatorColor)
+            painter.setBrush(brush)
+            pen.setWidth(1)
+            pen.setColor(self.indicatorColor)
+            painter.setPen(pen)
+
+            x1 = w * self.percent
+            boxh = 40
+            BOXW = 20
+            y1 = h/2 - boxh/2
+            painter.drawRoundedRect(x1 - BOXW/2, y1, BOXW, boxh, 5, 5)
+
+        # bg
+        # brush.setColor(self.bgcolor)
+        # rect = QRect(0, 0, w, h)
+        # painter.fillRect(rect, brush)
+
+        # full line
+        # brush.setColor(QColor(0, 255, 255, 100))
+        # rect2 = QRect(0, yline, w, height)
+        # painter.fillRect(rect2, brush)
+
+        # paint the bars
+        # diff = 128 - len(self.colorList)
+
+        # print(f'Box width: {boxw}')
+
+        # brush.setColor(self.colorList[0])
+        # rect = QRect(x1, yline, boxw, height)
+        # x1 += boxw
+        # painter.fillRect(rect, brush)
+        # boxw = 10
+
+    def _trigger_refresh(self, colorList: list, isColorMode: bool, percent: float, indicatorColor: QColor):
+        # print(f'ColorBar._trigger_refresh()')
+        self.colorList = colorList
+        self.indicator = isColorMode
+        self.percent = percent
+        self.indicatorColor = indicatorColor
+        # self.update()
+
+
+class TimeBar(UIWidget):
+    '''Defines the time bar at the bottom of the screen.
+    There's two styles depending whether you are in Time mode or Not'''
+    def __init__(self, color, percent: float, isTimeMode: bool) -> None:
+        super().__init__()
+        self.setFixedHeight(40)
+        self.bgcolor = color
+        self.percent = percent
+        self.isTimeMode = isTimeMode
+
+        # self.resize(1280, 150)
+        # self.setFixedWidth(100)
+        # self.setAlignment(Qt.Qt.AlignTop)
+        # self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+
+    def paintEvent(self, e):
+        # print('painting... TimeBar')
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        # grab width & height of the whole painter
+        w = painter.device().width()
+        h = painter.device().height()
+
+        # Set the values for the widget
+        lheight = 6
+        yline = h/2 - lheight/2
+        dotdiam = 20
+        ydot = (40/2) - (dotdiam/2)
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        # bg
+        # brush.setColor(self.bgcolor)
+        # rect = QRect(0, 0, w, h)
+        # painter.fillRect(rect, brush)
+
+        # full line
+        brush.setColor(QColor(255, 255, 255, 100))
+        rect2 = QRect(0, yline, w, lheight)
+        painter.fillRect(rect2, brush)
+        brush.setColor(QColor(255, 255, 255))
+
+        # partial fill-line
+        if self.isTimeMode:
+            rect2 = QRect(0, yline, w*self.percent, lheight)
+            painter.fillRect(rect2, brush)
+
+        # Indicator Styling
+        pen.setWidth(1)
+        pen.setColor(QColor(255, 255, 255))
+        painter.setPen(pen)
+        brush.setStyle(Qt.SolidPattern)
+        painter.setBrush(brush)
+        x = w*self.percent - dotdiam/2
+
+        # Circle
+        # painter.drawEllipse(x, ydot, dotdiam, dotdiam)
+
+        # Triangle
+        rect = QRectF(x, ydot - 7, 20, 20)
+
+        path = QPainterPath()
+        path.moveTo(rect.left() + (rect.width() / 2), rect.bottom())
+        path.lineTo(rect.topLeft())
+        path.lineTo(rect.topRight())
+        path.lineTo(rect.left() + (rect.width() / 2), rect.bottom())
+
+        painter.fillPath(path, brush)
+
+        # ellipse = QEllipse
+        # brush.setColor(QColor('#2A2E2B'))
+        # painter.drawEllipse(10, 10, 10, 10)
+        # painter.drawRoundedRect(20, 20, 20, 20, 10, 15)
+
+        # brush = QBrush()
+        # brush.setColor(QColor('#2A2E2B'))
+        # brush.setStyle(Qt.Dense1Pattern)
+        # painter.setBrush(brush)
+
+        # painter.drawRects(
+        #     QRect(50, 50, 100, 100),
+        #     QRect(60, 60, 150, 100),
+        #     QRect(70, 70, 100, 150),
+        #     QRect(80, 80, 150, 100),
+        #     QRect(90, 90, 100, 150)
+        # )
+
+    def _trigger_refresh(self, percent: float, isTimeMode: bool):
+        self.percent = percent
+        self.isTimeMode = isTimeMode
+        self.update()
+        # print('triggered')
+
+
 # UI Effects
 # -----------------------------------------------------------------------------
 
