@@ -330,6 +330,42 @@ class SQLController:
     # --------------------------------------------------------------------------
     # UI Calls (2021)
     # --------------------------------------------------------------------------
+
+    # Altitude
+    def ui_get_altitudes_for_hike_sortby(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_altitudes_for_hike_sortby(m, current.hike_id)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            altlist = list()
+            for r in rows:
+                altlist.append(float(r[0]))
+
+        return altlist
+
+    def ui_get_altitudes_for_archive_sortby(self, m: str) -> list:
+        sql = self.statements.ui_select_altitudes_for_archive_sortby(m)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            altlist = list()
+            for r in rows:
+                altlist.append(float(r[0]))
+
+        return altlist
+
     # Colors
     def ui_get_colors_for_hike_sortby(self, m: str, current: Picture) -> list:
         sql = self.statements.ui_select_colors_for_hike_sortby(m, current.hike_id)

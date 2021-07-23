@@ -469,7 +469,44 @@ class SQLStatements:
     # UI Calls (2021)
     # --------------------------------------------------------------------------
 
+    # Altitude Graph in hikes
+    def ui_select_altitudes_for_hike_sortby(self, mode: str, hike: int) -> str:
+        size = 128.0  # variable to change size of the returned altitude list
+
+        if mode == 'alt':
+            ordering = 'altrank_hike ASC'
+        elif mode == 'color':
+            ordering = 'color_rank_hike ASC'
+        elif mode == 'time':
+            ordering = 'time ASC'
+        else:
+            raise ValueError('Expected a str parameter which was not given.')
+
+        # Uses mod(altrank_hike) so the picture_ids are the same across color bar and altitude graph
+        statement = 'SELECT altitude, mod(altrank_hike, (SELECT count(*) FROM pictures WHERE hike={h})/{sz}) AS mod_val \
+	    FROM pictures WHERE hike={h} AND mod_val < 1.0 ORDER BY {o};'.format(h=hike, sz=size, o=ordering)
+
         return statement
+
+    # Altitude Graph in archive
+    def ui_select_altitudes_for_archive_sortby(self, mode: str) -> str:
+        # variables to change size of returned altitudes
+        # size - a bit larger, to ensure that we always have exactly what the limit is
+        size = 1281.0
+        limit = 1280.0
+
+        if mode == 'alt':
+            ordering = 'altrank_global ASC'
+        elif mode == 'color':
+            ordering = 'color_rank_global ASC'
+        elif mode == 'time':
+            ordering = 'time_rank_global ASC'  # minute rank (not chronological)
+        else:
+            raise ValueError('Expected a str parameter which was not given.')
+
+        # Uses mod(altrank_global) so the picture_ids are the same across color bar and altitude graph
+        statement = 'SELECT altitude, mod(altrank_global, (SELECT count(*) FROM pictures)/{sz}) AS mod_val \
+	    FROM pictures WHERE mod_val < 1.0 ORDER BY {o} LIMIT {l};'.format(sz=size, l=limit, o=ordering)
 
         return statement
 
