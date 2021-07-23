@@ -13,6 +13,7 @@
 import math
 import os
 import platform
+from classes import sql_controller
 import psutil
 import sys
 import time
@@ -22,7 +23,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import PIL
-from PIL import ImageTk, Image, ImageQt
+from PIL import Image
+# from PIL import ImageTk, Image, ImageQt
+
 # from PIL.ImageQt import ImageQt
 if platform.system() == 'Linux':
     from RPi import GPIO
@@ -433,9 +436,6 @@ class MainWindow(QMainWindow):
         self.setupSoftwareThreads()
 
         if platform.system() == 'Linux':
-            # TODO - figure out what these are used for (if anything)
-            # self.index = 1
-            # self.seconds = 0
             self.setupGPIO()
             self.setupHardwareThreads()
 
@@ -465,15 +465,14 @@ class MainWindow(QMainWindow):
             self.directory = os.path.dirname(self.database)
         else:  # Raspberry Pi: preset location
             self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
-            # TODO Pi - look at better structure instead of setting ivar to None
-            self.directory = None  # uses path from database
+            self.directory = '/media/pi/capra-hd'
 
         print(self.database)
         print(self.directory)
-        self.sql_controller = SQLController(database=self.database, filepath=self.directory)
-        # print(f'in setupDB: {self.sql_controller}')
-        self.picture = self.sql_controller.get_first_time_picture()
-        # self.picture.print_obj_mvp()
+        self.sql_controller = SQLController(database=self.database, directory=self.directory)
+        self.picture = self.sql_controller.get_picture_with_id(1)
+
+        self.scrollspeed = 1
 
     # Setup the window size, title, and container layout
     def setupWindowLayout(self):
