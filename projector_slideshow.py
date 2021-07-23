@@ -598,7 +598,9 @@ class MainWindow(QMainWindow):
         # finished()  : when blending has finished blending two the two images,
         #               sends callback to notify the fade out of UI elements
         self.imageBlender = ImageBlender(self.sql_controller, self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
-        self.imageBlender.signals.result.connect(self._load_new_row)
+
+        # TODO - figure out the fading of vertical images
+        # self.imageBlender.signals.result.connect(self._load_new_row)
         self.imageBlender.signals.results.connect(self._load_new_images)
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
@@ -691,6 +693,7 @@ class MainWindow(QMainWindow):
         # self.pictureVertical2 = UIImage(self.picture.camera2)
         # self.pictureVertical3 = UIImage(self.picture.camera3)
 
+        # Just sets the picture, no blending
         self.pictureVertical1.update_image(image1)
         self.pictureVertical2.update_image(image2)
         self.pictureVertical3.update_image(image3)
@@ -711,9 +714,9 @@ class MainWindow(QMainWindow):
     # The new image has finished blending; now fade out the UI components
     def _finished_image_blend(self):
         # REMOVE - Remove this testing setup for checking the number of blends
-        print('\ndef finished_image_blend() -- result emitted')
-        print('FINISHED Blending')
-        print('Blended {b}xs\n'.format(b=self.blendCount))
+        # print('\ndef finished_image_blend() -- result emitted')
+        # print('FINISHED Blending')
+        # print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
 
         # Allows another image to be blended onto the current image
@@ -721,15 +724,21 @@ class MainWindow(QMainWindow):
         # global isReadyForNewPicture
         # isReadyForNewPicture = True
 
-        self.timerFadeOutUI.start(1000)  # wait 1s until you fade out top UI
+        # TODO - testing moving this to updateUI
+        # self.timerFadeOutUI.start(1000)  # wait 1s until you fade out top UI
 
     # Called when timerFadeOutUI finishes. This is bound in setupUI()
     # The timer is stopped when there is a keyboard / hardware interaction
     def _fadeOutUI(self):
-        self.topUnderlay.fadeOut(1000)
-        self.rightLabel.fadeOut(1000)
-        self.leftLabel.fadeOut(1000)
+        time_ms = 1000
+        self.topUnderlay.fadeOut(time_ms)
+        self.rightLabel.fadeOut(time_ms)
+        self.leftLabel.fadeOut(time_ms)
         self.centerLabel.fadeOut()
+
+        # self.timebar.fadeOut(time_ms)
+        # self.colorbar.fadeOut(time_ms)
+        # self.palette.fadeOut(time_ms)
 
     # UI Interactions
     # -------------------------------------------------------------------------
