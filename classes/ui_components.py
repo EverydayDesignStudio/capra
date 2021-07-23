@@ -361,13 +361,9 @@ class PortraitTopLabel(UIWidget):
 class ColorPalette(UIWidget):
     def __init__(self, colorList: list, confidentList: list, visible: bool) -> None:
         super().__init__()
-        # self.resize(window.width(), window.height())
 
         self.setFixedHeight(40)
         self.setFixedWidth(160)
-        # self.layout = QVBoxLayout()
-        # self.layout.setContentsMargins(0, 0, 0, 0)
-        # self.layout.setAlignment(Qt.AlignCenter)
 
         self.colorList = colorList
         self.confidentList = confidentList
@@ -389,16 +385,6 @@ class ColorPalette(UIWidget):
             rect = QRect(0, 0, widgetw, widgeth)
             painter.fillRect(rect, brush)
 
-            # bg
-            # pen = QPen()
-            # pen.setWidth(10)
-            # pen.setColor(QColor(0, 0, 0))
-            # painter.setPen(pen)
-            # brush.setColor(QColor("pink"))
-            # painter.drawRect(0, 0, widgetw, widgeth)
-            # rect = QRect(0, 0, widgetw, widgeth)
-            # painter.fillRect(rect, brush)
-
             total = sum(self.confidentList)
             x = 0
             for i, color in enumerate(self.colorList):
@@ -408,7 +394,6 @@ class ColorPalette(UIWidget):
                 rect = QRect(x, 0, w, widgeth)
                 x += w
                 painter.fillRect(rect, brush)
-            # print('{x}\n\n'.format(x=x))
 
     def trigger_refresh(self, colorList: list, confidentList: list, visible: bool):
         self.colorList = colorList
@@ -442,11 +427,6 @@ class AltitudeGraph(UIWidget):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         pen = QPen()
-
-        # bg
-        # brush.setColor(self.bgcolor)
-        # rect = QRect(0, 0, w, h)
-        # painter.fillRect(rect, brush)
 
         # Setup for painting the dots
         pen.setWidth(1)
@@ -541,28 +521,7 @@ class ColorBar(UIWidget):
             y1 = h/2 - boxh/2
             painter.drawRoundedRect(x1 - BOXW/2, y1, BOXW, boxh, 5, 5)
 
-        # bg
-        # brush.setColor(self.bgcolor)
-        # rect = QRect(0, 0, w, h)
-        # painter.fillRect(rect, brush)
-
-        # full line
-        # brush.setColor(QColor(0, 255, 255, 100))
-        # rect2 = QRect(0, yline, w, height)
-        # painter.fillRect(rect2, brush)
-
-        # paint the bars
-        # diff = 128 - len(self.colorList)
-
-        # print(f'Box width: {boxw}')
-
-        # brush.setColor(self.colorList[0])
-        # rect = QRect(x1, yline, boxw, height)
-        # x1 += boxw
-        # painter.fillRect(rect, brush)
-        # boxw = 10
-
-    def _trigger_refresh(self, colorList: list, isColorMode: bool, percent: float, indicatorColor: QColor):
+    def trigger_refresh(self, colorList: list, isColorMode: bool, percent: float, indicatorColor: QColor):
         # print(f'ColorBar._trigger_refresh()')
         self.colorList = colorList
         self.indicator = isColorMode
@@ -580,11 +539,6 @@ class TimeBar(UIWidget):
         self.bgcolor = color
         self.percent = percent
         self.isTimeMode = isTimeMode
-
-        # self.resize(1280, 150)
-        # self.setFixedWidth(100)
-        # self.setAlignment(Qt.Qt.AlignTop)
-        # self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
     def paintEvent(self, e):
         # print('painting... TimeBar')
@@ -604,11 +558,6 @@ class TimeBar(UIWidget):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         pen = QPen()
-
-        # bg
-        # brush.setColor(self.bgcolor)
-        # rect = QRect(0, 0, w, h)
-        # painter.fillRect(rect, brush)
 
         # full line
         brush.setColor(QColor(255, 255, 255, 100))
@@ -643,29 +592,10 @@ class TimeBar(UIWidget):
 
         painter.fillPath(path, brush)
 
-        # ellipse = QEllipse
-        # brush.setColor(QColor('#2A2E2B'))
-        # painter.drawEllipse(10, 10, 10, 10)
-        # painter.drawRoundedRect(20, 20, 20, 20, 10, 15)
-
-        # brush = QBrush()
-        # brush.setColor(QColor('#2A2E2B'))
-        # brush.setStyle(Qt.Dense1Pattern)
-        # painter.setBrush(brush)
-
-        # painter.drawRects(
-        #     QRect(50, 50, 100, 100),
-        #     QRect(60, 60, 150, 100),
-        #     QRect(70, 70, 100, 150),
-        #     QRect(80, 80, 150, 100),
-        #     QRect(90, 90, 100, 150)
-        # )
-
-    def _trigger_refresh(self, percent: float, isTimeMode: bool):
+    def trigger_refresh(self, percent: float, isTimeMode: bool):
         self.percent = percent
         self.isTimeMode = isTimeMode
         self.update()
-        # print('triggered')
 
 
 # UI Effects
