@@ -751,25 +751,75 @@ class MainWindow(QMainWindow):
         mode = Status().get_mode()
         if mode == StatusMode.TIME:
             self.modeOverlay.setTime()
+            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
         elif mode == StatusMode.ALTITUDE:
             self.modeOverlay.setAltitude()
+            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
         elif mode == StatusMode.COLOR:
             self.modeOverlay.setColor()
+            # self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
+
+    def changeScope(self):
+        # print('changeScope()')
+        Status().change_scope()
+        # print(Status().get_scope())
 
     def setLandscape(self):
         print('setLandscape()')
         Status().set_orientation_landscape()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
+        self.portraitUIContainerTop.hide()
+        self.bottomUIContainer.show()
+
+        self.leftLabel.show()
+        self.centerLabel.show()
+        self.rightLabel.show()
+
     def setVertical(self):
         print('setVertical()')
         Status().set_orientation_vertical()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
+        self.portraitUIContainerTop.show()
+        self.bottomUIContainer.hide()
+
+        self.leftLabel.hide()
+        self.centerLabel.hide()
+        self.rightLabel.hide()
+
+    # Update the Screen
+    # -------------------------------------------------------------------------
+    # A slow and inefficient, but good base case for updating the UI on the screen
+    def updateScreen(self):
+        # self.picture.print_obj()
+        self.updateImages()
+        self.updateUITop()
+        self.updateUIBottom()
+
+    # NOTE: Not used right now
+    def updateScreenHikesNewPictures(self):
+        self.picture.print_obj()
+        self.updateImages()
+        self.updateUITop()
+        self.updateUIBottom()
+        # self.updateUIIndicatorsBottom()
+
+    # NOTE: Not used right now
+    def updateScreenHikesNewHike(self):
+        self.picture.print_obj()
+        self.updateImages()
+        self.updateUITop()
+        self.updateUIBottom()
+
+    # NOTE: Not used right now
+    def updateScreenArchive(self):
+        pass
+
     # TODO - still need to have multiple blending images
     def updateImages(self):
         self.imageBlender.set_next_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
-        self.printCurrentMemoryUsage()
+        # self.printCurrentMemoryUsage()  # TODO - check on memory usage on Pi & Mac
 
     # TODO -- Might be more resource efficient to have all the objects faded out
     # in 1 method, instead of having the fade attached to each individual class
@@ -777,21 +827,128 @@ class MainWindow(QMainWindow):
     def updateUITop(self):
         self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
 
-        self.topUnderlay.show()
+        # Do the visualization
+        self.topUnderlay.show()  # semi-transparent background
 
-        self.centerLabel.setPrimaryText(self.picture.altitude)
-        self.centerLabel.setSecondaryText('M')
-        self.centerLabel.show()
+        mode = Status().get_mode()
+        scope = Status().get_scope()
 
-        self.rightLabel.setPrimaryText(self.picture.time)
-        self.rightLabel.show()
-
-        hikeText = 'Hike {h}'.format(h=self.picture.hike_id)
-        self.leftLabel.setPrimaryText(hikeText)
+        if scope == StatusScope.HIKE:
+            # self.leftLabel.setPrimaryText(self.picture.uihike)
+            self.leftLabel.setPrimaryText("Hikes")
+        elif scope == StatusScope.GLOBAL:
+            # self.leftLabel.setPrimaryText(f"Global - {self.picture.uihike}")
+            self.leftLabel.setPrimaryText("Archive")
         self.leftLabel.show()
 
+        if mode == StatusMode.TIME:
+            self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
+            self.centerLabel.setSecondaryText(self.picture.uitime_sec)
+            self.vlabelCenter.setText(f'{self.picture.uitime_hrmm}{self.picture.uitime_sec}')
+        elif mode == StatusMode.ALTITUDE:
+            self.centerLabel.setPrimaryText(self.picture.uialtitude)
+            self.centerLabel.setSecondaryText('M')
+            self.vlabelCenter.setText(f'{self.picture.uialtitude} M')
+        elif mode == StatusMode.COLOR:
+            # TODO - eventually the color bar will be here, so it'll be blank
+            # self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
+            # self.centerLabel.setSecondaryText(self.picture.uitime_sec)
+            # self.vlabelCenter.setText(self.picture.uitime_hrmm)
+            self.centerLabel.setPrimaryText('')
+            self.centerLabel.setSecondaryText('')
+            self.vlabelCenter.setText(f'Color Mode')
+        self.centerLabel.show()
+        self.vlabelCenter.show()  # JAR - I think this might have been part of the issue
+
+        self.rightLabel.setPrimaryText(f"{self.picture.uihike}\n{self.picture.uidate}")
+        self.rightLabel.show()
+
+        self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
+
+    # NOTE: - currently not used!
+    def updateUIIndicatorsBottom(self):
+        # TODO 
+        # self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
+
+        scope = Status().get_scope()
+        mode = Status().get_mode()
+
+
+        # rank_time = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
+        # rank_alt = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
+        # rank_color = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
+
+        # if mode == StatusMode.TIME:
+        #     rank = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
+        # elif mode == StatusMode.ALTITUDE:
+        #     rank = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
+        # elif mode == StatusMode.COLOR:
+        #     rank = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
+
+        # TODO - have a function to only update the indicators, not redraw the entire widget!
+        self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+        self.timebar.trigger_refresh(rank_time, True)
+        self.colorbar.trigger_refresh(self.colorlist, True, rank_color, self.picture.color_rgb)
+
+        # self.palette.show()
+        # self.timebar.show()
+        # self.colorbar.show()
+
+        # TODO -- I might need to put all the UI fading stuff in 1 single function
+        # self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
+
     def updateUIBottom(self):
-        pass
+        scope = Status().get_scope()
+        mode = Status().get_mode()
+
+        if scope == StatusScope.HIKE:
+            # rank_timebar = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
+            rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+            if mode == StatusMode.TIME:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+                # rank_colorbar_altgraph = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
+                rank_colorbar_altgraph = rank_timebar
+                self.timebar.trigger_refresh(rank_timebar, True)
+            elif mode == StatusMode.ALTITUDE:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
+                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
+                # rank_colorbar_altgraph = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
+                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
+                self.timebar.trigger_refresh(rank_timebar, False)
+            elif mode == StatusMode.COLOR:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
+                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
+                # rank_colorbar_altgraph = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
+                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
+                self.timebar.trigger_refresh(rank_timebar, False)
+        elif scope == StatusScope.GLOBAL:
+            # TODO - finish this implementation
+            # rank_timebar = int(self.picture.timerank_global)/self.sql_controller.get_archive_size()
+            rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+            if mode == StatusMode.TIME:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
+                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
+                # rank_colorbar_altgraph = int(self.picture.timerank_global)/self.sql_controller.get_archive_size()
+                rank_colorbar_altgraph = rank_timebar
+                self.timebar.trigger_refresh(rank_timebar, True)
+            elif mode == StatusMode.ALTITUDE:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
+                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
+                # rank_colorbar_altgraph = int(self.picture.altrank_global)/self.sql_controller.get_archive_size()
+                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
+                self.timebar.trigger_refresh(rank_timebar, False)
+            elif mode == StatusMode.COLOR:
+                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
+                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
+                # rank_colorbar_altgraph = int(self.picture.colorrank_global)/self.sql_controller.get_archive_size()
+                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
+                self.timebar.trigger_refresh(rank_timebar, False)
+
+        # NOTE - this is the reason why the ranks *were* messed up, because its using indexes that aren't necessarily 1-n
+        self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+        self.colorbar.trigger_refresh(self.colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
+        self.altitudegraph.trigger_refresh(self.altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
 
     # Hardware Button Presses
     # -------------------------------------------------------------------------
