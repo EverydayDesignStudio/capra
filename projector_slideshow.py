@@ -1169,15 +1169,25 @@ class MainWindow(QMainWindow):
             # self.palette.fadeOut(2000)
             # self.timebar.fadeOut(2500)
             # self.colorbar.fadeOut(2000)
+        elif event.key() == Qt.Key_W:
+            print('W')
+            self.loopThroughAllPictures()
         else:
             print(event.key())
 
     # Testing
     # -------------------------------------------------------------------------
+    def loopThroughAllPictures(self):
+        while True:
+            self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, self.scrollspeed)
+            # self.picture.print_obj()
+            self.updateScreen()
+            # time.sleep(2.0)
 
     # Memory usage in kB
     def printCurrentMemoryUsage(self):
         process = psutil.Process(os.getpid())
+        print('Memory Used:')
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
 
