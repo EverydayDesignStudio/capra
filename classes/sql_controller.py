@@ -27,16 +27,17 @@ class SQLController:
         cursor = self.connection.cursor()
         cursor.execute(query)
         all_rows = cursor.fetchall()
+
         if not all_rows:
             print("ERROR UPON CALLING QUERY:")
             print(query)
             return None
         else:
             # TESTING: used for testing the original 4 database
-            picture = self._test_build_picture_from_row(all_rows[0])
+            # picture = self._test_build_picture_from_row(all_rows[0])
 
             # PRODUCTION: create Picture object from database row
-            # picture = self._build_picture_from_row(all_rows[0])
+            picture = self._build_picture_from_row(all_rows[0])
 
             return picture
 
@@ -76,7 +77,9 @@ class SQLController:
         return rows
 
     def _test_build_picture_from_row(self, row: list) -> Picture:
-        """Builds old (winter 2021 verion) of Picture object from an old `pictures` row
+        """⚠️ DO NOT USE IN PRODUCTION
+        This is only for using to test!!!
+        Builds an old (winter 2021 verion) of Picture object from an old `pictures` row
         ::
 
             :param row: from `pictures` table
