@@ -284,6 +284,39 @@ class UIModeOverlay(QLabel):
         # self.anim.start()
 
 
+# UI Time, Color, Altitude Components
+# -----------------------------------------------------------------------------
+class UIContainer(QWidget):
+    def __init__(self, window, layout, alignment, *args, **kwargs):
+        super().__init__(window, *args, **kwargs)
+
+        self.resize(window.width(), window.height())
+        self.layout = layout
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(alignment)
+
+        # layout.setSpacing(5)
+        # self.timebar = TimeBar(QColor(62, 71, 47), 75, True)
+        # self.timebar.setGraphicsEffect(UIEffectDropShadow())
+        # self.layout.addWidget(self.timebar)
+
+        self.setLayout(self.layout)
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+
+        # grab width & height of the whole painter
+        w = painter.device().width()
+        h = painter.device().height()
+
+        # bg - for testing
+        # brush.setColor(QColor(9, 24, 94, 150))
+        # rect = QRect(0, 0, w, h)
+        # painter.fillRect(rect, brush)
+
 # UI Effects
 # -----------------------------------------------------------------------------
 
