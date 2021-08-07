@@ -20,7 +20,8 @@ def init():
 
     # Databases
     global DBNAME_MASTER
-    DBNAME_MASTER = "capra_projector.db"
+    # DBNAME_MASTER = "capra_projector.db"
+    DBNAME_MASTER = 'capra_projector_jun2021_min_test_0708.db'
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
@@ -38,7 +39,8 @@ def init():
 
     global DATAPATH_PROJECTOR
     # TODO: update existing projector path by adding an extra slash '/'
-    DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+    # DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+    DATAPATH_PROJECTOR = '/media/pi/capra-hd2/jordan/'
 
     global CAPRAPATH_PROJECTOR
     CAPRAPATH_PROJECTOR = '/home/pi/capra/'
