@@ -29,6 +29,7 @@ class UIWidget(QWidget):
 
         self.anim = QPropertyAnimation()
         self.fadeEffect = QGraphicsOpacityEffect()
+        self.canRepaint = True
 
     def fadeOut(self, duration: int):
         """Fades out the label over passed in duration (milliseconds)"""
@@ -46,6 +47,12 @@ class UIWidget(QWidget):
 
     def myHide(self):
         self.fadeEffect.setOpacity(0.0)
+
+    def setCanRepaint(self):
+        self.canRepaint = True
+
+    def setCanNotRepain(self):
+        self.canRepaint = False
 
 
 class UILabel(QLabel):
@@ -370,7 +377,11 @@ class ColorPalette(UIWidget):
         self.visible = visible
 
     def paintEvent(self, e):
-        # print('painting Color Palette')
+        # if self.canRepaint == False:
+        #     return
+
+        print('painting Color Palette')
+        print(self.previousInFocusChain())
         if self.visible:
             painter = QPainter(self)
             brush = QBrush()
@@ -395,7 +406,10 @@ class ColorPalette(UIWidget):
                 x += w
                 painter.fillRect(rect, brush)
 
+        self.canRepaint = False
+
     def trigger_refresh(self, colorList: list, confidentList: list, visible: bool):
+        self.canRepaint = True
         self.colorList = colorList
         self.confidentList = confidentList
         self.visible = visible
@@ -415,6 +429,8 @@ class AltitudeGraph(UIWidget):
         self.currentAlt = currentAlt
 
     def paintEvent(self, e):
+        print('painting Altitude Graph')
+
         DOT_DIAM = 4
         IND_DIAM = DOT_DIAM + 6
 
@@ -483,6 +499,8 @@ class ColorBar(UIWidget):
         self.indicatorColor = indicatorColor
 
     def paintEvent(self, e):
+        print('painting Color Bar')
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
 
@@ -541,7 +559,8 @@ class TimeBar(UIWidget):
         self.isTimeMode = isTimeMode
 
     def paintEvent(self, e):
-        # print('painting... TimeBar')
+        print('painting TimeBar')
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
 

@@ -413,10 +413,16 @@ class ImageBlender(QRunnable):
                 # self.current2_raw = Image.blend(self.current2_raw, self.next2_raw, self.alpha)
                 # self.current3_raw = Image.blend(self.current3_raw, self.next3_raw, self.alpha)
 
+                # Increments the alpha, so the image will slowly blend
+                # self.alpha += 0.1
                 self.alpha += 0.025  # Rougly 20 frames until the old picture is blurred out
                 # self.alpha += 0.04
 
+                # BUG - This is causing the issues around paintEvent() being over called
+                # Anytime a widget is updated, all widgets update, and this will emit 20-30xs
+                # Which causes a repaint of all widgets each time
                 self.signals.results.emit(self.p1, self.p2, self.p3, self.currentf_raw)
+
                 # self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
                 if self.alpha >= 0.75:
                     self.signals.finished.emit()
@@ -443,13 +449,6 @@ class MainWindow(QMainWindow):
         # Updates the UI's picture for the first time
         # self.updateImages()
 
-        # Show the MainWindow
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            self.show()
-        elif platform.system() == 'Linux':
-            # self.showFullScreen()
-            self.show()
-
     # Setup Helpers
     # -------------------------------------------------------------------------
 
@@ -465,7 +464,7 @@ class MainWindow(QMainWindow):
             self.directory = os.path.dirname(self.database)
         else:  # Raspberry Pi: preset location
             self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
-            self.directory = '/media/pi/capra-hd'
+            self.directory = g.DATAPATH_PROJECTOR
 
         print(self.database)
         print(self.directory)
@@ -512,6 +511,10 @@ class MainWindow(QMainWindow):
         verticalWidget = QWidget()
         verticalWidget.setLayout(verticallayout)
         self.stacklayout.addWidget(verticalWidget)
+
+        # pagelayout2 = QVBoxLayout()
+        # pagelayout2.setContentsMargins(0, 0, 0, 0)
+        # pagelayout2.setAlignment(Qt.AlignBottom)
 
         # Add central widget
         centralWidget = QWidget()
@@ -601,9 +604,17 @@ class MainWindow(QMainWindow):
 
         # TODO - figure out the fading of vertical images
         # self.imageBlender.signals.result.connect(self._load_new_row)
+
+        # TODO - paintEvent issue: following the path
         self.imageBlender.signals.results.connect(self._load_new_images)
+        # self.imageBlender.signals.results.connect(self._poop)
+
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
+
+    def _poop(self):
+        pass
+        # print('poop')
 
     # Setup hardware pins
     def setupGPIO(self):
@@ -680,15 +691,15 @@ class MainWindow(QMainWindow):
         """image 1, 2, 3 are strings to the path location
         imagef is an raw Image.open()"""
 
-        # REMOVE - Test variable to show how many times it blends the two images
+        # Test variable to show how many times it blends the two images
+        # not necessarily in 1 second though
         self.blendCount += 1
 
-        # print(imagef)
-        # print(image1)
-        # print(image2)
-        # print(image3)
-
+        # BUG - paintEvent issue: following the path. Does this change it?
+        # Adjusting any Widget (even a QLabel) is causing all the widgets to repaint
         self.pictureLandscape.update_pixmap(imagef)
+
+        # Forget what the status of these were
         # self.pictureVertical1 = UIImage(self.picture.camera1)
         # self.pictureVertical2 = UIImage(self.picture.camera2)
         # self.pictureVertical3 = UIImage(self.picture.camera3)
@@ -716,8 +727,13 @@ class MainWindow(QMainWindow):
         # REMOVE - Remove this testing setup for checking the number of blends
         # print('\ndef finished_image_blend() -- result emitted')
         # print('FINISHED Blending')
-        # print('Blended {b}xs\n'.format(b=self.blendCount))
+
+        print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
+
+        # HACK - that almost works. However the widget is still being wiped off the screen, 
+        # then reapinted after the fading
+        self.palette.setCanRepaint()
 
         # Allows another image to be blended onto the current image
         # HACK - sorta works, but this is the safe (but ugly) base case
@@ -794,29 +810,17 @@ class MainWindow(QMainWindow):
         self.updateUITop()
         self.updateUIBottom()
 
-    # NOTE: Not used right now
-    def updateScreenHikesNewPictures(self):
-        self.picture.print_obj()
-        self.updateImages()
-        self.updateUITop()
-        self.updateUIBottom()
-        # self.updateUIIndicatorsBottom()
-
-    # NOTE: Not used right now
-    def updateScreenHikesNewHike(self):
-        self.picture.print_obj()
-        self.updateImages()
-        self.updateUITop()
-        self.updateUIBottom()
-
-    # NOTE: Not used right now
-    def updateScreenArchive(self):
-        pass
-
     # TODO - still need to have multiple blending images
     def updateImages(self):
-        self.imageBlender.set_next_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
-        # self.printCurrentMemoryUsage()  # TODO - check on memory usage on Pi & Mac
+        # Somewhere along this chain, all the paintEvents are called
+        # self.imageBlender.set_next_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
+
+        # TODO on Pi -  tes to see if not having the imageBlender makes it refresh faster
+        self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+        self._load_new_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.nextf_raw)  # JRW
+
+        # TODO - check on memory usage on Pi & Mac
+        # self.printCurrentMemoryUsage()
 
     # TODO -- Might be more resource efficient to have all the objects faded out
     # in 1 method, instead of having the fade attached to each individual class
@@ -970,6 +974,8 @@ class MainWindow(QMainWindow):
             self.updateImages()
             self.updateUITop()
 
+        # TODO - add check to see if moved to a new hike during rotary turn
+
         # change = rotaryCounter - rotaryCounterLast
         # print(change)
         # print('\n')
@@ -979,7 +985,7 @@ class MainWindow(QMainWindow):
 
     def pressed_mode(self, result):
         print('Mode button was pressed: %d' % result)
-        self.changeMode()
+        self.control_mode()
 
     def pressed_next(self, result):
         print('Next button was pressed: %d' % result)
@@ -1157,6 +1163,13 @@ class MainWindow(QMainWindow):
 
     def control_play_pause(self):
         print('Space - Play/Pause')
+        Status().change_playpause()
+        status = Status().get_playpause()
+
+        if status == StatusPlayPause.PLAY:
+            print('Start Playing')
+        elif status == StatusPlayPause.PAUSE:
+            print('Pause the Program')
 
     def control_landscape(self):
         print('setLandscape')
@@ -1186,9 +1199,7 @@ class MainWindow(QMainWindow):
     # -------------------------------------------------------------------------
     def loopThroughAllPictures(self):
         while True:
-            self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, self.scrollspeed)
-            # self.picture.print_obj()
-            self.updateScreen()
+            self.control_next()
             # time.sleep(2.0)
 
     # Memory usage in kB
@@ -1209,4 +1220,11 @@ if __name__ == '__main__':
     # print('Available: %d x %d' % (rect.width(), rect.height()))
 
     window = MainWindow()
-    app.exec_()
+
+    if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        window.show()
+    elif platform.system() == 'Linux':
+        window.showFullScreen()
+        # window.show()
+
+    sys.exit(app.exec_())
