@@ -413,7 +413,7 @@ def buildHike(currHike):
     print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
     print("[{}] Expected valid row count: {}".format(timenow(), str(numValidRows)))
 
-    while (index_in_hike <= maxRows):
+    while (index_in_hike <= maxRows + 2):   # allow a loose upper bound (max + 2) to handle the last index
         row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
         picPathCam1_src = srcPath + "{}_cam1.jpg".format(index_in_hike)
@@ -496,38 +496,40 @@ def buildHike(currHike):
             index_in_hike += 1
             continue
 
-        fileName = "{}_camN".format(index_in_hike)
+        # increment the validRowCounter since we have successfully trasferred the pictures for this row
+        validRowCount += 1
+
+        fileName = "{}_camN".format(validRowCount)
 
         if (not os.path.exists(picPathCam3_src)):
             picPathCam3_dest = None
         # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=picPathCam1_dest, image2=picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
-        commit, domCol_hsv = dominantColorWrapper(currHike, validRowCount+1, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+        commit, domCol_hsv = dominantColorWrapper(currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
 
         commits[fileName] = commit
         domColorsHike_hsv.append(domCol_hsv)
 
         dummyGlobalCounter += 1
-        validRowCount += 1
         index_in_hike += 1
 
     ### Post-processing
     # attach color ranking within the current hike
     # then, upsert rows
-    colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=13, index_in_hike=7)
-    altRankList = sort_by_alts(list(commits.copy().values()), alt_index=9, index_in_hike=7)
+    colRankList = sort_by_colors(list(commits.copy().values()), color_index_hsv=COLOR_INDEX_HSV-1, index_in_hike=INDEX_IN_HIKE_INDEX-1)
+    altRankList = sort_by_alts(list(commits.copy().values()), alt_index=ALTITUDE_INDEX-1, index_in_hike=INDEX_IN_HIKE_INDEX-1)
 
-    for index_in_hike in range(maxRows+1):
-        fileName = "{}_camN".format(index_in_hike)
+    for i in range(maxRows+2):
+        fileName = "{}_camN".format(i)
 
-        if index_in_hike not in altRankList or index_in_hike not in colRankList:
+        if i not in altRankList or i not in colRankList:
             continue
 
-        altrank = altRankList[index_in_hike]
+        altrank = altRankList[i]
         commits[fileName][10] = altrank
         commits[fileName][11] = dummyGlobalAltRank
         commits[fileName][12] = globalCounter_h + altrank
 
-        colrank = colRankList[index_in_hike]
+        colrank = colRankList[i]
         commits[fileName][16] = colrank
         commits[fileName][17] = dummyGlobalColorRank
         commits[fileName][18] = globalCounter_h + colrank
