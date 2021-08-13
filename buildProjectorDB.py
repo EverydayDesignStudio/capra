@@ -245,7 +245,7 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
     commit = [round(row_src['time'], 0),
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
                 currHike, validRowCount, dummyGlobalCounter,
-                round(row_src['altitude'], 0), -1, -1, dummyGlobalCounter,
+                round(row_src['altitude'], 2), -1, -1, dummyGlobalCounter,
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 camera1, camera2, camera3, camera2f, row_src['created_date_time']]
