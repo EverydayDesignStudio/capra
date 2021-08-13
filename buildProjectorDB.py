@@ -36,6 +36,13 @@ dest_db_name = None
 
 DBTYPE = 'projector'   # 'camera' or 'projector'
 
+# need this indexes hardcoded for the python helper function
+# *** These are indexes at the destDB (projector), so the srcDB type doesn't matter
+ALTITUDE_INDEX = 10
+COLOR_INDEX_HSV = 14
+INDEX_IN_HIKE_INDEX = 8
+
+
 # TODO: set DB and PATH accordingly
 if (DBTYPE == 'projector'):
     BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
@@ -171,17 +178,17 @@ def sortby_hue_luminosity(r, g, b, repetitions=1):
 
 
 def sort_by_alts(data, alt_index, index_in_hike):
-    data.sort(key=itemgetter(alt_index, 0))  # 8 - altitude
+    data.sort(key=itemgetter(alt_index, 0))  # 10 - altitude
 
     rankList = {}
     for i in range(len(data)):
-        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 7 - index_in_hike
+        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 8 - index_in_hike
 
     return rankList
 
 
 def splitColor(item):
-    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 12 - color_hsv
+    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 14 - color_hsv
     return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
 
 
@@ -195,7 +202,7 @@ def sort_by_colors(data, color_index_hsv, index_in_hike):
 
     rankList = {}
     for i in range(len(data)):
-        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 7 - index_in_hike
+        rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 8 - index_in_hike
 
     return rankList
 
