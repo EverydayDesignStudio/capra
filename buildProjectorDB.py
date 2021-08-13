@@ -608,8 +608,14 @@ def main():
             currExpectedHikeSize = 0
 
         # 1. skip empty hikes
+        #       + also skip small hikes (< 20) [Jul 8, 2021]
         if (currExpectedHikeSize == 0):
             print("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
+            currHike += 1
+            continue
+
+        elif (currExpectedHikeSize < 20):
+            print("[{}] Hike {} seems to be very small (Only {} rows). Skipping the hike...".format(timenow(), str(currHike), str(currExpectedHikeSize)))
             currHike += 1
             continue
 
