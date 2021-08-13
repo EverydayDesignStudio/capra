@@ -561,7 +561,7 @@ def buildHike(currHike):
     #     pictures, PATH
 
     defaultHikePath = "/hike{}/".format(str(currHike))
-    created_timestamp = dbDESTController.get_hike_crated_timestamp(currHike)
+    created_timestamp = dbSRCController.get_hike_created_timestamp(currHike)
 
     dbDESTController.upsert_hike(currHike, round(avgAlt, 2), -currHike,
                                     round(startTime, 0), hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
