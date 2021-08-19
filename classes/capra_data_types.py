@@ -206,14 +206,39 @@ class Hike(CapraDataType):
         self.uihike = self._parse_hike(self.hike_id)
         self.uialtitude = str(int(self.avg_altitude))
 
-        def print_obj(self):
-            print('Hike ID\tstart time\t\tavg_alt\tavg_altrank\tcolor\tcolor_rank\tpictures\tpath')
-            print('{id}\t{t}\t{avg_alt}\t{avg_altrank}\t{color}\t{color_rank}\t{pic}\t{path}\n\
-                '.format(id=self.hike_id, t=self.start_time, avg_alt=self.avg_altitude, avg_altrank=self.avg_altrank,
-                         color=self.color_rgb, color_rank=self.color_rank, pic=self.num_pictures, path=self.path))
+    def print_obj(self):
+        print('Hike ID\tstart time\t\tavg_alt\tavg_altrank\tcolor\tcolor_rank\tpictures\tpath')
+        print('{id}\t{t}\t{avg_alt}\t{avg_altrank}\t{color}\t{color_rank}\t{pic}\t{path}\n\
+            '.format(id=self.hike_id, t=self.start_time, avg_alt=self.avg_altitude, avg_altrank=self.avg_altrank,
+                        color=self.color_rgb, color_rank=self.color_rank, pic=self.num_pictures, path=self.path))
 
-        def get_hike_length_seconds(self) -> float:
-            return round(self.end_time - self.start_time, 0)
+    def get_hike_length_seconds(self) -> float:
+        return round(self.end_time - self.start_time, 0)
 
-        def get_hike_length_minutes(self) -> float:
-            return round((self.end_time - self.start_time)/60, 1)
+    def get_hike_length_minutes(self) -> float:
+        return round((self.end_time - self.start_time)/60, 1)
+
+
+class UIData:
+    """Defines object which holds all the UI data for the archive"""
+
+    def __init__(self):
+        super().__init__()
+
+        # Hikes UI data
+        self.altitudesSortByAltitudeForHike = {}
+        self.altitudesSortByColorForHike = {}
+        self.altitudesSortByTimeForHike = {}
+
+        self.colorSortByAltitudeForHike = {}
+        self.colorSortByColorForHike = {}
+        self.colorSortByTimeForHike = {}
+
+        # Archive UI data
+        self.altitudesSortByAltitudeForArchive = []
+        self.altitudesSortByColorForArchive = []
+        self.altitudesSortByTimeForArchive = []
+
+        self.colorSortByAltitudeForArchive = []
+        self.colorSortByColorForArchive = []
+        self.colorSortByTimeForArchive = []

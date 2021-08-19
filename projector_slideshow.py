@@ -50,6 +50,7 @@ print('projector_slideshow.py running...')
 rotaryCounter = 0
 rotaryCounterLast = 0
 isReadyForNewPicture = True
+picture = None
 
 
 # Statuses
@@ -245,9 +246,9 @@ class RotaryEncoder(QRunnable):
                 self.multFactor = 1
 
             if (self.Current_Direction == 1):
-                rotaryCounter = rotaryCounter + 1 * self.multFactor
-            else:
                 rotaryCounter = rotaryCounter - 1 * self.multFactor
+            else:
+                rotaryCounter = rotaryCounter + 1 * self.multFactor
 
             self.Last_Direction = self.Current_Direction
             print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
@@ -256,7 +257,8 @@ class RotaryEncoder(QRunnable):
             # Resetting counter will happen in Main UI Thread
             # rotaryCounter = 0
 
-            self.signals.result.emit(rotaryCounter)
+            # REMOVE - is it okay to not emit the rotary count?
+            # self.signals.result.emit(rotaryCounter)
 
     def clear(self, ev=None):
         global rotaryCounter
@@ -295,21 +297,15 @@ class ImageBlender(QRunnable):
     def __init__(self, sql_cntrl, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
-        # TODO - a SQLCntrl is needed in this thread to properly work for Raspberry Pi
-        # self.sql_controller2 = SQLController(database=DB, system=platform.system())
-        # self.picture = self.sql_controller2.get_first_time_picture()
-        # self.picture = self.sql_controller2.get_picture_with_id(9000)
-        # self.picture.print_obj_mvp()
-
-        # TODO - verify on Pi that this works instead of the above version
-        self.sql_controller2 = sql_cntrl
-        print(f'in ImageBlender: {self.sql_controller2}')
-        # test_pic = self.sql_controller2.get_picture_with_id(9000)
-        # print(test_pic)
+        # The rotary encoder needs an instance of the SQLController
+        self.sql_controller = sql_cntrl
+        self.picture = self.sql_controller.get_picture_with_id(1)
 
         # Needed setup
         self.alpha = 0
         self.signals = WorkerSignals()
+        self._skipNextStatus = False  # status for whether to skip next, called from MainWindow
+        self._skipPrevStatus = False  # status for whether to skip previous, called from MainWindow
         self.currentf_raw = Image.open(currentf_path, 'r')
         self.nextf_raw = Image.open(currentf_path, 'r')
         # self.current1_raw = Image.open(current1_path, 'r')
@@ -319,24 +315,29 @@ class ImageBlender(QRunnable):
         # self.current3_raw = Image.open(current3_path, 'r')
         # self.next3_raw = Image.open(current3_path, 'r')
 
-        self.p1 = current1_path
-        self.p2 = current2_path
-        self.p3 = current3_path
-
         # print(self.currentf_raw)
         # print(self.current1_raw)
         # print(self.current2_raw)
         # print(self.current3_raw)
 
+        self.p1 = current1_path
+        self.p2 = current2_path
+        self.p3 = current3_path
+
         # REMOVE - this is just for testing
         self.text_current = 'currently'
         self.text_next = 'nextly'
-        self.next_value = 0
         self.inside_data = 'shhhh, it is a secret'
+        self.next_value = 0
 
     def increment_next(self):
         self.next_value += 1
 
+    # Only used for the computer version which needs to be told to change the image
+    # since the rotary encoder won't changing value
+    #
+    # Though, I could implement it so keyboard changes rotaryCount
+    #
     # Receives a new "next image" which is consequently blended into the current
     # image. If this process happens in the middle of a blend, then the new image
     # will be blended into this already blended together photo
@@ -375,35 +376,141 @@ class ImageBlender(QRunnable):
 
         self.alpha = 0.25
 
+    # Public function to tell thread we should skip on the next pass through the loop
+    def skipNext(self):
+        self._skipNextStatus = True
+
+    def skipPrev(self):
+        self._skipPrevStatus = True
+
+    # Private functions for sql queries
+    def _control_skip_next(self):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_skip_in_hikes(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_skip_in_global(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
+
+    def _control_skip_previous(self):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_skip_in_hikes(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_skip_in_global(self.picture)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
+
+    def _control_rotary_next(self, change: int):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        currentHike = self.picture.hike_id
+
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, change)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_in_hikes(self.picture, change)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_in_hikes(self.picture, change)
+
+            if self.picture.hike_id != currentHike:
+                print('🧨🧨🧨 NEXT - NEW HIKE! 🧨🧨🧨')
+                # self.updateScreenHikesNewHike()
+            # else:
+                # self.updateScreenHikesNewPictures()
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_next_time_in_global(self.picture, change)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_next_altitude_in_global(self.picture, change)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_next_color_in_global(self.picture, change)
+
+    def _control_rotary_previous(self, change: int):
+        mode = Status().get_mode()
+        scope = Status().get_scope()
+        currentHike = self.picture.hike_id
+
+        if scope == StatusScope.HIKE:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, change)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_in_hikes(self.picture, change)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_in_hikes(self.picture, change)
+
+            if self.picture.hike_id != currentHike:
+                print('🧨🧨🧨 PREVIOUS - NEW HIKE! 🧨🧨🧨')
+                # self.updateScreenHikesNewHike()
+            # else:
+                # self.updateScreenHikesNewPictures()
+        elif scope == StatusScope.GLOBAL:
+            if mode == StatusMode.TIME:
+                self.picture = self.sql_controller.get_previous_time_in_global(self.picture, change)
+            elif mode == StatusMode.ALTITUDE:
+                self.picture = self.sql_controller.get_previous_altitude_in_global(self.picture, change)
+            elif mode == StatusMode.COLOR:
+                self.picture = self.sql_controller.get_previous_color_in_global(self.picture, change)
+
+    def _emit_result_update_image_and_alpha(self):
+        self.signals.result.emit(self.picture)
+        self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+        self.alpha = 0.25
+
     # Continually runs blending together
     def run(self):
         while True:
-            global rotaryCounter
-            global rotaryCounterLast
+            if self._skipNextStatus == True:
+                self._control_skip_next()
+                self._emit_result_update_image_and_alpha()  # NOTE - emit
+                self._skipNextStatus = False
+            elif self._skipPrevStatus == True:
+                self._control_skip_previous()
+                self._emit_result_update_image_and_alpha()  # NOTE - emit
+                self._skipPrevStatus = False
+            else:
+                global rotaryCounter
+                global rotaryCounterLast
+                change = rotaryCounter - rotaryCounterLast
 
-            change = rotaryCounter - rotaryCounterLast
-            # print(change)
+                # NOTE: this local version of SQLController will only be called if the rotary encoder 
+                # is changing, otherwise it simply blends the image if alpha is < 0.75
+                if change > 0:
+                    print('POSITIVE')
+                    print(change)
+                    rotaryCounterLast = rotaryCounter
 
-            # NOTE: this local version of SQLController will only be called if the rotary encoder 
-            # is changing, otherwise it simply blends the image if alpha is < 0.75
-            if change > 0:
-                print('POSITIVE')
-                print(change)
-                rotaryCounterLast = rotaryCounter
-                self.picture = self.sql_controller2.get_next_time_in_hikes(self.picture, change)
-                self.signals.result.emit(self.picture)
-                print(self.picture.cameraf)
-                self.nextf_raw = Image.open(self.picture.cameraf, 'r')
-                self.alpha = 0.25
-            elif change < 0:
-                print('NEGATIVE')
-                print(change)
-                rotaryCounterLast = rotaryCounter
-                self.picture = self.sql_controller2.get_previous_time_in_hikes(self.picture, abs(change))
-                self.signals.result.emit(self.picture)
-                print(self.picture.cameraf)
-                self.nextf_raw = Image.open(self.picture.cameraf, 'r')
-                self.alpha = 0.25
+                    self._control_rotary_next(change)
+                    # self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, change)
+                    self._emit_result_update_image_and_alpha()  # NOTE - emit
+                elif change < 0:
+                    print('NEGATIVE')
+                    print(change)
+                    rotaryCounterLast = rotaryCounter
+
+                    self._control_rotary_previous(abs(change))
+                    # self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(change))
+                    self._emit_result_update_image_and_alpha()  # NOTE - emit
 
             if self.alpha < 0.75:
                 self.currentf_raw = Image.blend(self.currentf_raw, self.nextf_raw, self.alpha)
@@ -421,12 +528,47 @@ class ImageBlender(QRunnable):
                 # BUG - This is causing the issues around paintEvent() being over called
                 # Anytime a widget is updated, all widgets update, and this will emit 20-30xs
                 # Which causes a repaint of all widgets each time
-                self.signals.results.emit(self.p1, self.p2, self.p3, self.currentf_raw)
+                # NOTE - emit
+                self.signals.results.emit(self.p1, self.p2, self.p3, self.currentf_raw)  # NOTE - emit
 
                 # self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
                 if self.alpha >= 0.75:
-                    self.signals.finished.emit()
+                    # NOTE - emit
+                    self.signals.finished.emit()  # NOTE - emit
             time.sleep(0.1)  # 1/20frames = 0.05
+
+
+# TODO - JRW This can be deleted
+class SQLSkipQueries(QRunnable):
+    def __init__(self, sql_cntrl, current1_path, current2_path, current3_path, currentf_path, *args, **kwargs):
+        super(SQLSkipQueries, self).__init__()
+
+        # This thread needs an instance of the SQLController
+        self.sql_controller = sql_cntrl
+        self.signals = WorkerSignals()
+
+        self._skipNext = False
+        self._skipPrev = False
+
+    def skipNext(self):
+        self._skipNext = True
+
+    def skipPrev(self):
+        self._skipPrev = True
+
+    # Continually checks to see if there's a new skip button press
+    def run(self):
+        while True:
+            if self._skipNext:
+                print('I should skip NEXT homie')
+                self._skipNext = False
+            elif self._skipPrev:
+                print('I should skip PREV homie')
+                self._skipNext = False
+            else:
+                print('Okay, I need to check a value here or something')
+
+            time.sleep(0.05)
 
 
 class MainWindow(QMainWindow):
@@ -437,6 +579,7 @@ class MainWindow(QMainWindow):
         self.blendCount = 0
 
         self.setupDB()  # Mac or Windows shows the database dialog
+        self.preloadUIData()
         self.setupWindowLayout()
         self.setupUI()
         self.setupSoftwareThreads()
@@ -444,10 +587,6 @@ class MainWindow(QMainWindow):
         if platform.system() == 'Linux':
             self.setupGPIO()
             self.setupHardwareThreads()
-
-        # REVIEW - not having this may cause a crash
-        # Updates the UI's picture for the first time
-        # self.updateImages()
 
     # Setup Helpers
     # -------------------------------------------------------------------------
@@ -472,6 +611,10 @@ class MainWindow(QMainWindow):
         self.picture = self.sql_controller.get_picture_with_id(1)
 
         self.scrollspeed = 1
+
+    def preloadUIData(self):
+        self.uiData = self.sql_controller.preload_ui_data()
+        self.preload = True
 
     # Setup the window size, title, and container layout
     def setupWindowLayout(self):
@@ -603,18 +746,14 @@ class MainWindow(QMainWindow):
         self.imageBlender = ImageBlender(self.sql_controller, self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
 
         # TODO - figure out the fading of vertical images
+        self.imageBlender.signals.result.connect(self._new_picture_loaded)
         # self.imageBlender.signals.result.connect(self._load_new_row)
 
         # TODO - paintEvent issue: following the path
         self.imageBlender.signals.results.connect(self._load_new_images)
-        # self.imageBlender.signals.results.connect(self._poop)
 
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
-
-    def _poop(self):
-        pass
-        # print('poop')
 
     # Setup hardware pins
     def setupGPIO(self):
@@ -716,13 +855,20 @@ class MainWindow(QMainWindow):
         # self.pictureVertical2.update_pixmap(image2)
         # self.pictureVertical3.update_pixmap(image3)
 
+    def _new_picture_loaded(self, picture: Picture):
+        self.picture = picture
+        self.updateScreen()
+
+    # TODO - do I need this for vertical fading of images?
     def _load_new_row(self, picture: Picture):
         """Receives a new picture from the database"""
         # print(picture)
         self.picture = picture
         print(self.picture.picture_id)
 
-    # The new image has finished blending; now fade out the UI components
+    # The new image has finished blending
+    # Now fade out the UI components
+    # JRW - should we also update UI here. I think earlier!
     def _finished_image_blend(self):
         # REMOVE - Remove this testing setup for checking the number of blends
         # print('\ndef finished_image_blend() -- result emitted')
@@ -731,7 +877,7 @@ class MainWindow(QMainWindow):
         print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
 
-        # HACK - that almost works. However the widget is still being wiped off the screen, 
+        # HACK - that almost works. However the widget is still being wiped off the screen,
         # then reapinted after the fading
         self.palette.setCanRepaint()
 
@@ -771,11 +917,6 @@ class MainWindow(QMainWindow):
         elif mode == StatusMode.COLOR:
             self.modeOverlay.setColor()
 
-    def changeScope(self):
-        # print('changeScope()')
-        Status().change_scope()
-        # print(Status().get_scope())
-
     def setLandscape(self):
         print('setLandscape()')
         Status().set_orientation_landscape()
@@ -803,10 +944,12 @@ class MainWindow(QMainWindow):
     # Update the Screen
     # -------------------------------------------------------------------------
     # A slow and inefficient, but good base case for updating the UI on the screen
+    # TODO - JRW I'm quite certain that this is the bottleneck of the program!
     def updateScreen(self):
         # self.picture.print_obj()
         # self.printCurrentMemoryUsage()
-        self.updateImages()
+        # self.updateImages()  # Only for the Mac App
+
         self.updateUITop()
         self.updateUIBottom()
 
@@ -864,137 +1007,119 @@ class MainWindow(QMainWindow):
 
         self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
 
-    # NOTE: - currently not used!
-    def updateUIIndicatorsBottom(self):
-        # TODO 
-        # self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
-
-        scope = Status().get_scope()
-        mode = Status().get_mode()
-
-
-        # rank_time = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
-        # rank_alt = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
-        # rank_color = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
-
-        # if mode == StatusMode.TIME:
-        #     rank = int(self.picture.index_in_hike)/self.sql_controller.get_hike_size(self.picture)
-        # elif mode == StatusMode.ALTITUDE:
-        #     rank = int(self.picture.altrank_hike)/self.sql_controller.get_hike_size(self.picture)
-        # elif mode == StatusMode.COLOR:
-        #     rank = int(self.picture.colorrank_hike)/self.sql_controller.get_hike_size(self.picture)
-
-        # TODO - have a function to only update the indicators, not redraw the entire widget!
-        self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
-        self.timebar.trigger_refresh(rank_time, True)
-        self.colorbar.trigger_refresh(self.colorlist, True, rank_color, self.picture.color_rgb)
-
-        # self.palette.show()
-        # self.timebar.show()
-        # self.colorbar.show()
-
-        # TODO -- I might need to put all the UI fading stuff in 1 single function
-        # self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
-
     def updateUIBottom(self):
         scope = Status().get_scope()
         mode = Status().get_mode()
 
-        if scope == StatusScope.HIKE:
-            rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
-            if mode == StatusMode.TIME:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
-                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
-                rank_colorbar_altgraph = rank_timebar
-                self.timebar.trigger_refresh(rank_timebar, True)
-            elif mode == StatusMode.ALTITUDE:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
-                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
-                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
-                self.timebar.trigger_refresh(rank_timebar, False)
-            elif mode == StatusMode.COLOR:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
-                self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
-                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
-                self.timebar.trigger_refresh(rank_timebar, False)
-        elif scope == StatusScope.GLOBAL:
-            rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
-            if mode == StatusMode.TIME:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
-                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
-                rank_colorbar_altgraph = rank_timebar
-                self.timebar.trigger_refresh(rank_timebar, True)
-            elif mode == StatusMode.ALTITUDE:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
-                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
-                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
-                self.timebar.trigger_refresh(rank_timebar, False)
-            elif mode == StatusMode.COLOR:
-                self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
-                self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
-                rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
-                self.timebar.trigger_refresh(rank_timebar, False)
+        if self.preload:
+            print('use the preloaded UIData')
+            if scope == StatusScope.HIKE:
+                hike = self.picture.hike_id 
+                rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+                if mode == StatusMode.ALTITUDE:
+                    altitudelist = self.uiData.altitudesSortByAltitudeForHike[hike]
+                    colorlist = self.uiData.colorSortByAltitudeForHike[hike]
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                elif mode == StatusMode.COLOR:
+                    altitudelist = self.uiData.altitudesSortByColorForHike[hike]
+                    colorlist = self.uiData.colorSortByColorForHike[hike]
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                elif mode == StatusMode.TIME:
+                    altitudelist = self.uiData.altitudesSortByTimeForHike[hike]
+                    colorlist = self.uiData.colorSortByTimeForHike[hike]
+                    rank_colorbar_altgraph = rank_timebar
+                    self.timebar.trigger_refresh(rank_timebar, True)
+            elif scope == StatusScope.GLOBAL:
+                rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+                if mode == StatusMode.ALTITUDE:
+                    altitudelist = self.uiData.altitudesSortByAltitudeForArchive
+                    colorlist = self.uiData.colorSortByAltitudeForArchive
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                elif mode == StatusMode.COLOR:
+                    altitudelist = self.uiData.altitudesSortByColorForArchive
+                    colorlist = self.uiData.colorSortByColorForArchive
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                if mode == StatusMode.TIME:
+                    altitudelist = self.uiData.altitudesSortByTimeForArchive
+                    colorlist = self.uiData.colorSortByTimeForArchive
+                    rank_colorbar_altgraph = rank_timebar
+                    self.timebar.trigger_refresh(rank_timebar, True)
 
-        self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
-        self.colorbar.trigger_refresh(self.colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
-        self.altitudegraph.trigger_refresh(self.altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
+            self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+            self.colorbar.trigger_refresh(colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
+            self.altitudegraph.trigger_refresh(altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
+
+        else:
+            print('directly call SQL for the ui data')
+            if scope == StatusScope.HIKE:
+                rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+                if mode == StatusMode.TIME:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+                    rank_colorbar_altgraph = rank_timebar
+                    self.timebar.trigger_refresh(rank_timebar, True)
+                elif mode == StatusMode.ALTITUDE:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
+                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                elif mode == StatusMode.COLOR:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
+                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+            elif scope == StatusScope.GLOBAL:
+                rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+                if mode == StatusMode.TIME:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
+                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
+                    rank_colorbar_altgraph = rank_timebar
+                    self.timebar.trigger_refresh(rank_timebar, True)
+                elif mode == StatusMode.ALTITUDE:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
+                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+                elif mode == StatusMode.COLOR:
+                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
+                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
+                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
+                    self.timebar.trigger_refresh(rank_timebar, False)
+
+            self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+            self.colorbar.trigger_refresh(self.colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
+            self.altitudegraph.trigger_refresh(self.altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
 
     # Hardware Button Presses
     # -------------------------------------------------------------------------
 
-    # TODO - test this code on the Pi
-    # REMOVE & NOTE: this is where the bottleneck was occuring
-    # Was spawning a new instance of the method each time the rotary changed
-    def rotary_changed(self, result):
-        print('rotary_changed() result: {r}'.format(r=result))
-        # self.picture.print_obj()
-
-        global isReadyForNewPicture
-
-        if isReadyForNewPicture:
-            # HACK Only allow this image to be blended
-            isReadyForNewPicture = True
-
-            # print('ready for new picture')
-            if result > 0:
-                # print('Next: %d' % result)
-                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, result)
-            elif result < 0:
-                # print('Previous: %d' % result)
-                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, abs(result))
-
-            # HACK - Clears the rotaryEncoder thread's counter since the count has
-            # been used in a database call. Otherwise, we want the count to be maintained
-            print('about to call clear()')
-            self.rotaryEncoder.clear()
-
-            global rotaryCounter
-            print(rotaryCounter)
-
-            self.updateImages()
-            self.updateUITop()
-
-        # TODO - add check to see if moved to a new hike during rotary turn
-
-        # change = rotaryCounter - rotaryCounterLast
-        # print(change)
-        # print('\n')
-
+    # Change Scope - Scrollwheel press
     def pressed_encoder(self, result):
         print('Encoder button was pressed: %d' % result)
+        self.control_scope()
 
+    # Change Mode - Time, Altitude, Color
     def pressed_mode(self, result):
         print('Mode button was pressed: %d' % result)
         self.control_mode()
 
+    # Skip Buttons
     def pressed_next(self, result):
         print('Next button was pressed: %d' % result)
+        self.control_skip_next()
 
     def pressed_prev(self, result):
         print('Previous button was pressed: %d' % result)
+        self.control_skip_previous()
 
+    # Play / Pause
     def pressed_play_pause(self, result):
         print('Play Pause button was pressed: %d' % result)
+        self.control_play_pause()
 
     # Keyboard Presses
     # -------------------------------------------------------------------------
@@ -1062,104 +1187,34 @@ class MainWindow(QMainWindow):
 
     def control_scope(self):
         print('Shift Archive / Hike')
-        self.changeScope()
+        Status().change_scope()
         self.updateScreen()
 
     def control_next(self):
-        mode = Status().get_mode()
-        scope = Status().get_scope()
-        currentHike = self.picture.hike_id
-        if scope == StatusScope.HIKE:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_next_time_in_hikes(self.picture, self.scrollspeed)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_next_altitude_in_hikes(self.picture, self.scrollspeed)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_next_color_in_hikes(self.picture, self.scrollspeed)
-
-            if self.picture.hike_id != currentHike:
-                print('🧨🧨🧨 NEXT - NEW HIKE! 🧨🧨🧨')
-                # self.updateScreenHikesNewHike()
-            # else:
-                # self.updateScreenHikesNewPictures()
-        elif scope == StatusScope.GLOBAL:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_next_time_in_global(self.picture, self.scrollspeed)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_next_altitude_in_global(self.picture, self.scrollspeed)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_next_color_in_global(self.picture, self.scrollspeed)
-
-            # self.updateScreenArchive()  # TODO - function still needs to be coded
-        self.updateScreen()
+        pass
+        # TODO - see how this affects the Mac App
+        # The logic in here was moved to ImageBlender. Will likely need to update
+        # rotaryCount from the keyboard input
+        # self.updateScreen()
 
     def control_previous(self):
-        mode = Status().get_mode()
-        scope = Status().get_scope()
-        currentHike = self.picture.hike_id
-        if scope == StatusScope.HIKE:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_previous_time_in_hikes(self.picture, self.scrollspeed)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_previous_altitude_in_hikes(self.picture, self.scrollspeed)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_previous_color_in_hikes(self.picture, self.scrollspeed)
-
-            if self.picture.hike_id != currentHike:
-                print('🧨🧨🧨 PREVIOUS - NEW HIKE! 🧨🧨🧨')
-                # self.updateScreenHikesNewHike()
-            # else:
-                # self.updateScreenHikesNewPictures()
-        elif scope == StatusScope.GLOBAL:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_previous_time_in_global(self.picture, self.scrollspeed)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_previous_altitude_in_global(self.picture, self.scrollspeed)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_previous_color_in_global(self.picture, self.scrollspeed)
-
-            # self.updateScreenArchive()  # TODO - still needs to be coded
-        self.updateScreen()
+        pass
+        # TODO - see how this affects the Mac App
+        # The logic in here was moved to ImageBlender. Will likely need to update
+        # rotaryCount from the keyboard input
+        # self.updateScreen()
 
     def control_skip_next(self):
         # print('Next Button')
-        mode = Status().get_mode()
-        scope = Status().get_scope()
-        if scope == StatusScope.HIKE:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_next_time_skip_in_hikes(self.picture)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_next_altitude_skip_in_hikes(self.picture)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_next_color_skip_in_hikes(self.picture)
-        elif scope == StatusScope.GLOBAL:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_next_time_skip_in_global(self.picture)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_next_altitude_skip_in_global(self.picture)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
-        self.updateScreen()
+        # JRW - tell ImageBlender to skip
+        self.imageBlender.skipNext()
+        # self.updateScreen()
 
     def control_skip_previous(self):
         # print('Previous Button')
-        mode = Status().get_mode()
-        scope = Status().get_scope()
-        if scope == StatusScope.HIKE:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_previous_time_skip_in_hikes(self.picture)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_previous_altitude_skip_in_hikes(self.picture)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_previous_color_skip_in_hikes(self.picture)
-        elif scope == StatusScope.GLOBAL:
-            if mode == StatusMode.TIME:
-                self.picture = self.sql_controller.get_previous_time_skip_in_global(self.picture)
-            elif mode == StatusMode.ALTITUDE:
-                self.picture = self.sql_controller.get_previous_altitude_skip_in_global(self.picture)
-            elif mode == StatusMode.COLOR:
-                self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
-        self.updateScreen()
+        # JRW - tell ImageBlender to skip
+        self.imageBlender.skipPrev()
+        # self.updateScreen()
 
     def control_play_pause(self):
         print('Space - Play/Pause')
@@ -1224,7 +1279,7 @@ if __name__ == '__main__':
     if platform.system() == 'Darwin' or platform.system() == 'Windows':
         window.show()
     elif platform.system() == 'Linux':
-        window.showFullScreen()
-        # window.show()
+        # window.showFullScreen()
+        window.show()
 
     sys.exit(app.exec_())

@@ -5,7 +5,7 @@ import platform
 import sqlite3
 import time
 from PyQt5.QtGui import *
-from classes.capra_data_types import Picture, Hike
+from classes.capra_data_types import Picture, Hike, UIData
 from classes.sql_statements import SQLStatements
 
 
@@ -330,6 +330,44 @@ class SQLController:
     # --------------------------------------------------------------------------
     # UI Calls (2021)
     # --------------------------------------------------------------------------
+
+    # Preload all the UI Data into a UIData object
+    def preload_ui_data(self) -> UIData:
+        uiData = UIData()
+
+        # Load all the Hike UI data
+        # starting point in database
+        picture = self.get_picture_with_id(1)
+        starting_hike = picture.hike_id
+
+        hike = 0
+        while hike != starting_hike:
+            # Update the hike from the current picture
+            hike = picture.hike_id
+
+            # Load data for this hike
+            uiData.altitudesSortByAltitudeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('alt', picture)
+            uiData.altitudesSortByColorForHike[hike] = self.ui_get_altitudes_for_hike_sortby('color', picture)
+            uiData.altitudesSortByTimeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('time', picture)
+
+            uiData.colorSortByAltitudeForHike[hike] = self.ui_get_colors_for_hike_sortby('alt', picture)
+            uiData.colorSortByColorForHike[hike] = self.ui_get_colors_for_hike_sortby('color', picture)
+            uiData.colorSortByTimeForHike[hike] = self.ui_get_colors_for_hike_sortby('time', picture)
+
+            # iterate to next hike
+            picture = self.get_next_time_skip_in_hikes(picture)
+            hike = picture.hike_id
+
+        # Load all the Global Archive Data
+        uiData.altitudesSortByAltitudeForArchive = self.ui_get_altitudes_for_archive_sortby('alt')
+        uiData.altitudesSortByColorForArchive = self.ui_get_altitudes_for_archive_sortby('color')
+        uiData.altitudesSortByTimeForArchive = self.ui_get_altitudes_for_archive_sortby('time')
+
+        uiData.colorSortByAltitudeForArchive = self.ui_get_colors_for_archive_sortby('alt')
+        uiData.colorSortByColorForArchive = self.ui_get_colors_for_archive_sortby('color')
+        uiData.colorSortByTimeForArchive = self.ui_get_colors_for_archive_sortby('time')
+
+        return uiData
 
     # Altitude
     def ui_get_altitudes_for_hike_sortby(self, m: str, current: Picture) -> list:
