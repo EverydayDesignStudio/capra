@@ -386,6 +386,67 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
     return len(confidences), dominant_colors_hsv, dominant_colors_rgb, confidences
 
 
+def filterZeroBytePicturesFromSrc():
+    global dbSRCController
+
+    print("[{}] Checking 0 byte pictures in the source directory before start transferring.. {}".format(timenow()))
+
+    latest_src_hikeID = dbSRCController.get_last_hike_id()
+    latest_dest_hikeID = dbDESTController.get_last_hike_id()
+    print("[{}] ## hikes from Source: {}".format(timenow(), str(latest_src_hikeID)))
+    print("[{}] ## hikes at Dest: {}".format(timenow(), str(latest_dest_hikeID)))
+
+    currHike = 1
+    delCount = 0
+
+    while currHike <= latest_src_hikeID:
+        print("[{}] ### Checking hike {}".format(currHike))
+        srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
+
+        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+        print("[{}] ### Hike {} originally has {} rows".format(currHike, totalCountHike))
+
+        if (not os.path.isdir(srcPath)):
+            currHike += 1
+            continue
+
+        allRows = dbSRCController.get_pictures_of_selected_hike(currHike)
+
+        for row in allRows:
+            picPathCam1_src = srcPath + "{}_cam1.jpg".format(row['index_in_hike'])
+            picPathCam2_src = srcPath + "{}_cam2.jpg".format(row['index_in_hike'])
+            picPathCam3_src = srcPath + "{}_cam3.jpg".format(row['index_in_hike'])
+
+            if (os.path.exists(picPathCam1_src) and os.stat(picPathCam1_src).st_size == 0 or
+                os.path.exists(picPathCam2_src) and os.stat(picPathCam2_src).st_size == 0 or
+                os.path.exists(picPathCam3_src) and os.stat(picPathCam3_src).st_size == 0):
+
+                # ### (For testing) select the row but don't delete it yet
+                # srcConnection = dbSRCController.connection
+                # srcCursor = srcConnection.cursor()
+                # statement = 'select * from pictures where time = {}'.format(row['time'])
+                # srcCursor.execute(statement)
+                # res = srcCursor.fetchall()
+                # print (res)
+
+                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(row['index_in_hike']))
+
+                dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
+                delCount += 1
+
+        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+
+        if (delCount > 0):
+            print("[{}] {} rows deleted".format(delCount))
+            print("[{}] Hike {} now has {} rows".format(currHike, totalCountHike))
+
+            dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
+
+        # commit changes only when a given hike is fully scanned
+        dbSRCController.connection.commit()
+        currHike += 1
+
+
 def buildHike(currHike):
     global dbSRCController, dbDESTController
     global srcPath, destPath

@@ -536,7 +536,7 @@ class SQLController:
         row = cursor.fetchone()
         return row[0]
 
-    def get_hike_crated_timestamp(self, hike_id: int):
+    def get_hike_created_timestamp(self, hike_id: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_created_date_time(hike_id))
         row = cursor.fetchone()
@@ -596,13 +596,13 @@ class SQLController:
 
     def get_pictures_of_specific_hike_by_altrank(self, hike: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_pictures_of_specific_hike_by_altrank(self, hike))
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_altrank(hike))
         rows = cursor.fetchall()
         return rows
 
     def update_pictures_altrank_global_h(self, rankIndex: int, picture_id: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_pictures_altrank_global_h(self, rankIndex, picture_id))
+        cursor.execute(self.statements.update_pictures_altrank_global_h(rankIndex, picture_id))
         self.connection.commit()
 
     # color_rank_global_h
@@ -614,13 +614,13 @@ class SQLController:
 
     def get_pictures_of_specific_hike_by_color_rank(self, hike: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_pictures_of_specific_hike_by_color_rank(self, hike))
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_color_rank(hike))
         rows = cursor.fetchall()
         return rows
 
     def update_pictures_color_rank_global_h(self, rankIndex: int, picture_id: int):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.update_pictures_color_rank_global_h(self, rankIndex, picture_id))
+        cursor.execute(self.statements.update_pictures_color_rank_global_h(rankIndex, picture_id))
         self.connection.commit()
 
 
@@ -648,3 +648,29 @@ class SQLController:
         cursor.execute(self.statements.get_hikes_rgb_global())
         res = cursor.fetchall()
         return res
+
+
+    ### Zero-byte picture filtering
+    def get_pictures_count_of_selected_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_count_of_selected_hike(hike))
+        res = cursor.fetchone()[0]
+        return res
+
+    def get_pictures_of_selected_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_selected_hike(hike))
+        res = cursor.fetchall()
+        return res
+
+    def delete_picture_of_given_timestamp(self, timestamp: float, delayedCommit: bool = False):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.delete_picture_of_given_timestamp(timestamp))
+        if (not delayedCommit):
+            self.connection.commit()
+
+    def update_hikes_total_picture_count_of_given_hike(self, picCount: int, hike: int, delayedCommit: bool = False):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_total_picture_count_of_given_hike(picCount, hike))
+        if (not delayedCommit):
+            self.connection.commit()

@@ -429,7 +429,7 @@ class SQLStatements:
         return statement
 
     def update_pictures_altrank_global_h(self, rankIndex: int, picture_id: int):
-        statement: 'UPDATE pictures SET altrank_global_h = {} WHERE picture_id = {}'.format(rankIndex, picture_id)
+        statement = 'UPDATE pictures SET altrank_global_h = {} WHERE picture_id = {}'.format(rankIndex, picture_id)
         return statement
 
     # color_rank_global_h
@@ -462,4 +462,23 @@ class SQLStatements:
 
     def get_hikes_rgb_global(self):
         statement = 'SELECT color_rgb FROM hikes ORDER BY color_rank'
+        return statement
+
+
+    ### Zero-byte filtering
+
+    def get_pictures_count_of_selected_hike(self, hike: int):
+        statement = 'select count(*) from pictures where hike = {}'.format(hike)
+        return statement
+
+    def get_pictures_of_selected_hike(self, hike: int):
+        statement = 'select * from pictures where hike = {}'.format(hike)
+        return statement
+
+    def delete_picture_of_given_timestamp(self, timestamp: float):
+        statement = 'delete from pictures where time = {}'.format(timestamp)
+        return statement
+
+    def update_hikes_total_picture_count_of_given_hike(self, picCount: int, hike: int):
+        statement = 'update hikes set pictures = {} where hike_id = {}'.format(picCount, hike)
         return statement
