@@ -31,20 +31,20 @@ HALL_EFFECT_ON = threading.Event()                  # https://blog.miguelgrinber
 
 logger = None
 rsync_status = None
-cDBController = None
-pDBController = None
-p2DBController = None
 retry = 0
 RETRY_MAX = 5
 
-checkSum_transferred = 0
-checkSum_rotated = 0
-checkSum_total = 0
+STOP = False
 
-colrankHikeCounter = 0
-colrankGlobalCounter = 0
+currHike = -1
+globalCounter_h = 0
+dummyGlobalColorRank = -1
+dummyGlobalAltRank = -1
+dummyGlobalCounter = 0
 
-domColors = []
+COLOR_HSV_INDEX = -1    # used in the sortColor helper function
+NEW_DATA = False        # is there any updated data coming in?
+
 commits = []        # deferred commits due to concurrency
 threads = []
 threadPool = None
@@ -55,8 +55,100 @@ DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
-DUMMY_IMAGE = DATAPATH + "dummy.jpg"
 PROJECTOR_BAK_DB = DATAPATH + g.DBNAME_MASTER_BAK
+WHITE_IMAGE = DATAPATH + "white.jpg"
+
+### TODO: move constant variables to globals.py
+
+WHITE_IMAGE = DROPBOX + BASEPATH_DEST + "white.jpg"
+
+DROPBOX = "/Users/myoo/Dropbox/"
+BASEPATH_SRC = None
+BASEPATH_DEST = None
+src_db_name = None
+dest_db_name = None
+
+DBTYPE = 'projector'   # 'camera' or 'projector'
+ROWINDEX_TIMESTAMP = None
+ROWINDEX_ALTITUDE = None
+ROWINDEX_INDEX_IN_HIKE = None
+ROWINDEX_CAMERA1 = None
+ROWINDEX_CAMERA2 = None
+ROWINDEX_CAMERA3 = None
+
+if (DBTYPE == 'projector'):
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
+    # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
+
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2_test/"
+    src_db_name = "capra_projector_jun2021_min_test2.db"
+
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer_full/"
+    dest_db_name = "capra_projector_jun2021_min_full.db"
+
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
+    # src_db_name = "capra_projector_apr2021_min_camera_full_merge.db"
+    # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
+    # dest_db_name = "capra_projector_apr2021_min_test_full_merged.db"
+
+    ROWINDEX_TIMESTAMP = 1
+    ROWINDEX_ALTITUDE = 9
+    ROWINDEX_INDEX_IN_HIKE = 8
+    ROWINDEX_CAMERA1 = 22
+
+else:
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
+    # src_db_name = "capra_camera.db"
+    #
+    # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
+    # dest_db_name = "capra_projector_apr2021_min_camera_full.db"
+
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2_test/"
+    src_db_name = "capra_camera.db"
+
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2_test/"
+    dest_db_name = "capra_projector_jun2021_min_test.db"
+
+
+    ROWINDEX_TIMESTAMP = 0
+    ROWINDEX_ALTITUDE = 1
+    ROWINDEX_INDEX_IN_HIKE = 3
+    ROWINDEX_CAMERA1 = 4
+
+ROWINDEX_CAMERA2 = ROWINDEX_CAMERA1 + 1
+ROWINDEX_CAMERA3 = ROWINDEX_CAMERA1 + 2
+
+CLUSTERS = 5        # assumes X number of dominant colors in a pictures
+REPETITION = 8
+
+srcPath = ""
+destPath = ""
+SRCDBPATH = DROPBOX + BASEPATH_SRC + src_db_name
+DESTDBPATH = DROPBOX + BASEPATH_DEST + dest_db_name
+
+dbSRCController = None
+dbDESTController = None
+
+FILENAME = "[!\.]*_cam[1-3].jpg"
+FILENAME_FULLSIZE = "[!\.]*_cam2f.jpg"
+# sample dimensions: (100, 60), (160, 95), (320, 189), (720, 427)
+DIMX = 100
+DIMY = 60
+TOTAL = DIMX * DIMY
+
+res_red = []
+res_green = []
+res_blue = []
+
+# ??
+domColors = []
+cDBController = None
+pDBController = None
+p2DBController = None
+checkSum_transferred = 0
+checkSum_rotated = 0
+checkSum_total = 0
+
 
 class readHallEffectThread(threading.Thread):
     def __init__(self):
