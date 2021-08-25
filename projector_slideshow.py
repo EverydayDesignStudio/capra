@@ -35,6 +35,7 @@ from enum import IntEnum, unique, auto
 
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
+from classes.led_player import RGB_LED, WHITE_LEDS
 # from classes.sql_statements import SQLStatements
 from classes.ui_components import *
 from classes.singleton import Singleton
@@ -621,6 +622,7 @@ class MainWindow(QMainWindow):
         # Test counter variable to see the frame rate
         self.blendCount = 0
 
+        self.loadSavedState()  # Loads the state of last picture, mode, and scope
         self.setupDB()  # Mac or Windows shows the database dialog
         self.preloadUIData()
         self.setupWindowLayout()
@@ -633,6 +635,10 @@ class MainWindow(QMainWindow):
 
     # Setup Helpers
     # -------------------------------------------------------------------------
+    def loadSavedState(self):
+        # TODO - Pull from the status text file and update the Status() object
+        self._saved_picture_id = 1
+        Status().set_mode_time()
 
     def setupDB(self):
         '''Initializes the database connection.\n
@@ -651,7 +657,7 @@ class MainWindow(QMainWindow):
         print(self.database)
         print(self.directory)
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
-        self.picture = self.sql_controller.get_picture_with_id(1)
+        self.picture = self.sql_controller.get_picture_with_id(self._saved_picture_id)
 
         self.scrollspeed = 1
 
@@ -807,6 +813,7 @@ class MainWindow(QMainWindow):
     def setupGPIO(self):
         # Set the GPIO mode, alternative is GPIO.BOARD
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
 
         # Rotary Encoder
         self.PIN_ROTARY_A = g.ENC1_A
@@ -824,20 +831,29 @@ class MainWindow(QMainWindow):
         self.PIN_ACCEL = g.ACCEL
 
         # NeoPixels
-        self.PIN_NEOPIXELS = g.NEO1
+        # self.PIN_NEOPIXELS = g.NEO1
 
         # LED indicators
-        self.PIN_LED_WHITE1 = g.WHITE_LED1
-        self.PIN_LED_WHITE2 = g.WHITE_LED2
-        self.PIN_LED_WHITE3 = g.WHITE_LED3
+        self.ledWhite = WHITE_LEDS(g.WHITE_LED1, g.WHITE_LED2, g.WHITE_LED3)
+        self.ledWhite.turn_off()
+        if Status().get_mode() == StatusMode.TIME:
+            self.ledWhite.set_time_mode()
+        elif Status().get_mode() == StatusMode.COLOR:
+            self.ledWhite.set_color_mode()
+        elif Status().get_mode() == StatusMode.ALTITUDE:
+            self.ledWhite.set_altitude_mode()
 
-        self.PIN_LED_RGB_RED = g.RGB2_RED
-        self.PIN_LED_RGB_GREEN = g.RGB2_GREEN
-        self.PIN_LED_RGB_BLUE = g.RGB2_BLUE
+        self.ledRGB = RGB_LED(g.RGB2_RED, g.RGB2_GREEN, g.RGB2_BLUE)
+        self.ledRGB.turn_off()
+        # if Status().get_scope() == StatusScope.GLOBAL:
+        #     self.ledRGB.turn_teal()
 
+        # Test LED - which isn't visible from outside of the case
         self.PIN_LED_TEST_RED = g.RGB1_RED
         self.PIN_LED_TEST_GREEN = g.RGB1_GREEN
-        # self.PIN_LED_TEST_BLUE = 0
+        # self.PIN_LED_TEST_BLUE = 0  # Used for sending a signal on startup (I think)
+        GPIO.setup(self.PIN_LED_TEST_RED, GPIO.OUT)
+        GPIO.setup(self.PIN_LED_TEST_GREEN, GPIO.OUT)
 
     # Setup threads to check for hardware changes
     def setupHardwareThreads(self):
@@ -978,10 +994,13 @@ class MainWindow(QMainWindow):
         mode = Status().get_mode()
         if mode == StatusMode.TIME:
             self.modeOverlay.setTime()
-        elif mode == StatusMode.ALTITUDE:
-            self.modeOverlay.setAltitude()
+            self.ledWhite.set_time_mode()
         elif mode == StatusMode.COLOR:
             self.modeOverlay.setColor()
+            self.ledWhite.set_color_mode()
+        elif mode == StatusMode.ALTITUDE:
+            self.modeOverlay.setAltitude()
+            self.ledWhite.set_altitude_mode()
 
     def setLandscape(self):
         print('setLandscape()')
@@ -1257,11 +1276,13 @@ class MainWindow(QMainWindow):
     # Helper Functions for keyboard / hardware controls
     # -------------------------------------------------------------------------
     def control_mode(self):
+        '''Changes the mode: Time -> Color -> Altitude ->'''
         print('Mode change')
         self.changeMode()
         self.updateScreen()
 
     def control_scope(self):
+        '''Changes the scope: Hike -> Archive ->'''
         print('Shift Archive / Hike')
         Status().change_scope()
         self.updateScreen()

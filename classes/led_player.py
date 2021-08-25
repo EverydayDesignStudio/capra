@@ -8,7 +8,40 @@ import RPi.GPIO as GPIO
 import time
 
 
+class WHITE_LEDS:
+    '''Used for the Projector'''
+    def __init__(self, PIN1: int, PIN2: int, PIN3: int):
+        self._timeLED = PIN1
+        self._colorLED = PIN2
+        self._altitudeLED = PIN3
+
+        GPIO.setup(self._timeLED, GPIO.OUT)
+        GPIO.setup(self._colorLED, GPIO.OUT)
+        GPIO.setup(self._altitudeLED, GPIO.OUT)
+
+    def turn_off(self):
+        GPIO.output(self._timeLED, False)
+        GPIO.output(self._colorLED, False)
+        GPIO.output(self._altitudeLED, False)
+
+    def set_time_mode(self):
+        GPIO.output(self._timeLED, True)
+        GPIO.output(self._colorLED, False)
+        GPIO.output(self._altitudeLED, False)
+
+    def set_color_mode(self):
+        GPIO.output(self._timeLED, False)
+        GPIO.output(self._colorLED, True)
+        GPIO.output(self._altitudeLED, False)
+
+    def set_altitude_mode(self):
+        GPIO.output(self._timeLED, False)
+        GPIO.output(self._colorLED, False)
+        GPIO.output(self._altitudeLED, True)
+
+
 class RGB_LED:
+    '''Used for the Camera and Projector'''
     def __init__(self, red_pin: int, green_pin: int, blue_pin: int):
         self.LED_RED = red_pin
         self.LED_GREEN = green_pin

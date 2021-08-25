@@ -109,12 +109,13 @@ def init():
 
     global NEO1
     NEO1 = 18               # BOARD - 12
+
     global WHITE_LED1
-    WHITE_LED1 = 21         # BOARD - 40
+    WHITE_LED1 = 19         # BOARD - 35
     global WHITE_LED2
     WHITE_LED2 = 16         # BOARD - 36
     global WHITE_LED3
-    WHITE_LED3 = 19         # BOARD - 35
+    WHITE_LED3 = 21         # BOARD - 40
 
     global RGB1_RED
     RGB1_RED = 15           # BOARD - 10
