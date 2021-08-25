@@ -29,7 +29,7 @@ from PIL import Image
 # from PIL.ImageQt import ImageQt
 if platform.system() == 'Linux':
     from RPi import GPIO
-# from lsm303d import LSM303D
+    from lsm303d import LSM303D
 from datetime import datetime
 from enum import IntEnum, unique, auto
 
@@ -327,6 +327,57 @@ class HardwareButton(QRunnable):
             else:                                   # Button is not pressed
                 self.status = False
             time.sleep(0.05)
+
+
+class Accelerometer(QRunnable):
+    '''Thread to monitor the LSM303D accelerometer'''
+    def __init__(self, address, *args, **kwargs):
+        super(Accelerometer, self).__init__()
+        self.lsm = LSM303D(address)  # Create accelerometer object from the address (should be 0x1d)
+        # self.lsm = LSM303D(0x1d)  # Change to 0x1e if you have soldered the address jumper
+        self.lastOrientation = None
+        self.signals = WorkerSignals()
+
+    def run(self):
+        while True:
+            try:
+                xyz = self.lsm.accelerometer()
+            except Exception as error:
+                time.sleep(2.0)
+                continue
+                raise Exception("Oops! There was no valid accelerometer data.")
+
+            ax = round(xyz[0], 7)
+            ay = round(xyz[1], 7)
+            az = round(xyz[2], 7)
+
+            pitch = round(180 * math.atan(ax/math.sqrt(ay*ay + az*az))/math.pi, 3)
+            roll = round(180 * math.atan(ay/math.sqrt(ax*ax + az*az))/math.pi, 3)
+
+            if abs(pitch) < 20:
+                if roll < -45:  # correct vertical
+                    orientation = StatusOrientation.PORTRAIT
+                elif roll > 45:  # upside-down vertical
+                    orientation = None
+                else:  # horizontal
+                    orientation = StatusOrientation.LANDSCAPE
+            else:
+                if roll < -30:  # correct vertical
+                    orientation = StatusOrientation.PORTRAIT
+                elif roll > 30:  # upside-down vertical
+                    orientation = None
+                else:  # horizontal
+                    orientation = StatusOrientation.LANDSCAPE
+
+            # Check to see if orientation changed
+            if self.lastOrientation != orientation:
+                self.lastOrientation = orientation
+
+                # Ensure it is a usable orientation
+                if orientation == StatusOrientation.LANDSCAPE or orientation == StatusOrientation.PORTRAIT:
+                    self.signals.result.emit(orientation)
+
+            time.sleep(0.5)
 
 
 class PlayPause(QRunnable):
@@ -858,7 +909,7 @@ class MainWindow(QMainWindow):
     # Setup threads to check for hardware changes
     def setupHardwareThreads(self):
         self.threadpool = QThreadPool()
-        self.threadpool.setMaxThreadCount(7)  # TODO - change if more threads are needed
+        self.threadpool.setMaxThreadCount(8)  # TODO - change if more threads are needed
 
         # Rotary Encoder
         self.rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
@@ -885,6 +936,11 @@ class MainWindow(QMainWindow):
         buttonNext = HardwareButton(self.PIN_NEXT)
         buttonNext.signals.result.connect(self.pressed_next)
         self.threadpool.start(buttonNext)
+
+        # Accelerometer
+        accelerometer = Accelerometer(self.PIN_ACCEL)
+        accelerometer.signals.result.connect(self.changed_accelerometer)
+        self.threadpool.start(accelerometer)
 
     # UI Callbacks from bg threads
     # -------------------------------------------------------------------------
@@ -1215,6 +1271,14 @@ class MainWindow(QMainWindow):
     def pressed_play_pause(self, result):
         print('Play Pause button was pressed: %d' % result)
         self.control_play_pause()
+
+    # Accelerometer
+    def changed_accelerometer(self, result):
+        print('Result from accelerometer mate: %d' % result)
+        if result == StatusOrientation.LANDSCAPE:
+            self.control_landscape()
+        elif result == StatusOrientation.PORTRAIT:
+            self.control_vertical()
 
     # Keyboard Presses
     # -------------------------------------------------------------------------

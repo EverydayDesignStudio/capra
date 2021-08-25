@@ -94,7 +94,7 @@ def init():
     BUTT_ON = 3             # BOARD - 5
 
     global ACCEL
-    ACCEL = 0x1d            # Accelerometer
+    ACCEL = 0x1d            # Accelerometer - change to 0x1e if you have soldered the address jumper
     global ACCEL_SCL
     ACCEL_SCL = 3           # BOARD - 5
     global ACCEL_SDA
