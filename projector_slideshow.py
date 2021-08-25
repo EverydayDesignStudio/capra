@@ -942,6 +942,13 @@ class MainWindow(QMainWindow):
         accelerometer.signals.result.connect(self.changed_accelerometer)
         self.threadpool.start(accelerometer)
 
+        # Detects when the a magnet is near the hall effect
+        # This may need a custom thread that continually checks for a change in status
+        # I.E. there was a magnet near, but now there isn't
+        buttonHallEffect = HardwareButton(self.PIN_HALL_EFFECT)
+        buttonHallEffect.signals.result.connect(self.pressed_hall_effect)
+        self.threadpool.start(buttonHallEffect)
+
     # UI Callbacks from bg threads
     # -------------------------------------------------------------------------
 
@@ -1279,6 +1286,10 @@ class MainWindow(QMainWindow):
             self.control_landscape()
         elif result == StatusOrientation.PORTRAIT:
             self.control_vertical()
+
+    # Hall Effect
+    def pressed_hall_effect(self, result):
+        print('Hall Effect was pressed: %d' % result)
 
     # Keyboard Presses
     # -------------------------------------------------------------------------
