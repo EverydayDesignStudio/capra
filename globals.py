@@ -40,7 +40,7 @@ def init():
     global DATAPATH_PROJECTOR
     # TODO: update existing projector path by adding an extra slash '/'
     # DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
-    DATAPATH_PROJECTOR = '/media/pi/capra-hd2/jordan/'
+    DATAPATH_PROJECTOR = '/media/pi/capra-hd3/jordan/'
 
     global CAPRAPATH_PROJECTOR
     CAPRAPATH_PROJECTOR = '/home/pi/capra/'

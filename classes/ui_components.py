@@ -29,7 +29,7 @@ class UIWidget(QWidget):
 
         self.anim = QPropertyAnimation()
         self.fadeEffect = QGraphicsOpacityEffect()
-        self.canRepaint = True
+        # self.canRepaint = True
 
     def fadeOut(self, duration: int):
         """Fades out the label over passed in duration (milliseconds)"""
@@ -48,11 +48,11 @@ class UIWidget(QWidget):
     def myHide(self):
         self.fadeEffect.setOpacity(0.0)
 
-    def setCanRepaint(self):
-        self.canRepaint = True
+    # def setCanRepaint(self):
+    #     self.canRepaint = True
 
-    def setCanNotRepain(self):
-        self.canRepaint = False
+    # def setCanNotRepain(self):
+    #     self.canRepaint = False
 
 
 class UILabel(QLabel):
@@ -182,8 +182,8 @@ class UILabelTopCenter(QWidget):
         self.animGroupFadeOut.addAnimation(anim2)
 
 
-# Simple wrapper of QLabel, for easier image loading
 class UIImage(QLabel):
+    '''Simple wrapper of QLabel, for easier image loading'''
     def __init__(self, path: str, *args, **kwargs):
         super(QLabel, self).__init__(*args, **kwargs)
         # QLabel.__init__(self)
@@ -199,12 +199,32 @@ class UIImage(QLabel):
     # TODO - see how processing consumption for this, compares to saving locally
     def update_pixmap(self, im):
         """Accepts a raw image and utilizes image conversion to load it"""
-        im = im.convert("RGB")
-        data = im.tobytes("raw", "RGB")
-        # qim = QImage(data, im.size[0], im.size[1], QImage.Format_ARGB32)  # give weird color distortion
-        qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGB888)
+        im = im.convert("RGBA")
+        data = im.tobytes("raw", "RGBA")
+        qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGBA8888)
+
         self.pixmap = QPixmap.fromImage(qim)
         self.setPixmap(self.pixmap)
+
+        # TODO - add a try/exception block which uses a blank pink image
+        # if theres issues loading from bytes. There seems to be a problem with Python3.7.3
+
+        # NOTE - Could easily add image effects via this function i.e. black and white
+
+        # Due to the issues around distortion, these are left in for reference of what didn't work
+        # ----------
+
+        # RGB16 is trippy!
+        # qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGB16)
+
+        # Gave weird color distortion
+        # qim = QImage(data, im.size[0], im.size[1], QImage.Format_ARGB32)
+
+        # Inverted Colors
+        # im = im.convert("CMYK")
+        # print(im.format())
+        # data = im.tobytes("raw", "CMYK")
+        # qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGBX8888)
 
 
 # Semi-transparent underlay that inherits from UILabel
@@ -223,7 +243,7 @@ class UIUnderlay(UILabel):
 
 
 class UIModeOverlay(QLabel):
-    def __init__(self, window, path: str, mode, *args, **kwargs):
+    def __init__(self, window, path: str, *args, **kwargs):
         super(QLabel, self).__init__(window, *args, **kwargs)
         # QLabel.__init__(self, window)
 
@@ -380,8 +400,8 @@ class ColorPalette(UIWidget):
         # if self.canRepaint == False:
         #     return
 
-        print('painting Color Palette')
-        print(self.previousInFocusChain())
+        # print('painting Color Palette')
+        # print(self.previousInFocusChain())
         if self.visible:
             painter = QPainter(self)
             brush = QBrush()
@@ -406,10 +426,10 @@ class ColorPalette(UIWidget):
                 x += w
                 painter.fillRect(rect, brush)
 
-        self.canRepaint = False
+        # self.canRepaint = False
 
     def trigger_refresh(self, colorList: list, confidentList: list, visible: bool):
-        self.canRepaint = True
+        # self.canRepaint = True
         self.colorList = colorList
         self.confidentList = confidentList
         self.visible = visible
@@ -429,7 +449,7 @@ class AltitudeGraph(UIWidget):
         self.currentAlt = currentAlt
 
     def paintEvent(self, e):
-        print('painting Altitude Graph')
+        # print('painting Altitude Graph')
 
         DOT_DIAM = 4
         IND_DIAM = DOT_DIAM + 6
@@ -499,7 +519,7 @@ class ColorBar(UIWidget):
         self.indicatorColor = indicatorColor
 
     def paintEvent(self, e):
-        print('painting Color Bar')
+        # print('painting Color Bar')
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
@@ -559,7 +579,7 @@ class TimeBar(UIWidget):
         self.isTimeMode = isTimeMode
 
     def paintEvent(self, e):
-        print('painting TimeBar')
+        # print('painting TimeBar')
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
