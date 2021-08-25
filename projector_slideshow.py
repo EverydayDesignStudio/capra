@@ -262,7 +262,9 @@ class RotaryEncoder(QRunnable):
         while(not GPIO.input(self.RoAPin)):
             self.Current_RoB_Status = GPIO.input(self.RoBPin)
             self.flag = 1
+
         if self.flag == 1:
+            Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
             self.flag = 0
 
             if (self.Last_RoB_Status == 0) and (self.Current_RoB_Status == 1):
@@ -282,8 +284,10 @@ class RotaryEncoder(QRunnable):
 
             if (self.Current_Direction == 1):
                 rotaryCounter = rotaryCounter - 1 * self.multFactor
+                Status().set_direction_prev()
             else:
                 rotaryCounter = rotaryCounter + 1 * self.multFactor
+                Status().set_direction_next()
 
             self.Last_Direction = self.Current_Direction
             print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
@@ -322,6 +326,24 @@ class HardwareButton(QRunnable):
             else:                                   # Button is not pressed
                 self.status = False
             time.sleep(0.05)
+
+
+class PlayPause(QRunnable):
+    '''Thread to continually increment the slideshow while in PLAY'''
+    def __init__(self, *args, **kwargs):
+        super(PlayPause, self).__init__()
+
+    def run(self):
+        global rotaryCounter
+
+        while True:
+            if Status().get_playpause() == StatusPlayPause.PLAY:
+                if Status().get_direction() == StatusDirection.NEXT:
+                    rotaryCounter += 1
+                elif Status().get_direction() == StatusDirection.PREV:
+                    rotaryCounter -= 1
+            # TODO - should I change this
+            time.sleep(2.0)
 
 
 # Continually tries blending the next image into the current image
@@ -776,6 +798,10 @@ class MainWindow(QMainWindow):
         # Receives finished signal, used to fade out UI and print test values
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
         self.threadpoolSoftware.start(self.imageBlender)
+
+        # Play Pause, sends 0 callbacks
+        self.playPauseThread = PlayPause()
+        self.threadpoolSoftware.start(self.playPauseThread)
 
     # Setup hardware pins
     def setupGPIO(self):
@@ -1258,23 +1284,20 @@ class MainWindow(QMainWindow):
 
     def control_skip_next(self):
         '''Tells the ImageBlender thread to skip next'''
+        Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
         self.imageBlender.skipNext()
         # self.updateScreen()
 
     def control_skip_previous(self):
         '''Tells the ImageBlender thread to skip previous'''
+        Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
         self.imageBlender.skipPrev()
         # self.updateScreen()
 
     def control_play_pause(self):
+        '''Changes StatusPlayPause(). PlayPauseThread continually checks this status'''
         print('Space - Play/Pause')
         Status().change_playpause()
-        status = Status().get_playpause()
-
-        if status == StatusPlayPause.PLAY:
-            print('Start Playing')
-        elif status == StatusPlayPause.PAUSE:
-            print('Pause the Program')
 
     def control_landscape(self):
         '''Changes the orientation to landscape'''
