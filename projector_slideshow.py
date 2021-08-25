@@ -47,10 +47,11 @@ print('projector_slideshow.py running...')
 
 # Filewide Statuses
 # ----- Hardware -----
-rotaryCounter = 0
-rotaryCounterLast = 0
-isReadyForNewPicture = True
-picture = None
+rotaryCounter = 0  # Global value for rotary encoder, so ImageBlender thread doesn't need to ask MainWindow
+rotaryCounterLast = 0  # Needed to measure the change of the encoder that happens during the Encoder loop
+
+isReadyForNewPicture = True  # REVIEW - not sure if nedded, could be a solution
+picture = None  # REMOVE - not needed anymore. we use ImageBlender
 
 
 # Statuses
@@ -72,49 +73,37 @@ class StatusScope(IntEnum):
 
 
 class StatusMode(IntEnum):
-    __order__ = 'TIME ALTITUDE COLOR'
+    '''The order as described by the integer values is the order 
+    in which the modes will change'''
+    __order__ = 'TIME COLOR ALTITUDE'
     TIME = 0
-    ALTITUDE = 1
-    COLOR = 2
+    COLOR = 1
+    ALTITUDE = 2
 
 
-# Singleton Status class
+class StatusDirection(IntEnum):
+    NEXT = 0
+    PREV = 1
+
+
+# Singleton Status class; starting status values are defined here
 class Status(Singleton):
     """
     Singleton class containing all status variables for the slideshow
-    • orientation, playpause, scope, mode
+    \n\t orientation, playpause, scope, mode, direction
     """
 
     # Class variables, not instance variables
+    # Define starting status values here
     _orientation = StatusOrientation.LANDSCAPE
     _playpause = StatusPlayPause.PAUSE
     _scope = StatusScope.HIKE
     _mode = StatusMode.TIME
+    _direction = StatusDirection.NEXT
 
     # Eventually maybe we would need to setup this with input from the database
     def __init__(self):
         super().__init__()
-
-    # Mode
-    def get_mode(self) -> StatusMode:
-        return Status()._mode
-
-    def next_mode(self):
-        Status()._mode = StatusMode((Status()._mode + 1) % 3)
-
-    # Scope
-    def get_scope(self) -> StatusScope:
-        return Status()._scope
-
-    def change_scope(self):
-        Status()._scope = StatusScope((Status()._scope + 1) % 2)
-
-    # Play Pause
-    def get_playpause(self) -> StatusPlayPause:
-        return Status()._playpause
-
-    def change_playpause(self):
-        Status()._playpause = StatusPlayPause((Status()._playpause + 1) % 2)
 
     # Orientation
     def get_orientation(self) -> StatusOrientation:
@@ -129,18 +118,64 @@ class Status(Singleton):
     def set_orientation_vertical(self):
         Status()._orientation = StatusOrientation.PORTRAIT
 
+    # Play Pause
+    def get_playpause(self) -> StatusPlayPause:
+        return Status()._playpause
 
+    def change_playpause(self):
+        Status()._playpause = StatusPlayPause((Status()._playpause + 1) % 2)
+
+    def set_play(self):
+        Status()._playpause = StatusPlayPause.PLAY
+
+    def set_pause(self):
+        Status()._playpause = StatusPlayPause.PAUSE
+
+    # Scope
+    def get_scope(self) -> StatusScope:
+        return Status()._scope
+
+    def change_scope(self):
+        Status()._scope = StatusScope((Status()._scope + 1) % 2)
+
+    # Mode
+    def get_mode(self) -> StatusMode:
+        return Status()._mode
+
+    def next_mode(self):
+        Status()._mode = StatusMode((Status()._mode + 1) % 3)
+
+    def set_mode_time(self):
+        Status()._mode = StatusMode.TIME
+
+    def set_mode_color(self):
+        Status()._mode = StatusMode.COLOR
+
+    def set_mode_altitude(self):
+        Status()._mode = StatusMode.ALTITUDE
+
+    # Direction
+    def get_direction(self) -> StatusDirection:
+        return Status()._direction
+
+    def set_direction_next(self):
+        Status()._direction = StatusDirection.NEXT
+
+    def set_direction_prev(self):
+        Status()._direction = StatusDirection.PREV
+
+
+# REMOVE - since I'm using a Singleton, I don't actually need these
 # Global status values -- they need to have global file scope due to the modification by the hardware
-orientation = StatusOrientation.LANDSCAPE
-scope = StatusScope.HIKE
-mode = StatusMode.TIME
-playpause = StatusPlayPause.PLAY
+# orientation = StatusOrientation.LANDSCAPE
+# playpause = StatusPlayPause.PLAY
+# scope = StatusScope.HIKE
+# mode = StatusMode.TIME
 
 
 # Threads
 # -----------------------------------------------------------------------------
 
-# Threading Infrastructure
 class WorkerSignals(QObject):
     '''
     Defines the signals available from a running worker thread.
@@ -164,8 +199,8 @@ class WorkerSignals(QObject):
     progress = pyqtSignal(int)
 
 
-# Custom Hardware Controls
 class RotaryEncoder(QRunnable):
+    '''Custom thread for the rotary coder, so no signal is ever lost'''
     def __init__(self, PIN_A: int, PIN_B: int, *args, **kwargs):
         super(RotaryEncoder, self).__init__()
 
@@ -253,12 +288,9 @@ class RotaryEncoder(QRunnable):
             self.Last_Direction = self.Current_Direction
             print('rotaryCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=rotaryCounter, d=self.dt, s=speed, a=self.multFactor, st=self.speedText))
 
-            # TODO -- remove both of these lines
-            # Resetting counter will happen in Main UI Thread
-            # rotaryCounter = 0
-
-            # REMOVE - is it okay to not emit the rotary count?
-            # self.signals.result.emit(rotaryCounter)
+            # The counter is never reset, ImageBlender finds difference between this read and the last read
+            # No signal is ever emitted since rotaryCounter is a global value that is only written to in this thread
+            # ImageBlender can directly access it safely, at anytime
 
     def clear(self, ev=None):
         global rotaryCounter
@@ -271,8 +303,8 @@ class RotaryEncoder(QRunnable):
             self.rotaryTurn()
 
 
-# Uses global status variable to ensure there are no double presses for hardware buttons
 class HardwareButton(QRunnable):
+    '''Thread to continually monitor a GPIO PIN, emits signal when button is pressed'''
     def __init__(self, PIN: int, *args, **kwargs):
         super(HardwareButton, self).__init__()
 
