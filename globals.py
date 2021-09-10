@@ -1,4 +1,7 @@
+import time
+
 def init():
+    timestr = time.strftime("%Y%m%d")
 
     # *** Explorer -> Projector
     # *** Collector -> Camera
@@ -19,17 +22,19 @@ def init():
     global DBNAME_MASTER
     DBNAME_MASTER = "capra_projector.db"
     global DBNAME_MASTER_BAK
-    DBNAME_MASTER_BAK = "capra_projector_bak.db"
+    DBNAME_MASTER_BAK = "capra_projector_" + timestr + "_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
-    # DBNAME_CAMERA = "capra_camera.db"
+    DBNAME_CAMERA = "capra_camera.db"
     # TODO: change this
-    DBNAME_CAMERA = "capra_camera_test.db"
+    # DBNAME_CAMERA = "capra_camera_test.db"
+#    DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed.db"
+    # DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed_demo.db"
     global DBNAME_CAMERA_BAK
-    DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
+    DBNAME_CAMERA_BAK = "capra_camera_test_" + timestr + "_bak.db"
 
     # Hall Effect Sensor
     global HALL_EFFECT_PIN
