@@ -4,47 +4,47 @@
 # Allows passing through photos with a smooth fading animation
 
 # TODO
+# TESTING
 # REVIEW
 # REMOVE
-# FIXME
-# HACK
 
 # Imports
 import math
 import os
 import platform
-from classes import sql_controller
 import psutil
 import sys
 import time
-import traceback
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-import PIL
 from PIL import Image
-# from PIL import ImageTk, Image, ImageQt
 
-# from PIL.ImageQt import ImageQt
 if platform.system() == 'Linux':
     from RPi import GPIO
     from lsm303d import LSM303D
+    from classes.led_player import RGB_LED, WHITE_LEDS
 from datetime import datetime
 from enum import IntEnum, unique, auto
 
 from classes.capra_data_types import Picture, Hike
-from classes.sql_controller import SQLController
-from classes.led_player import RGB_LED, WHITE_LEDS
-# from classes.sql_statements import SQLStatements
-from classes.ui_components import *
 from classes.singleton import Singleton
+from classes.sql_controller import SQLController
+from classes.ui_components import *
+
+# from PyQt5.QtCore import pyqt5_enable_new_onexit_scheme
+# Qt.pyqt5_enable_new_onexit_scheme(True)
+# import PIL
+# from PIL import ImageTk, Image, ImageQt
+# from PIL.ImageQt import ImageQt
+# from classes import sql_controller
+# import traceback
 
 # PIN and Settings values are stored here
 import globals as g
 g.init()
 print('projector_slideshow.py running...')
-
 
 # Filewide Statuses
 # ----- Hardware -----
