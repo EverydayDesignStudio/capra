@@ -4,95 +4,66 @@
 
 DROP TABLE IF EXISTS "pictures";
 
--- -- picture_id is here, but not in CAMERA db
--- CREATE TABLE "pictures" (
--- 	"picture_id"		INTEGER PRIMARY KEY UNIQUE,
--- 	"time"				REAL UNIQUE,
--- 	"hike"				INTEGER,
--- 	"index_in_hike"		INTEGER,
--- 	"altitude"			REAL,
--- 	"hue"		REAL,
--- 	"saturation"		REAL,
--- 	"value"		REAL,
--- 	"red"		REAL,
--- 	"green"		REAL,
--- 	"blue"		REAL,
--- 	"camera1"			TEXT,
--- 	"camera2"			TEXT,
--- 	"camera3"			TEXT,
--- 	"camera_landscape" 	TEXT,
--- 	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
--- 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
--- 	FOREIGN KEY("hike") REFERENCES "hikes"("hike_id")
--- );
-
 -- picture_id is here, but not in CAMERA db
 CREATE TABLE "pictures" (
-	"picture_id"		INTEGER PRIMARY KEY UNIQUE,
-	"time"				REAL UNIQUE,
-	"year"				INTEGER,
-	"month"				INTEGER,
-	"day"				INTEGER,
-	"minute"				INTEGER,
-	"dayofweek"				INTEGER,
-	"hike"				INTEGER,
-	"index_in_hike"		INTEGER,
-	"altitude"			REAL,
-	"camera1"			TEXT,
-	"camera1_color_hsv"	TEXT,
-	"camera1_color_rgb"	TEXT,
-	"camera2"			TEXT,
-	"camera2_color_hsv"	TEXT,
-	"camera2_color_rgb"	TEXT,
-	"camera3"			TEXT,
-	"camera3_color_hsv"	TEXT,
-	"camera3_color_rgb"	TEXT,
-	"camera_landscape" 	TEXT,
-	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
-	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY("hike") REFERENCES "hikes"("hike_id")
+	"picture_id"					INTEGER PRIMARY KEY UNIQUE,
+	"time"								REAL UNIQUE,
+	"year"								INTEGER,
+	"month"								INTEGER,
+	"day"									INTEGER,
+	"minute"							INTEGER,		  	-- "[0,1440)" (minute of day)
+	"dayofweek"						INTEGER,
+	"hike"								INTEGER,
+	"index_in_hike"				INTEGER,
+	"time_rank_global"		INTEGER,				--  *UNIQUE* first sorted by minute, then time
+	"altitude"						REAL,
+	"altrank_hike"	  		INTEGER, 				--
+	"altrank_global"	  	INTEGER, 				--  *UNIQUE*
+	"altrank_global_h"		INTEGER, 				--  *UNIQUE*
+	"color_hsv"						TEXT,						-- "H,S,V" (decimal)
+	"color_rgb"						TEXT,						-- "R,G,B" (int)
+	"color_rank_value"		TEXT,						-- possible intermediate value used to sort colors
+	"color_rank_hike"			INTEGER,
+	"color_rank_global"		INTEGER, 				-- *UNIQUE*
+	"color_rank_global_h"	INTEGER, 				-- *UNIQUE* global_h = PREVIOUS_PICTURES + rank_value
+	"colors_count"				INTEGER,				-- # of dominant colors			>> for transfer animation only
+	"colors_rgb"					TEXT,						-- "R1,G1,B1|R2,G2,B2|..."	>> for transfer animation only
+	"colors_conf"					TEXT,						-- confidence value for each dominant color
+	"camera1"							TEXT,
+	"camera2"							TEXT,
+	"camera3"							TEXT,
+	"camera_landscape" 		TEXT,
+	"created_date_time" 	TEXT DEFAULT CURRENT_TIMESTAMP,
+	"updated_date_time" 	TEXT DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY("hike") 	REFERENCES "hikes"("hike_id")
 );
 
 DROP TABLE IF EXISTS "hikes";
 
--- hike_id is not PRIMARY KEY AUTOINCREMENT since it will never be incremented
--- on the projector and in the off case it is, it could get out of sync with camera
--- CREATE TABLE "hikes" (
--- 	"hike_id"			INTEGER UNIQUE,
--- 	"avg_altitude"		REAL,
--- 	"avg_hue" 	REAL,
--- 	"avg_saturation"	REAL,
--- 	"avg_value" 	REAL,
--- 	"start_time"		REAL UNIQUE,
--- 	"end_time"			REAL UNIQUE,
--- 	"pictures"			INTEGER,
--- 	"path" 				TEXT UNIQUE,
--- 	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
--- 	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
--- );
-
 CREATE TABLE "hikes" (
-	"hike_id"			INTEGER UNIQUE,
-	"avg_altitude"		REAL,
-	"avg_color_camera1_hsv"	TEXT,
-	"avg_color_camera2_hsv"	TEXT,
-	"avg_color_camera3_hsv"	TEXT,
-	"start_time"		REAL UNIQUE,
-	"start_year"		INTEGER,
-	"start_month"		INTEGER,
-	"start_day"		INTEGER,
-	"start_minute"		INTEGER,
-	"start_dayofweek"		INTEGER,
-	"end_time"			REAL UNIQUE,
-	"end_year"		INTEGER,
-	"end_month"		INTEGER,
-	"end_day"		INTEGER,
-	"end_minute"		INTEGER,
-	"end_dayofweek"		INTEGER,
-	"pictures"			INTEGER,
-	"path" 				TEXT UNIQUE,
-	"created_date_time" TEXT DEFAULT CURRENT_TIMESTAMP,
-	"updated_date_time" TEXT DEFAULT CURRENT_TIMESTAMP
+	"hike_id"							INTEGER UNIQUE,
+	"avg_altitude"				REAL,
+	"avg_altitude_rank"		INTEGER,				-- *UNIQUE*
+	"start_time"					REAL UNIQUE,
+	"start_year"					INTEGER,
+	"start_month"					INTEGER,
+	"start_day"						INTEGER,
+	"start_minute"				INTEGER,
+	"start_dayofweek"			INTEGER,
+	"end_time"						REAL UNIQUE,
+	"end_year"						INTEGER,
+	"end_month"						INTEGER,
+	"end_day"							INTEGER,
+	"end_minute"					INTEGER,
+	"end_dayofweek"				INTEGER,
+	"color_hsv"						TEXT,
+	"color_rgb"						TEXT,
+	"color_rank_value"		TEXT,
+	"color_rank"					INTEGER,				-- *UNIQUE*
+	"pictures"						INTEGER,
+	"path" 								TEXT UNIQUE,
+	"created_date_time" 	TEXT DEFAULT CURRENT_TIMESTAMP,
+	"updated_date_time" 	TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 DROP TABLE IF EXISTS "state";

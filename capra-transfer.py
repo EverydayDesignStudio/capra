@@ -19,6 +19,7 @@ from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
 from classes.kmeans import get_dominant_colors_for_picture
 from classes.kmeans import get_dominant_color_1D
+from classes.kmeans import hsvToRgb
 import logging
 g.init()
 
@@ -32,12 +33,16 @@ logger = None
 rsync_status = None
 cDBController = None
 pDBController = None
+p2DBController = None
 retry = 0
 RETRY_MAX = 5
 
 checkSum_transferred = 0
 checkSum_rotated = 0
 checkSum_total = 0
+
+colrankHikeCounter = 0
+colrankGlobalCounter = 0
 
 domColors = []
 commits = []        # deferred commits due to concurrency
@@ -50,6 +55,8 @@ DATAPATH = g.DATAPATH_PROJECTOR
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
+DUMMY_IMAGE = DATAPATH + "dummy.jpg"
+PROJECTOR_BAK_DB = DATAPATH + g.DBNAME_MASTER_BAK
 
 class readHallEffectThread(threading.Thread):
     def __init__(self):
@@ -153,6 +160,11 @@ def copy_remote_db():
     return
 
 
+def copy_master_db():
+    subprocess.Popen(['cp', PROJECTOR_DB, PROJECTOR_BAK_DB], stdout=subprocess.PIPE)
+    return
+
+
 def make_backup_remote_db():
     subprocess.Popen(['cp', CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
     return
@@ -160,13 +172,14 @@ def make_backup_remote_db():
 
 # 1. make db connections
 def getDBControllers():
-    global cDBController, pDBController
+    global cDBController, pDBController, p2DBController
 
     # this will be a local db, copied from camera
     cDBController = SQLController(database=CAMERA_DB)
     # master projector db
     pDBController = SQLController(database=PROJECTOR_DB)
-
+    # a copy of aster projector db
+    p2DBController = SQLController(database=PROJECTOR_BAK_DB)
 
 def count_files_in_directory(path, pattern):
     if (not os.path.exists(path)):
@@ -192,19 +205,13 @@ def build_picture_path(hikeID, index, camNum, rotated=False):
 def compute_checksum(currHike):
     global checkSum_total, checkSum_rotated, checkSum_transferred
     checkSum_transferred = count_files_in_directory(build_hike_path(currHike), g.FILENAME)
-    checkSum_rotated = count_files_in_directory(build_hike_path(currHike), g.FILENAME_ROTATED)
+    checkSum_rotated = count_files_in_directory(build_hike_path(currHike), g.FILENAME_FULLSIZE)
     checkSum_total = checkSum_transferred + checkSum_rotated
 
 
-def validate_color(hikeColor):
-    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
-
-
 def check_hike_postprocessing(currHike):
-    hikeColor1 = pDBController.get_hike_average_color(currHike, 1)
-    hikeColor2 = pDBController.get_hike_average_color(currHike, 2)
-    hikeColor3 = pDBController.get_hike_average_color(currHike, 3)
-    return validate_color(hikeColor1) and validate_color(hikeColor2) and validate_color(hikeColor3)
+    hikeColor = pDBController.get_hike_average_color(currHike)
+    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
 
 
 def roundToHundredth(lst):
@@ -213,34 +220,43 @@ def roundToHundredth(lst):
     return lst
 
 
-def dominant_color_wrapper(currHike, row):
+def dominant_color_wrapper(currHike, row, colrankHikeCounter, colrankGlobalCounter):
     index_in_hike = row[3]
     picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
     picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
     picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
     picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
+    colorR = None
+    colorG = None
+    colorB = None
+    colors_hsv_str = ""
+    colors_rgb_str = ""
+    domColor_hsv_str = ""
+    domColor_rgb_str = ""
+    conf_str = ""
 
+#    print("{}: {}".format(index_in_hike, row))
+
+    # TODO: perform duplicate check on
     if (pDBController.get_picture_at_timestamp(row[0]) > 0):
-        color1 = pDBController.get_picture_dominant_color(row[0], 1)
-        color2 = pDBController.get_picture_dominant_color(row[0], 2)
-        color3 = pDBController.get_picture_dominant_color(row[0], 3)
+        color_hsv = pDBController.get_picture_dominant_color(row[0], 'hsv')
+        color_rgb = pDBController.get_picture_dominant_color(row[0], 'rgb')
+        # TODO: get 'colors' and check this value as well
 
     try:
         # round color values to the nearest hundredth
-        if (color1 is None):
-            color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
-            color1 = color_res1.split(", ")
-            roundToHundredth(color1)
+        # TODO: fix the color processing function
+        if (color_hsv is None or color_rgb is None):
+            color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(picPathCam1, picPathCam2, picPathCam3)
+            # color_resCode, color_res1 = get_dominant_colors_for_picture(picPathCam1)
 
-        if (color2 is None):
-            color_resCode, color_res2 = get_dominant_colors_for_picture(picPathCam2)
-            color2 = color_res2.split(", ")
-            roundToHundredth(color2)
-
-        if (color3 is None):
-            color_resCode, color_res3 = get_dominant_colors_for_picture(picPathCam3)
-            color3 = color_res3.split(", ")
-            roundToHundredth(color3)
+            for i in range(color_size):
+                add = ","
+                if (i == color_size-1):
+                    add = ""
+                colors_hsv_str += str(colors_hsv[i][0]) + "," + str(colors_hsv[i][1]) + "," + str(colors_hsv[i][2]) + add
+                colors_rgb_str += str(colors_rgb[i][0]) + "," + str(colors_rgb[i][1]) + "," + str(colors_rgb[i][2]) + add
+                conf_str += str(conf_list[i]) + add
 
     # TODO: check if invalid files are handled correctly
     # TODO: how do we redo failed rows?
@@ -252,30 +268,41 @@ def dominant_color_wrapper(currHike, row):
 
     picDatetime = datetime.datetime.fromtimestamp(row[0])
 
-    # (time, year, month, day, minute, dayofweek,
-    #   hike, index_in_hike, altitude,
-    #   camera1, camera1_color_hsv, camera1_color_rgb,
-    #   camera2, camera2_color_hsv, camera2_color_rgb,
-    #   camera3, camera3_color_hsv, camera3_color_rgb, camera_landscape)
+    if (colrankHikeCounter % 100 == 0):
+        print("[{}]\t## Hike {} checkpoint at {}".format(timenow(), currHike, colrankHikeCounter))
+        logger.info("[{}]\t## Hike {} checkpoint at {}".format(timenow(), currHike, colrankHikeCounter))
+
+    domColor_hsv_str = "{},{},{}".format(colors_hsv[0][0], colors_hsv[0][1], colors_hsv[0][2])
+    domColor_rgb_str = "{},{},{}".format(colors_rgb[0][0], colors_rgb[0][1], colors_rgb[0][2])
+
+    #     time,
+    #     year, month, day, minute, dayofweek,
+    #     hike, index_in_hike, altitude, altrank_hike, altrank_global,      # TODO: implement altitude rank
+    #     color_hsv, color_rgb, colrank_value, colrank_hike, colrank_global,
+    #     colors_count, colors_rgb, colors_conf,
+    #     camera1, camera2, camera3, camera_landscape
 
     # ** 0 is monday in dayofweek
     # ** camera_landscape points to the path to cam2 pic
-    commit = (row[0], picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
-                currHike, index_in_hike, row[1],
-                picPathCam1, "({},{},{})".format(color1[0], color1[1], color1[2]), "({},{},{})".format(color1[3], color1[4], color1[5]),
-                picPathCam2, "({},{},{})".format(color2[0], color2[1], color2[2]), "({},{},{})".format(color2[3], color2[4], color2[5]),
-                picPathCam3, "({},{},{})".format(color3[0], color3[1], color3[2]), "({},{},{})".format(color3[3], color3[4], color3[5]), picPathCam2f)
+    commit = (row[0],
+                picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
+                currHike, index_in_hike, row[1], colrankHikeCounter, colrankGlobalCounter,
+                domColor_hsv_str, domColor_rgb_str, -1, colrankHikeCounter, colrankGlobalCounter,
+                color_size, colors_hsv_str, colors_rgb_str,
+                picPathCam1, picPathCam2, picPathCam3, picPathCam2f)
+
+    # *** Could create a secondary DB to save transactions if Capra fails too often during transfer
 
     # TODO: pass information needed for the transfer animation as a JSON file
 
-    return color1, color2, color3, commit
+    return [colors_hsv[0][0], colors_hsv[0][1], colors_hsv[0][2]], commit
 
 
 def start_transfer():
-    global cDBController, pDBController, rsync_status, retry, hall_effect
-    global checkSum_transferred, checkSum_rotated, checkSum_total
+    global cDBController, pDBController, p2DBController, rsync_status, retry, hall_effect
+    global checkSum_transferred, checkSum_rotated, checkSum_total, colrankHikeCounter, colrankGlobalCounter
     global logger
-    global domColors, commits, threads, threadPool
+    global domColors, commits, threads, threadPool, STOP
 
     latest_master_hikeID = pDBController.get_last_hike_id()
     latest_remote_hikeID = cDBController.get_last_hike_id()
@@ -286,6 +313,8 @@ def start_transfer():
 
     currHike = 1
     checkSum = 0
+
+    colrankGlobalCounter = 0
 
     # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
@@ -309,6 +338,8 @@ def start_transfer():
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
         expectedCheckSumTotal = currExpectedHikeSize * 4
+
+        colrankHikeCounter = 0
 
         # 1. skip empty hikes
         if (currExpectedHikeSize == 0):
@@ -349,17 +380,13 @@ def start_transfer():
 
                 print("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
                 logger.info("[{}]   Resume transfer on Hike {}: {} out of {} files".format(timenow(), currHike, checkSum_transferred, str(currExpectedHikeSize * 3)))
-                # TRANSFER
 
-                # POST-PROCESSING
                 avgAlt = 0
                 startTime = 9999999999
                 endTime = -1
 
                 # for colors
-                domColorsCam1 = []
-                domColorsCam2 = []
-                domColorsCam3 = []
+                domColorsHike_hsv_hsv = []
 
                 threads = []
                 threadPool = ThreadPoolExecutor(max_workers=5)
@@ -380,6 +407,9 @@ def start_transfer():
                         print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                         logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                         return
+                    colrankHikeCounter += 1
+                    colrankGlobalCounter += 1
+
 
                     # update timestamps
                     if (row[0] < startTime):
@@ -409,11 +439,13 @@ def start_transfer():
                             or os.path.exists(picPathCam2)
                             or os.path.exists(picPathCam3)):
 
-                            for tmpfile in glob.glob(tmpPath[:-5] + '*'):
+                            tmpPath = picPathCam1[:-5]
+                            for tmpfile in glob.glob(tmpPath + '*'):
                                 os.remove(tmpfile)
 
                         isNew = True
-                        rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '--remove-source-files', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
+                        # '--remove-source-files',
+                        rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + src, dest], stdout=subprocess.PIPE)
                         rsync_status.wait()
 
                         # report if rsync is failed
@@ -421,68 +453,87 @@ def start_transfer():
                             print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
                             logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
 
+                    img = None
+                    img_res = None
                     # resize and rotate for newly added pictures
                     #    1. make a copy of pic2 as pic2'f'
                     if (not os.path.exists(picPathCam2f)):
-                        Image.open(picPathCam2).copy().save(picPathCam2f)
+                        img = Image.open(picPathCam2)
+                        img_res = img.copy()
+                        img_res.save(picPathCam2f)
 
                     #    2. resize to 427x720 and rotate 90 deg
                     if (isNew):
-                        Image.open(picPathCam1).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
-                        Image.open(picPathCam2).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
-                        Image.open(picPathCam3).resize((427, 720), Image.ANTIALIAS).rotate(90, expand=True).save(picPathCam1)
+                        img = Image.open(picPathCam1)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                        img_res.save(picPathCam1)
+
+                        img = Image.open(picPathCam2)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                        img_res.save(picPathCam2)
+
+                        if (os.path.exists(picPathCam3)):
+                            img = Image.open(picPathCam3)
+                            img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(90, expand=True)
+                            img_res.save(picPathCam3)
+                        else:
+                            img = Image.open(BLACK_IMAGE)
+                            img_res = img.copy().rotate(90, expand=True)
+                            img_res.save(picPathCam3)
 
                     # concurrently extract the dominant color
                     #    1. calculate dominant HSV/RGB colors
                     #    2. update path to each picture for camera 1, 2, 3
-                    threads.append(threadPool.submit(dominant_color_wrapper, currHike, row))
+                    threads.append(threadPool.submit(dominant_color_wrapper, currHike, row, colrankHikeCounter, colrankGlobalCounter))
 
                     i += 1
 
                 # wait for threads to finish
                 for thread in futures.as_completed(threads):
-                    color1, color2, color3, commit = thread.result()
-                    domColorsCam1.append([color1[0], color1[1], color1[2]])
-                    domColorsCam2.append([color2[0], color2[1], color2[2]])
-                    domColorsCam3.append([color3[0], color3[1], color3[2]])
+                    color_hsv, commit = thread.result()
+                    domColorsHike_hsv.append(color_hsv)
                     commits.append(commit)
                 threadPool.shutdown(wait=True)
 
                 # commit changes
                 #  ** sqlite does not support concurrent write options
+                print(".. Pictures for hike {} start committing..".format(currHike))
                 for commit in commits:
                     pDBController.upsert_picture(*commit)
 
                 # make a row for the hike table with postprocessed values
                 compute_checksum(currHike)
                 avgAlt /= numValidRows
-                hikeDomCol1 = []
-                hikeDomCol2 = []
-                hikeDomCol3 = []
+                domColorHike_hsv = []
                 if (checkSum_total / 4 > g.COLOR_CLUSTER):
-                    hikeDomCol1 = get_dominant_color_1D(domColorsCam1, g.COLOR_CLUSTER)
-                    hikeDomCol2 = get_dominant_color_1D(domColorsCam2, g.COLOR_CLUSTER)
-                    hikeDomCol3 = get_dominant_color_1D(domColorsCam3, g.COLOR_CLUSTER)
-                    roundToHundredth(hikeDomCol1)
-                    roundToHundredth(hikeDomCol2)
-                    roundToHundredth(hikeDomCol3)
+                    domColorHike_hsv = get_dominant_color_1D(domColorsHike_hsv, g.COLOR_CLUSTER)
+                    roundToHundredth(domColorHike_hsv)
+
+                # TODO: color ranking
+                # https://github.com/EverydayDesignStudio/capra-color/blob/master/generate_colors.py
+
+                # TODO: altitude ranking
 
                 hikeStartDatetime = datetime.datetime.fromtimestamp(startTime)
                 hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
 
-                # (hike_id, avg_altitude, \
-                #     avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv, \
-                #     start_time, start_year, start_month, start_day, start_minute, start_dayofweek \
-                #     end_time, end_year, end_month, end_day, end_minute, end_dayofweek \
-                #     pictures, path)
+                domColorHike_rgb = hsvToRgb(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
+                domColorHike_hsv_str = "{},{},{}".format(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
+                domColorHike_rgb_str = "{},{},{}".format(domColorHike_rgb[0], domColorHike_rgb[1], domColorHike_rgb[2])
+
+
+                #     hike_id, avg_altitude,
+                #     start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
+                #     end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
+                #     color_hsv, color_rgb, color_rank_value, color_rank,               # TODO: calculate color rank
+                #     pictures, path
+
                 print("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
                 logger.info("[{}] @@ Writing a row to hikes table for Hike {} ...".format(timenow(), currHike))
                 pDBController.upsert_hike(currHike, avgAlt,
-                                            "({},{},{})".format(hikeDomCol1[0], hikeDomCol1[1], hikeDomCol1[2]),
-                                            "({},{},{})".format(hikeDomCol2[0], hikeDomCol2[1], hikeDomCol2[2]),
-                                            "({},{},{})".format(hikeDomCol3[0], hikeDomCol3[1], hikeDomCol3[2]),
                                             startTime, hikeStartDatetime.year, hikeStartDatetime.month, hikeStartDatetime.day, hikeStartDatetime.hour * 60 + hikeStartDatetime.minute, hikeStartDatetime.weekday(),
                                             endTime, hikeEndDatetime.year, hikeEndDatetime.month, hikeEndDatetime.day, hikeEndDatetime.hour * 60 + hikeEndDatetime.minute, hikeEndDatetime.weekday(),
+                                            domColorHike_hsv_str, domColorHike_rgb_str, -1, currHike,
                                             numValidRows, dest)
 
                 # suppose hike is finished, now do the resizing
@@ -539,6 +590,9 @@ def start_transfer():
 
         currHike += 1
 
+    # TODO: global color ranking
+    # TODO: global altitude ranking
+
     print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
     logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
 
@@ -560,6 +614,9 @@ while True:
                 g.flag_start_transfer = False
                 HALL_EFFECT_ON.clear()
                 continue
+
+            # copy the current snapshot of master DB for checking references
+            copy_master_db()
 
             start_transfer()
             # if transfer is successfully finished pause running until camera is dismounted and re-mounted

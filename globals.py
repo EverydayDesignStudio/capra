@@ -7,7 +7,7 @@ def init():
     # --------------------------------------------------------------------------
 
     # IP Addresses
-    # TODO: determine statis IP addrs for the camera and the projector
+    # TODO: change for deployment - determine static IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
     IP_ADDR_PROJECTOR = '192.168.123.193'
@@ -19,16 +19,18 @@ def init():
     # IP_ADDR_CAMERA = '192.168.1.100'
 
     # Databases
+    # TODO: change for deployment
     global DBNAME_MASTER
-    # DBNAME_MASTER = "capra_projector.db"
     DBNAME_MASTER = 'capra_projector_jun2021_min_test_0708.db'
+    global DBNAME_MASTER_BAK
+    DBNAME_MASTER_BAK = "capra_projector_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
     # DBNAME_CAMERA = "capra_camera.db"
-    # TODO: change this
+    # TODO: change for deployment
     DBNAME_CAMERA = "capra_camera_test.db"
     global DBNAME_CAMERA_BAK
     DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
@@ -38,7 +40,6 @@ def init():
     DATAPATH_CAMERA = '/home/pi/capra-storage/'
 
     global DATAPATH_PROJECTOR
-    # TODO: update existing projector path by adding an extra slash '/'
     # DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
     DATAPATH_PROJECTOR = '/media/pi/capra-hd3/jordan/'
 
@@ -54,6 +55,22 @@ def init():
     global PATH_TRANSFER_ANIMATION_DB
     PATH_TRANSFER_ANIMATION_DB = DATAPATH_PROJECTOR + DBNAME_TRANSFER_ANIMATION
 
+    # Regex for picture names
+    global FILENAME
+    global FILENAME_ROTATED
+    FILENAME = "[!\.]*_cam[1-3].jpg"
+    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
+
+    # Hall Effect sensor statuses
+    global HALL_EFFECT
+    global PREV_HALL_VALUE
+    HALL_EFFECT = None
+    PREV_HALL_VALUE = False
+    global HALL_BOUNCE_LIMIT
+    global HALL_BOUNCE_TIMER
+    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
+    HALL_BOUNCE_TIMER = None
+
     # Flags
     global flag_start_transfer
     flag_start_transfer = False
@@ -63,7 +80,7 @@ def init():
 
     # Color detection
     global COLOR_CLUSTER
-    COLOR_CLUSTER = 5
+    COLOR_CLUSTER = 10
 
     global COLOR_DIMX
     COLOR_DIMX = 160
@@ -128,21 +145,6 @@ def init():
     RGB2_GREEN = 8          # BOARD - 24
     global RGB2_BLUE
     RGB2_BLUE = 11          # BOARD - 23
-
-    # Projector Status and Settings
-    global HALL_EFFECT
-    global PREV_HALL_VALUE
-    HALL_EFFECT = None
-    PREV_HALL_VALUE = False
-    global HALL_BOUNCE_LIMIT
-    global HALL_BOUNCE_TIMER
-    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
-    HALL_BOUNCE_TIMER = None
-
-    global FILENAME
-    global FILENAME_ROTATED
-    FILENAME = "[!\.]*_cam[1-3].jpg"
-    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
 
     # Camera
     # --------------------------------------------------------------------------

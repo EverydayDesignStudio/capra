@@ -14,6 +14,7 @@ class SQLController:
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
         self.directory = directory
+        self.connection.row_factory = sqlite3.Row
         self.statements = SQLStatements()
 
     # --------------------------------------------------------------------------
@@ -23,7 +24,6 @@ class SQLController:
     # Private functions
     def _execute_query(self, query) -> Picture:
         '''Returns the first (row) `Picture` from a given query'''
-        self.connection.row_factory = sqlite3.Row
         cursor = self.connection.cursor()
         cursor.execute(query)
         all_rows = cursor.fetchall()
@@ -802,9 +802,7 @@ class SQLController:
     def upsert_hike(self,
                         hike_id: int,
                         avg_altitude: float,
-                        avg_color_camera1_hsv: str,
-                        avg_color_camera2_hsv: str,
-                        avg_color_camera3_hsv: str,
+                        avg_altitude_rank: int,
                         start_time: float,
                         start_year: int,
                         start_month: int,
@@ -817,14 +815,19 @@ class SQLController:
                         end_day: int,
                         end_minute: int,
                         end_dayofweek: int,
+                        color_hsv: str,
+                        color_rgb: str,
+                        color_rank_value: str,
+                        color_rank: int,
                         pictures: int,
-                        path: str):
+                        path: str,
+                        created_date_time: str):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude,
-                                                        avg_color_camera1_hsv, avg_color_camera2_hsv, avg_color_camera3_hsv,
+        cursor.execute(self.statements.upsert_hike_row(hike_id, avg_altitude, avg_altitude_rank,
                                                         start_time, start_year, start_month, start_day, start_minute, start_dayofweek,
                                                         end_time, end_year, end_month, end_day, end_minute, end_dayofweek,
-                                                        pictures, path))
+                                                        color_hsv, color_rgb, color_rank_value, color_rank,
+                                                        pictures, path, created_date_time))
         self.connection.commit()
 
     def upsert_picture(self,
@@ -836,24 +839,31 @@ class SQLController:
                             dayofweek: int,
                             hike: int,
                             index_in_hike: int,
+                            time_rank_global: int,
                             altitude: float,
+                            altrank_hike: int,
+                            altrank_global: int,
+                            altrank_global_h: int,
+                            color_hsv: str,
+                            color_rgb: str,
+                            color_rank_value: str,
+                            color_rank_hike: int,
+                            color_rank_global: int,
+                            color_rank_global_h: int,
+                            colors_count: int,
+                            colors_rgb: str,
+                            colors_conf: str,
                             camera1: str,
-                            camera1_color_hsv: str,
-                            camera1_color_rgb: str,
                             camera2: str,
-                            camera2_color_hsv: str,
-                            camera2_color_rgb: str,
                             camera3: str,
-                            camera3_color_hsv: str,
-                            camera3_color_rgb: str,
-                            camera_landscape: str):
+                            camera_landscape: str,
+                            created_date_time: str):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.upsert_picture_row(time, year, month, day, minute, dayofweek,
-                                                            hike, index_in_hike, altitude,
-                                                            camera1, camera1_color_hsv, camera1_color_rgb,
-                                                            camera2, camera2_color_hsv, camera2_color_rgb,
-                                                            camera3, camera3_color_hsv, camera3_color_rgb,
-                                                            camera_landscape))
+                                                            hike, index_in_hike, time_rank_global, altitude, altrank_hike, altrank_global, altrank_global_h,
+                                                            color_hsv, color_rgb, color_rank_value, color_rank_hike, color_rank_global, color_rank_global_h,
+                                                            colors_count, colors_rgb, colors_conf,
+                                                            camera1, camera2, camera3, camera_landscape, created_date_time))
         self.connection.commit()
 
     def get_size_of_hike(self, hike_id: int) -> int:
@@ -867,7 +877,7 @@ class SQLController:
 
     def get_hike_average_color(self, hike_id: int, camNum: int = 0):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id, camNum=camNum))
+        cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
         res = cursor.fetchone()
 
         if (res is None or res[0] is None):
@@ -883,23 +893,21 @@ class SQLController:
             	ret.append(float(i))
             return ret
 
-    # returns an array that represents the dominant color in HSV value: [float, float, float]
-    def get_picture_dominant_color(self, time: float, camNum: int = 0):
+    # returns an array that represents the dominant color in a specific format: [float, float, float]
+    # format = ('hsv'|'HSV') or ('rgb'|'RGB')
+    def get_picture_dominant_color(self, time: float, format: str):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time, camNum=camNum))
+        cursor.execute(self.statements.get_dominant_color_for_picture_of_given_timestamp(time=time, format=format))
         res = cursor.fetchone()
 
         if (res is None or res[0] is None):
             return None
+        if (res[0] == -1):
+            return -1
 
         ret = []
-
-        hsv = res[0].strip("()").split(',')
-        for i in hsv:
-            ret.append(float(i))
-
-        rgb = res[0].strip("()").split(',')
-        for i in rgb:
+        col = res[0].strip("()").split(',')
+        for i in col:
             ret.append(float(i))
 
         return ret
@@ -910,8 +918,153 @@ class SQLController:
         res = cursor.fetchone()
         return res[0]
 
+    def get_hikerow_by_index(self, hike_id: int, index_in_hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_hikerow_by_index(hike_id=hike_id, index_in_hike=index_in_hike))
+        res = cursor.fetchone()
+        return res
+
     def get_hike_path(self, hike_id: int):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_path(hike_id))
         row = cursor.fetchone()
-        return row
+        return row[0]
+
+    def get_hike_created_timestamp(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_created_date_time(hike_id))
+        row = cursor.fetchone()
+        return row[0]
+
+
+    ### Global rankings for pictures
+
+    def get_pictures_global_ranking_raw_data(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_time_altitude_domcol())
+        res = cursor.fetchall()
+        return res
+
+    def update_pictures_global_TimeRank(self, timestamp: float, timeRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalTimeRank(timestamp, timeRank))
+        self.connection.commit()
+
+    def update_pictures_global_AltRank(self, timestamp: float, altRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalAltRank(timestamp, altRank))
+        self.connection.commit()
+
+    def update_pictures_global_ColRank(self, timestamp: float, colRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_globalColRank(timestamp, colRank))
+        self.connection.commit()
+
+
+    ### Gloval rankings for hikes
+
+    def get_hikes_global_ranking_raw_data(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_id_altitude_domcol())
+        res = cursor.fetchall()
+        return res
+
+    # avg_altrank_global
+    def update_hikes_global_AltRank(self, hike_id: int, altRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_globalAltRank(hike_id, altRank))
+        self.connection.commit()
+
+    # color_rank_global
+    def update_hikes_global_ColRank(self, hike_id: int, colRank: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_globalColRank(hike_id, colRank))
+        self.connection.commit()
+
+    # altrank_global_h
+    def get_hikes_by_avg_altrank(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_by_avg_altrank())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_of_specific_hike_by_altrank(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_altrank(hike))
+        rows = cursor.fetchall()
+        return rows
+
+    def update_pictures_altrank_global_h(self, rankIndex: int, picture_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_altrank_global_h(rankIndex, picture_id))
+        self.connection.commit()
+
+    # color_rank_global_h
+    def get_hikes_by_color_rank(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_by_color_rank())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_of_specific_hike_by_color_rank(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_specific_hike_by_color_rank(hike))
+        rows = cursor.fetchall()
+        return rows
+
+    def update_pictures_color_rank_global_h(self, rankIndex: int, picture_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_pictures_color_rank_global_h(rankIndex, picture_id))
+        self.connection.commit()
+
+
+    ### Color spectrum
+    def get_pictures_rgb_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_hike(hike))
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_rgb_global(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_global())
+        res = cursor.fetchall()
+        return res
+
+    def get_pictures_rgb_global_h(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_rgb_global_h())
+        res = cursor.fetchall()
+        return res
+
+    def get_hikes_rgb_global(self):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hikes_rgb_global())
+        res = cursor.fetchall()
+        return res
+
+
+    ### Zero-byte picture filtering
+    def get_pictures_count_of_selected_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_count_of_selected_hike(hike))
+        res = cursor.fetchone()[0]
+        return res
+
+    def get_pictures_of_selected_hike(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_pictures_of_selected_hike(hike))
+        res = cursor.fetchall()
+        return res
+
+    def delete_picture_of_given_timestamp(self, timestamp: float, delayedCommit: bool = False):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.delete_picture_of_given_timestamp(timestamp))
+        if (not delayedCommit):
+            self.connection.commit()
+
+    def update_hikes_total_picture_count_of_given_hike(self, picCount: int, hike: int, delayedCommit: bool = False):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.update_hikes_total_picture_count_of_given_hike(picCount, hike))
+        if (not delayedCommit):
+            self.connection.commit()
