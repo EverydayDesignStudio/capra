@@ -674,9 +674,8 @@ class MainWindow(QMainWindow):
         self.blendCount = 0
 
         self.loadSavedState()  # Loads the state of last picture, mode, and scope
-        self.setupDB()  # Mac or Windows shows the database dialog
-        self.preloadUIData()
-        self.setupWindowLayout()
+        self.setupDB()  # Mac/Windows shows the database dialog
+        self.setupWindowLayout(self.picture)
         self.setupUI()
         self.setupSoftwareThreads()
 
@@ -696,10 +695,10 @@ class MainWindow(QMainWindow):
 
     def setupDB(self):
         '''Initializes the database connection.\n
-        If on Mac or Windows gives dialog box to select database,
+        If on Mac/Windows give dialog box to select database,
         otherwise it will use the global defined location for the database'''
 
-        # Mac or Windows: select the location
+        # Mac/Windows: select the location
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
             filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
             self.database = filename[0]
@@ -715,7 +714,7 @@ class MainWindow(QMainWindow):
 
         self.scrollspeed = 1
 
-    def preloadUIData(self):
+        # TESTING - comment out to speed up program load time
         self.uiData = self.sql_controller.preload_ui_data()
         self.preload = True
 
@@ -746,35 +745,25 @@ class MainWindow(QMainWindow):
         pagelayout.addLayout(self.stacklayout)
 
         # Landscape view
-        # Sets the initial picture to the first selected image from the DB
-        self.pictureLandscape = UIImage(self.picture.cameraf)
-        self.stacklayout.addWidget(self.pictureLandscape)
+        # Sets the initial picture to be loaded
+        self.pictureLandscape = UIImage(picture.cameraf)
+        self.stacklayout.addWidget(self.pictureLandscape)  # Add landscape UIImage to stack layout
 
         # Vertical view
         verticallayout = QHBoxLayout()
         verticallayout.setContentsMargins(0, 0, 0, 0)
         verticallayout.setSpacing(0)
-        # TODO - this will eventually be images from DB, but they need to be
-        # the proper size or else it'll mess up the size of the window
-        self.pictureVertical1 = UIImage(self.picture.camera1)
-        self.pictureVertical2 = UIImage(self.picture.camera2)
-        self.pictureVertical3 = UIImage(self.picture.camera3)
 
+        self.pictureVertical1 = UIImage(picture.camera1)
+        self.pictureVertical2 = UIImage(picture.camera2)
+        self.pictureVertical3 = UIImage(picture.camera3)
         verticallayout.addWidget(self.pictureVertical3)
         verticallayout.addWidget(self.pictureVertical2)
         verticallayout.addWidget(self.pictureVertical1)
 
-        # verticallayout.addWidget(UIImage(self.picture.camera1))
-        # verticallayout.addWidget(UIImage(self.picture.camera2))
-        # verticallayout.addWidget(UIImage(self.picture.camera3))
-
-        verticalWidget = QWidget()
-        verticalWidget.setLayout(verticallayout)
-        self.stacklayout.addWidget(verticalWidget)
-
-        # pagelayout2 = QVBoxLayout()
-        # pagelayout2.setContentsMargins(0, 0, 0, 0)
-        # pagelayout2.setAlignment(Qt.AlignBottom)
+        verticalImages = QWidget()
+        verticalImages.setLayout(verticallayout)
+        self.stacklayout.addWidget(verticalImages)  # Add vertical QWidget of UIImages to stack layout
 
         # Add central widget
         centralWidget = QWidget()
@@ -1230,45 +1219,46 @@ class MainWindow(QMainWindow):
             self.altitudegraph.trigger_refresh(altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
 
         else:
-            print('directly call SQL for the ui data')
-            if scope == StatusScope.HIKE:
-                rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
-                if mode == StatusMode.TIME:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
-                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
-                    rank_colorbar_altgraph = rank_timebar
-                    self.timebar.trigger_refresh(rank_timebar, True)
-                elif mode == StatusMode.ALTITUDE:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
-                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
-                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
-                elif mode == StatusMode.COLOR:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
-                    self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
-                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
-            elif scope == StatusScope.GLOBAL:
-                rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
-                if mode == StatusMode.TIME:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
-                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
-                    rank_colorbar_altgraph = rank_timebar
-                    self.timebar.trigger_refresh(rank_timebar, True)
-                elif mode == StatusMode.ALTITUDE:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
-                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
-                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
-                elif mode == StatusMode.COLOR:
-                    self.altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
-                    self.colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
-                    rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
+            pass
+            # print('directly call SQL for the ui data')
+            # if scope == StatusScope.HIKE:
+            #     rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+            #     if mode == StatusMode.TIME:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+            #         colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+            #         rank_colorbar_altgraph = rank_timebar
+            #         self.timebar.trigger_refresh(True, len(colorlist), rank_timebar)
+            #     elif mode == StatusMode.ALTITUDE:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('alt', self.picture)
+            #         colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('alt', self.picture)
+            #         rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
+            #         self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
+            #     elif mode == StatusMode.COLOR:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('color', self.picture)
+            #         colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('color', self.picture)
+            #         rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
+            #         self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
+            # elif scope == StatusScope.GLOBAL:
+            #     rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+            #     if mode == StatusMode.TIME:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('time')
+            #         colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('time')
+            #         rank_colorbar_altgraph = rank_timebar
+            #         self.timebar.trigger_refresh(True, len(colorlist), rank_timebar)
+            #     elif mode == StatusMode.ALTITUDE:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
+            #         colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('alt')
+            #         rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
+            #         self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
+            #     elif mode == StatusMode.COLOR:
+            #         altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('color')
+            #         colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
+            #         rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
+            #         self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
 
-            self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
-            self.colorbar.trigger_refresh(self.colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
-            self.altitudegraph.trigger_refresh(self.altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
+            # # self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+            # self.colorbar.trigger_refresh(True, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+            # self.altitudegraph.trigger_refresh(True, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
 
     # Hardware Button Presses
     # -------------------------------------------------------------------------
@@ -1463,7 +1453,12 @@ class MainWindow(QMainWindow):
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
 
-if __name__ == '__main__':
+# This is to make it not crash on closing, however still throws: 39120 segmentation fault
+app = None
+
+
+def main():
+    global app
     app = QApplication(sys.argv)
 
     # screen = app.primaryScreen()
@@ -1482,3 +1477,7 @@ if __name__ == '__main__':
         window.show()
 
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
