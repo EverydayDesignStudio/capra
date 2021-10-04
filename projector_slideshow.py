@@ -716,8 +716,22 @@ class MainWindow(QMainWindow):
         self.uiData = self.sql_controller.preload_ui_data()
         self.preload = True
 
-    # Setup the window size, title, and container layout
-    def setupWindowLayout(self):
+    def setupMenuBar(self):
+        menubar = self.menuBar()
+        # filemenu = menubar.addMenu('File')
+        helpmenu = menubar.addMenu('Help')
+
+        # File
+        # exitaction = filemenu.addAction("Change Database")
+        # exitaction.triggered.connect(self.print_change)
+
+        # Help
+        pathhelp = helpmenu.addAction("Toggle Help Menu")
+        pathhelp.triggered.connect(self.control_help_menu)
+
+    def setupWindowLayout(self, picture: Picture):
+        '''Setup the window size, title, and container layout'''
+
         self.setWindowTitle("Capra Explorer Slideshow")
         self.setGeometry(0, 50, 1280, 720)
         # self.setStyleSheet("background-color: black;")
@@ -1333,6 +1347,10 @@ class MainWindow(QMainWindow):
             self.control_speed_faster()
         elif event.key() == Qt.Key_Minus:
             self.control_speed_slower()
+        # Help Menu
+        elif event.key() == Qt.Key_H:
+            print('Help menu')
+            self.control_help_menu()
 
         # Testing
         elif event.key() == Qt.Key_F:
@@ -1422,6 +1440,10 @@ class MainWindow(QMainWindow):
             self.scrollspeed = 256
         self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
         # print(self.scrollspeed)
+
+    def control_help_menu(self):
+        # self.helpMenu.toggleShowHide()
+        self.helpMenu.toggleShowHideWithFade()
 
     # Testing
     # -------------------------------------------------------------------------

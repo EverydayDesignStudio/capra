@@ -311,6 +311,73 @@ class UIModeOverlay(QLabel):
         # self.anim.start()
 
 
+# UI Fullscreen Components
+# -----------------------------------------------------------------------------
+class UIHelpMenu(QWidget):
+    '''Help Menu overlay that shows Mac/Windows controls
+    Remember to pass in MainWindow as a parameter'''
+    def __init__(self, window: QMainWindow):
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(Qt.AlignCenter)
+        self.setLayout(self.layout)
+
+        helpImage = UIImage('assets/help-menu@2x.png')
+        self.layout.addWidget(helpImage)
+
+        self._opacity = QGraphicsOpacityEffect()
+        self._opacity.setOpacity(0.0)
+        helpImage.setGraphicsEffect(self._opacity)
+
+        self._setupHideAnimation()
+        self._setupShowAnimation()
+
+        self._status = 0
+
+    def _setupHideAnimation(self):
+        anim1 = QPropertyAnimation(self._opacity, b"opacity")
+        anim1.setStartValue(1)  # opaque
+        anim1.setEndValue(0)  # transparent
+        anim1.setDuration(500)
+
+        self.animGroupFadeOut = QParallelAnimationGroup(self)
+        self.animGroupFadeOut.addAnimation(anim1)
+
+    def _setupShowAnimation(self):
+        anim1 = QPropertyAnimation(self._opacity, b"opacity")
+        anim1.setStartValue(0)  # opaque
+        anim1.setEndValue(1)  # transparent
+        anim1.setDuration(0)
+
+        self.animGroupFadeIn = QParallelAnimationGroup(self)
+        self.animGroupFadeIn.addAnimation(anim1)
+
+    def fadeOut(self):
+        self.animGroupFadeOut.start()
+
+    def fadeIn(self):
+        self.animGroupFadeOut.stop()
+        self.animGroupFadeIn.start()
+
+    def toggleShowHide(self):
+        self._opacity.setOpacity(1.0)
+        self._status = (self._status + 1) % 2
+
+        if self._status:
+            self.show()
+        else:
+            self.hide()
+
+    def toggleShowHideWithFade(self):
+        self._status = (self._status + 1) % 2
+
+        if self._status:
+            self.fadeIn()
+        else:
+            self.fadeOut()
 # UI Time, Color, Altitude Components
 # -----------------------------------------------------------------------------
 class UIContainer(QWidget):
