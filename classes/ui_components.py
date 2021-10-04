@@ -3,18 +3,10 @@
 # Various helper UI classes for easier development of PyQt5 applications
 
 # Imports
-# from projector_slideshow import *
-
 from sqlite3.dbapi2 import Error
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PIL import Image, ImageQt  # Pillow image functions
-# from PIL.ImageQt import ImageQt
-
-import math
-import sys
-import time
 
 # TODO - add rotatable widget container
 
@@ -22,10 +14,13 @@ import time
 # -----------------------------------------------------------------------------
 
 
+# TODO - figure out how to merge these two widget types together
 class UIWidget(QWidget):
-    """Super class for universal animations of QWidgets"""
+    """Super class for QWidgets that will be placed inside other widgets, not directly on MainWindow"""
     def __init__(self) -> None:
         super().__init__()
+    # def __init__(self, window):
+    #     super().__init__(window)
 
         self.anim = QPropertyAnimation()
         self.fadeEffect = QGraphicsOpacityEffect()
@@ -42,10 +37,12 @@ class UIWidget(QWidget):
         self.update()
 
     def show(self):
+        '''UIWdiget superclass method'''
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
 
     def myHide(self):
+        '''UIWdiget superclass method'''
         self.fadeEffect.setOpacity(0.0)
 
     # def setCanRepaint(self):
@@ -53,6 +50,42 @@ class UIWidget(QWidget):
 
     # def setCanNotRepain(self):
     #     self.canRepaint = False
+
+
+class UIWindowWidget(QWidget):
+    """Super class for widgets that are directly fullscreen on the MainWindow, provides universal animations"""
+    def __init__(self, window):
+        super().__init__(window)
+
+        self.anim = QPropertyAnimation()
+        self.fadeEffect = QGraphicsOpacityEffect()
+        self.fadeEffect.setOpacity(0.0)
+        self.setGraphicsEffect(self.fadeEffect)
+        # self.canRepaint = True
+
+        # self._opacity = QGraphicsOpacityEffect()
+        # helpImage.setGraphicsEffect(self._opacity)
+
+    def fadeOut(self, duration: int):
+        """Fades out the label over passed in duration (milliseconds)"""
+        self.setGraphicsEffect(self.fadeEffect)
+        self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(duration)
+        self.anim.start()
+        self.update()
+
+    def myShow(self):
+        self.show()
+        self.anim.stop()
+        self.fadeEffect.setOpacity(1.0)
+
+    def opacityHide(self):
+        '''UIWindowWidget superclass method'''
+        self.fadeEffect.setOpacity(0.0)
+        self.setGraphicsEffect(self.fadeEffect)
+        self.hide()
 
 
 class UILabel(QLabel):
@@ -78,6 +111,10 @@ class UILabel(QLabel):
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
 
+    def opacityHide(self):
+        self.anim.stop()
+        self.fadeEffect.setOpacity(0.0)
+
 
 # UI Text & Image Components
 # -----------------------------------------------------------------------------
@@ -95,7 +132,7 @@ class UILabelTop(UILabel):
         self.resize(1280, 200)
         # self.setAlignment(Qt.AlignLeft)
         self.setAlignment(alignment)
-        self.setMargin(65)
+        self.setMargin(35)
         # self.setIndent(100)
 
         self.setFont(QFont('Atlas Grotesk', 24, 400))
@@ -112,7 +149,7 @@ class UILabelTopCenter(QWidget):
         # super(QWidget, self).__init__(window, *args, **kwargs)
         super().__init__(window, *args, **kwargs)
 
-        self.resize(1280, 150)
+        self.resize(1280, 110)
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignHCenter)
         # layout.setAlignment(Qt.AlignTop)
@@ -160,6 +197,11 @@ class UILabelTopCenter(QWidget):
         self.animGroupFadeOut.stop()
         self._label1_opacity.setOpacity(1.0)
         self._label2_opacity.setOpacity(1.0)
+
+    def opacityHide(self):
+        self.animGroupFadeOut.stop()
+        self._label1_opacity.setOpacity(0.0)
+        self._label2_opacity.setOpacity(0.0)
 
     def fadeIn(self):
         print('UILabelTopCenter.fadeIn() -- NO YET IMPLEMENTED')
@@ -243,6 +285,7 @@ class UIUnderlay(UILabel):
 
 
 class UIModeOverlay(QLabel):
+    '''Old version of Mode -- No longer used'''
     def __init__(self, window, path: str, *args, **kwargs):
         super(QLabel, self).__init__(window, *args, **kwargs)
         # QLabel.__init__(self, window)
@@ -253,7 +296,6 @@ class UIModeOverlay(QLabel):
         # self.setStyleSheet("border: 3px solid pink; background-color: rgba(0, 0, 0, 100);")
         self.setStyleSheet("background-color: rgba(0, 0, 0, 25);")
 
-        # TODO - remove this because its so janky
         fadeEffect = QGraphicsOpacityEffect()
         self.setGraphicsEffect(fadeEffect)
         anim1 = QPropertyAnimation(fadeEffect, b"opacity")
@@ -406,8 +448,8 @@ class UIContainer(QWidget):
         w = painter.device().width()
         h = painter.device().height()
 
-        # bg - for testing
-        # brush.setColor(QColor(9, 24, 94, 150))
+        # TESTING
+        # brush.setColor(QColor(9, 24, 94, 100))
         # rect = QRect(0, 0, w, h)
         # painter.fillRect(rect, brush)
 
