@@ -420,6 +420,65 @@ class UIHelpMenu(QWidget):
             self.fadeIn()
         else:
             self.fadeOut()
+
+
+# UI Top Components
+# -----------------------------------------------------------------------------
+class UIScope(UIWindowWidget):
+    '''Shows the Scope in the top left for both Landscape and Portrait'''
+    def __init__(self, window: QMainWindow):
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(Qt.AlignCenter)
+        self.setLayout(self.layout)
+
+        self.scopeImage = UIImage('assets/scope-hikes@2x.png')
+        # scopeImage.setGeometry(0, 610, 1280, 110)
+        self.layout.addWidget(self.scopeImage)
+
+        self._status_scope = 1  # 0 - Archive; 1 - Hikes
+        self._status_visibility = 1  # 0 - hidden; 1 - visible
+
+        # self.label = QLabel("HOWDY", self)
+        # bottomImg = QPixmap("bottom.png")
+        # self.label.setPixmap(bottomImg)
+        # self.label.setAlignment(Qt.AlignCenter)
+        # self.label.setGeometry(0, 610, 1280, 110)
+
+        # self._opacity = QGraphicsOpacityEffect()
+        # self._opacity.setOpacity(0.0)
+        # helpImage.setGraphicsEffect(self._opacity)
+
+        # self._setupHideAnimation()
+        # self._setupShowAnimation()
+
+        # self._status = 0
+
+    def setScopeHikes(self):
+        self.scopeImage.update_image('assets/scope-hikes@2x.png')
+
+    def setScopeArchive(self):
+        self.scopeImage.update_image('assets/scope-archive@2x.png')
+
+    def toggleScope(self):
+        self._status_scope = (self._status_scope + 1) % 2
+        if self._status_scope:  # 1 - Hikes
+            self.scopeImage.update_image('assets/scope-hikes@2x.png')
+        else:
+            self.scopeImage.update_image('assets/scope-archive@2x.png')
+
+    # def toggleShowHide(self):
+    #     self._status = (self._status + 1) % 2
+
+    #     if self._status:
+    #         self.show()
+    #     else:
+    #         self.hide()
+
+
 # UI Time, Color, Altitude Components
 # -----------------------------------------------------------------------------
 class UIContainer(QWidget):
