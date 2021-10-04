@@ -101,6 +101,7 @@ class Status(Singleton):
     _scope = StatusScope.HIKE
     _mode = StatusMode.TIME
     _direction = StatusDirection.NEXT
+    _speed = 1  # only used for Mac/Windows app (since there' no Rotary Encoder to detect speed)
 
     # Eventually maybe we would need to setup this with input from the database
     def __init__(self):
@@ -165,13 +166,19 @@ class Status(Singleton):
     def set_direction_prev(self):
         Status()._direction = StatusDirection.PREV
 
+    # Speed - Mac/Windows only
+    def get_speed(self) -> int:
+        return Status()._speed
 
-# REMOVE - since I'm using a Singleton, I don't actually need these
-# Global status values -- they need to have global file scope due to the modification by the hardware
-# orientation = StatusOrientation.LANDSCAPE
-# playpause = StatusPlayPause.PLAY
-# scope = StatusScope.HIKE
-# mode = StatusMode.TIME
+    def increase_speed(self):
+        Status()._speed = int(Status()._speed * 2)
+        if Status()._speed > 256:
+            Status()._speed = 256
+
+    def decrease_speed(self):
+        Status()._speed = int(Status()._speed / 2)
+        if Status()._speed < 1:
+            Status()._speed = 1
 
 
 # Threads
@@ -391,115 +398,95 @@ class PlayPause(QRunnable):
         while True:
             if Status().get_playpause() == StatusPlayPause.PLAY:
                 if Status().get_direction() == StatusDirection.NEXT:
-                    rotaryCounter += 1
+                    rotaryCounter += 1 * Status().get_speed()
                 elif Status().get_direction() == StatusDirection.PREV:
-                    rotaryCounter -= 1
-            # TODO - should I change this
-            time.sleep(2.0)
+                    rotaryCounter -= 1 * Status().get_speed()
+            # TODO - What should this be?
+            time.sleep(1.0)
 
 
-# Continually tries blending the next image into the current image
 class ImageBlender(QRunnable):
+    '''Thread to continually tries blending the next image into the current image'''
     def __init__(self, sql_cntrl, picture, *args, **kwargs):
         super(ImageBlender, self).__init__()
 
-        # The rotary encoder needs an instance of the SQLController
+        # This thread holds an instance of the SQLController
         self.sql_controller = sql_cntrl
+        # Thread maintains and updates the Picture instance
         self.picture = picture
 
         # Needed setup
-        self.alpha = 0
-        self.signals = WorkerSignals()
-        self._skipNextStatus = False  # status for whether to skip next, called from MainWindow
-        self._skipPrevStatus = False  # status for whether to skip previous, called from MainWindow
+        self.signals = WorkerSignals()  # Setups signals that will be used to send data back to MainWindow
+        self._skipNextStatus = False  # setter via setSkipNext(), decides if _control_rotary_next() is called
+        self._skipPrevStatus = False  # setter via setSkipPrev(), decides if _control_rotary_prev() is called
 
-        self.currentf_raw = Image.open(self.picture.cameraf, 'r')
-        self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+        # Status value for alpha blending
+        self.alpha = 0.0
 
-        self.current1_raw = Image.open(self.picture.camera1, 'r')
-        self.next1_raw = Image.open(self.picture.camera1, 'r')
-        self.current2_raw = Image.open(self.picture.camera2, 'r')
-        self.next2_raw = Image.open(self.picture.camera2, 'r')
-        self.current3_raw = Image.open(self.picture.camera3, 'r')
-        self.next3_raw = Image.open(self.picture.camera3, 'r')
+        # Image blending settings
+        self.ALPHA_RESET = 0.18  # value alpha is reset to after each new Picture (row)
+        self.ALPHA_INCREMENT = 0.025  # value alpha is incremented by each blend
+        self.ALPHA_WAIT = 0.05  # time in ms to wait between blends
+        self.ALPHA_UPPERBOUND = 0.60  # value of alpha that blend is considered finished
 
-    # Public function only used for the computer version which needs to be told to change the image
-    # since the rotary encoder won't changing value
-    # TODO - Though, I could implement it so keyboard changes rotaryCount
-    #
-    # Receives a new "next image" which is consequently blended into the current image.
-    # If this process happens in the middle of a blend, then the new image
-    # will be blended into this already blended image
-    def set_next_images(self, path1, path2, path3, pathf):
-        global isReadyForNewPicture
-        isReadyForNewPicture = False
+        # self.ALPHA_INCREMENT = 0.025  # Rougly 20 frames until the old picture is blurred out
+        # self.ALPHA_WAIT = 0.05  # 1/20frames
 
-        # nextf_raw = Image.open(pathf, 'r')
-        # try:
-        #     print('try:')
-        #     isReadyForNewPicture = True
-        #     self.nextf_raw = nextf_raw
-        # finally:
-        #     print('finally:')
+        # Load initial image
+        try:
+            self.currentf_raw = Image.open(self.picture.cameraf, 'r')
+            self.nextf_raw = Image.open(self.picture.cameraf, 'r')
 
-        self.nextf_raw = Image.open(pathf, 'r')
-        self.next1_raw = Image.open(path1, 'r')
-        self.next2_raw = Image.open(path2, 'r')
-        self.next3_raw = Image.open(path3, 'r')
-        isReadyForNewPicture = True
-        # Jordan
+            self.current1_raw = Image.open(self.picture.camera1, 'r')
+            self.next1_raw = Image.open(self.picture.camera1, 'r')
+            self.current2_raw = Image.open(self.picture.camera2, 'r')
+            self.next2_raw = Image.open(self.picture.camera2, 'r')
+            self.current3_raw = Image.open(self.picture.camera3, 'r')
+            self.next3_raw = Image.open(self.picture.camera3, 'r')
+        except Exception as error:
+            print('\nError while opening image during ImageBlender construction')
+            print(error)
 
-        # REVIEW - I think this might be where the bottle neck is. So my thought
-        # is that we just emit a signal back to the main thread to handle this
-        # with Image.open(pathf, 'r') as nextf_raw:
-        #     self.nextf_raw = nextf_raw
-        #     print('a new image has been opened')
-
-        # self.nextf_raw = Image.open(pathf, 'r')
-
-        # print(self.nextf_raw)
-
-        # TODO - implement this with blending the images
-        # self.next1_raw = Image.open(path1, 'r')
-        # self.next2_raw = Image.open(path2, 'r')
-        # self.next3_raw = Image.open(path3, 'r')
-
-        # REVIEW - Old way
-        # self.p1 = path1
-        # self.p2 = path2
-        # self.p3 = path3
-
-        self.alpha = 0.25
-
-    # Public function to tell thread we should skip on the next pass through the loop
-    def skipNext(self):
+    def setSkipNext(self):
+        '''Public function to tell thread we should skip 'next' on the next pass through the loop'''
         self._skipNextStatus = True
 
-    def skipPrev(self):
+    def setSkipPrev(self):
+        '''Public function to tell thread we should skip 'previous' on the next pass through the loop'''
         self._skipPrevStatus = True
 
     # Public functions to tell thread that we switched orientations
     def loadLandscapeImages(self):
-        print("8-22-21 Changing to landscape")
-        self.currentf_raw = Image.open(self.picture.cameraf, 'r')
-        self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+        '''Public function called upon switching orientations; emits the current landscape images.'''
+        try:
+            self.currentf_raw = Image.open(self.picture.cameraf, 'r')
+            self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+        except Exception as error:
+            print('\nError while opening image during loadLandscapeImages()')
+            print(error)
 
+        time.sleep(0.25)  # This sleep gives a bit of extra time for the images to update before rotating the view
         self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
 
     def loadPortraitImages(self):
-        print("8-22-21 Changing to portrait")
-        self.current1_raw = Image.open(self.picture.camera1, 'r')
-        self.next1_raw = Image.open(self.picture.camera1, 'r')
-        self.current2_raw = Image.open(self.picture.camera2, 'r')
-        self.next2_raw = Image.open(self.picture.camera2, 'r')
-        self.current3_raw = Image.open(self.picture.camera3, 'r')
-        self.next3_raw = Image.open(self.picture.camera3, 'r')
-        time.sleep(0.5)  # JAR - does this help, by giving more time to update?
+        '''Public function called upon switching orientations; emits the current portrait images.'''
+        try:
+            self.current1_raw = Image.open(self.picture.camera1, 'r')
+            self.next1_raw = Image.open(self.picture.camera1, 'r')
+            self.current2_raw = Image.open(self.picture.camera2, 'r')
+            self.next2_raw = Image.open(self.picture.camera2, 'r')
+            self.current3_raw = Image.open(self.picture.camera3, 'r')
+            self.next3_raw = Image.open(self.picture.camera3, 'r')
+        except Exception as error:
+            print('\nError while opening image during loadLandscapeImages()')
+            print(error)
 
+        time.sleep(0.5)  # This sleep gives a bit of extra time for the images to update before rotating the view
         self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
 
-    # Private functions for sql queries
+    # Private functions for SQL queries
     def _control_skip_next(self):
+        '''Updates ImageBlender.picture with next skip'''
         mode = Status().get_mode()
         scope = Status().get_scope()
         if scope == StatusScope.HIKE:
@@ -518,6 +505,7 @@ class ImageBlender(QRunnable):
                 self.picture = self.sql_controller.get_next_color_skip_in_global(self.picture)
 
     def _control_skip_previous(self):
+        '''Updates ImageBlender.picture with previous skip'''
         mode = Status().get_mode()
         scope = Status().get_scope()
         if scope == StatusScope.HIKE:
@@ -536,6 +524,11 @@ class ImageBlender(QRunnable):
                 self.picture = self.sql_controller.get_previous_color_skip_in_global(self.picture)
 
     def _control_rotary_next(self, change: int):
+        '''Updates ImageBlender.picture with next image
+        ::
+
+            change int: size of offset
+        '''
         mode = Status().get_mode()
         scope = Status().get_scope()
         currentHike = self.picture.hike_id
@@ -548,8 +541,9 @@ class ImageBlender(QRunnable):
             elif mode == StatusMode.COLOR:
                 self.picture = self.sql_controller.get_next_color_in_hikes(self.picture, change)
 
+            # Isn't used for anything, but could be used for splitting up UI updates
             if self.picture.hike_id != currentHike:
-                print('🧨🧨🧨 NEXT - NEW HIKE! 🧨🧨🧨')
+                print('NEXT - NEW HIKE!')
                 # self.updateScreenHikesNewHike()
             # else:
                 # self.updateScreenHikesNewPictures()
@@ -562,6 +556,11 @@ class ImageBlender(QRunnable):
                 self.picture = self.sql_controller.get_next_color_in_global(self.picture, change)
 
     def _control_rotary_previous(self, change: int):
+        '''Updates ImageBlender.picture with previous image
+        ::
+
+            change int: size of offset
+        '''
         mode = Status().get_mode()
         scope = Status().get_scope()
         currentHike = self.picture.hike_id
@@ -574,8 +573,9 @@ class ImageBlender(QRunnable):
             elif mode == StatusMode.COLOR:
                 self.picture = self.sql_controller.get_previous_color_in_hikes(self.picture, change)
 
+            # Isn't used for anything, but could be used for splitting up UI updates
             if self.picture.hike_id != currentHike:
-                print('🧨🧨🧨 PREVIOUS - NEW HIKE! 🧨🧨🧨')
+                print('PREVIOUS - NEW HIKE!')
                 # self.updateScreenHikesNewHike()
             # else:
                 # self.updateScreenHikesNewPictures()
@@ -587,18 +587,28 @@ class ImageBlender(QRunnable):
             elif mode == StatusMode.COLOR:
                 self.picture = self.sql_controller.get_previous_color_in_global(self.picture, change)
 
-    # TODO - Check if I need to open all of these?
     def _emit_result_update_image_and_alpha(self):
-        # Emits signal to MainWindow which calls _new_picture_loaded()
+        '''Emits signal to MainWindow which calls `_new_picture_loaded()`'''
         self.signals.result.emit(self.picture)
-        self.nextf_raw = Image.open(self.picture.cameraf, 'r')
-        self.next1_raw = Image.open(self.picture.camera1, 'r')
-        self.next2_raw = Image.open(self.picture.camera2, 'r')
-        self.next3_raw = Image.open(self.picture.camera3, 'r')
-        self.alpha = 0.35
+        self.alpha = self.ALPHA_RESET
+        if Status().get_orientation() == StatusOrientation.LANDSCAPE:
+            try:
+                self.nextf_raw = Image.open(self.picture.cameraf, 'r')
+            except Exception as error:
+                print('\nError while blending landscape image in: _emit_result_update_image_and_alpha()')
+                print(error)
+        elif Status().get_orientation() == StatusOrientation.PORTRAIT:
+            try:
+                self.next1_raw = Image.open(self.picture.camera1, 'r')
+                self.next2_raw = Image.open(self.picture.camera2, 'r')
+                self.next3_raw = Image.open(self.picture.camera3, 'r')
+            except Exception as error:
+                print('\nError while blending vertical images in: _emit_result_update_image_and_alpha()')
+                print(error)
 
-    # Continually runs blending together
     def run(self):
+        '''Continually runs blending images together, emiting images back to MainWindow
+        signals end up calling: `_new_picture_loaded()`, `_load_new_images()`, `_finished_image_blend()`'''
         while True:
             # SQLController will only be called if there has been a hardware signal
             # Otherwise, it simply blends the image if alpha is < 0.65
@@ -615,30 +625,36 @@ class ImageBlender(QRunnable):
                 global rotaryCounterLast
                 change = rotaryCounter - rotaryCounterLast
 
-                # Pausing for rotary encoder changes happens inside RotaryEncoder thread
-                # Because this logic is also used for the auto-play functionality
+                # Changing Pause status for the rotary encoder happens inside RotaryEncoder thread
+                # Because the logic here is also used for the auto-play functionality; pausing in
+                # this block causes Play not to work
                 if change > 0:
                     # print('POSITIVE')
                     # print(change)
-
                     rotaryCounterLast = rotaryCounter
                     self._control_rotary_next(change)
                     self._emit_result_update_image_and_alpha()  # NOTE - emit
                 elif change < 0:
                     # print('NEGATIVE')
-                    # print(change)
-
                     rotaryCounterLast = rotaryCounter
                     self._control_rotary_previous(abs(change))
                     self._emit_result_update_image_and_alpha()  # NOTE - emit
 
-            if self.alpha < 0.65:
+            if self.alpha < self.ALPHA_UPPERBOUND:
+                print('blend')
+                # Increments the alpha, so the image will slowly blend
+                # REVIEW - okay it seems like this isn't doing anyting at all
+                # Wow. this is after the blend function. wow lol, this was unreachable.
+                # But wait, how is it still blending. OH i guess it is just using
+                # self.alpha += 0.0001
+                # self.alpha += 0.04
+                self.alpha += self.ALPHA_INCREMENT
                 # Only blends the landscape photo or portrait photos depending on the mode
                 if Status().get_orientation() == StatusOrientation.LANDSCAPE:
                     try:
                         self.currentf_raw = Image.blend(self.currentf_raw, self.nextf_raw, self.alpha)
                     except Exception as error:
-                        print('Error while blending landscape:')
+                        print('\nError while blending landscape:')
                         print(error)
                         continue
                 elif Status().get_orientation() == StatusOrientation.PORTRAIT:
@@ -647,23 +663,19 @@ class ImageBlender(QRunnable):
                         self.current2_raw = Image.blend(self.current2_raw, self.next2_raw, self.alpha)
                         self.current3_raw = Image.blend(self.current3_raw, self.next3_raw, self.alpha)
                     except Exception as error:
-                        print('Error while blending portrait:')
+                        print('\nError while blending portrait:')
                         print(error)
                         continue
-
-                # Increments the alpha, so the image will slowly blend
-                # self.alpha += 0.1
-                # self.alpha += 0.025  # Rougly 20 frames until the old picture is blurred out
-                self.alpha += 0.04
 
                 # Emits signal to MainWindow which calls _load_new_images()
                 self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
 
-                if self.alpha >= 0.65:
+                if self.alpha >= self.ALPHA_UPPERBOUND:
                     # Emits signal to MainWindow which calls _finished_image_blend()
+                    print(f'Alpha > {self.ALPHA_UPPERBOUND}')
                     self.signals.finished.emit()
             # TODO - still figure out this amount
-            time.sleep(0.1)  # 1/20frames = 0.05
+            time.sleep(self.ALPHA_WAIT)
 
 
 class MainWindow(QMainWindow):
@@ -711,8 +723,6 @@ class MainWindow(QMainWindow):
         print(self.directory)
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
         self.picture = self.sql_controller.get_picture_with_id(self._saved_picture_id)
-
-        self.scrollspeed = 1
 
         # TESTING - comment out to speed up program load time
         self.uiData = self.sql_controller.preload_ui_data()
@@ -808,6 +818,10 @@ class MainWindow(QMainWindow):
         self.palette.setGraphicsEffect(UIEffectDropShadow())
         self.bottomUIContainer.layout.addWidget(self.palette)
         self.bottomUIContainer.layout.addItem(spacer)
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            self.scrollSpeedLabel = UILabelTop(self, f'{Status().get_speed()}x', Qt.AlignLeft)
+            self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
+            self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
 
         # Altitude Graph
         self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
@@ -920,7 +934,6 @@ class MainWindow(QMainWindow):
 
         # Rotary Encoder
         self.rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
-        # self.rotaryEncoder.signals.result.connect(self.rotary_changed)
         self.threadpool.start(self.rotaryEncoder)
 
         buttonEncoder = HardwareButton(self.PIN_ROTARY_BUTT)
@@ -956,7 +969,7 @@ class MainWindow(QMainWindow):
         buttonHallEffect.signals.result.connect(self.pressed_hall_effect)
         self.threadpool.start(buttonHallEffect)
 
-    # UI Callbacks from bg threads
+    # UI callbacks from Threads
     # -------------------------------------------------------------------------
 
     def _load_new_images(self, image1, image2, image3, imagef):
@@ -964,27 +977,17 @@ class MainWindow(QMainWindow):
         image 1, 2, 3 are strings to the path location
         imagef is an raw Image.open()'''
 
-        # Test variable to show how many times it blends the two images
-        # not necessarily in 1 second though
+        # Test variable to show how many times it blends the two images, not necessarily in 1 second though
         self.blendCount += 1
 
         self.pictureLandscape.update_pixmap(imagef)
-        # JAR - comment this out
-        # self.pictureVertical1.update_image("disk_cam1.jpg")
-        # self.pictureVertical2.update_image("disk_cam2.jpg")
-        # self.pictureVertical3.update_image("disk_cam3.jpg")
 
-        # JAR - uncomment this
-        # self.pictureVertical1.update_pixmap(image1)
-        # self.pictureVertical2.update_pixmap(image2)
-        # self.pictureVertical3.update_pixmap(image3)
-
-        # NOTE - Adjusting any Widget (even a QLabel) is causing all the widgets to repaint
+        # NOTE - Adjusting any Widget (even a QLabel) causes all the widgets to repaint
         if Status().get_orientation() == StatusOrientation.LANDSCAPE:
             try:
                 self.pictureLandscape.update_pixmap(imagef)
             except Exception as error:
-                print('Error while update_pixmap landscape:')
+                print('\nError while update_pixmap landscape:')
                 print(error)
         elif Status().get_orientation() == StatusOrientation.PORTRAIT:
             try:
@@ -992,54 +995,22 @@ class MainWindow(QMainWindow):
                 self.pictureVertical2.update_pixmap(image2)
                 self.pictureVertical3.update_pixmap(image3)
             except Exception as error:
-                print('Error while update_pixmap portrait:')
+                print('\nError while update_pixmap portrait:')
                 print(error)
-
-        # Forget what the status of these were
-        # self.pictureVertical1 = UIImage(self.picture.camera1)
-        # self.pictureVertical2 = UIImage(self.picture.camera2)
-        # self.pictureVertical3 = UIImage(self.picture.camera3)
-
-        # Just sets the picture, no blending
-        # self.pictureVertical1.update_image(image1)
-        # self.pictureVertical2.update_image(image2)
-        # self.pictureVertical3.update_image(image3)
 
     def _new_picture_loaded(self, picture: Picture):
         '''ImageBlender passes a Picture (row) back to MainWindow and updates the UI'''
         self.picture = picture
-
-        # Update the pixmap for the mode that currently isn't being used
-        # Upon orientation change, the images are already there and ready
-        # if Status().get_orientation() == StatusOrientation.LANDSCAPE:
-        #     self.imageBlender.changeToPortrait()
-        # elif Status().get_orientation() == StatusOrientation.PORTRAIT:
-        #     self.imageBlender.changeToLandscape()
-
-        self.updateScreen()
+        self.uiUpdateScreen()
 
     def _finished_image_blend(self):
         '''New image finished blending, now fade out the UI components.
         Currently only used for printing the blend count'''
 
-        # REMOVE - Remove this testing setup for checking the number of blends
-        # print('\ndef finished_image_blend() -- result emitted')
-        # print('FINISHED Blending')
-
+        print('FINISHED Blending')
         print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
-
-        # HACK - that almost works. However the widget is still being wiped off the screen,
-        # then reapinted after the fading
-        # self.palette.setCanRepaint()
-
-        # Allows another image to be blended onto the current image
-        # HACK - sorta works, but this is the safe (but ugly) base case
-        # global isReadyForNewPicture
-        # isReadyForNewPicture = True
-
-        # TODO - testing moving this to updateUI
-        # self.timerFadeOutUI.start(1000)  # wait 1s until you fade out top UI
+        # self.uiUpdateScreen()  # Called from _new_picture_loaded() instead
 
     # Called when timerFadeOutUI finishes. This is bound in setupUI()
     # The timer is stopped when there is a keyboard / hardware interaction
@@ -1047,7 +1018,8 @@ class MainWindow(QMainWindow):
         time_ms = 1000
         self.topUnderlay.fadeOut(time_ms)
         self.rightLabel.fadeOut(time_ms)
-        self.leftLabel.fadeOut(time_ms)
+        # self.leftLabel.fadeOut(time_ms)
+        self.scopeWidget.fadeOut(time_ms)
         self.centerLabel.fadeOut()
 
         # self.timebar.fadeOut(time_ms)
@@ -1075,8 +1047,9 @@ class MainWindow(QMainWindow):
     def setLandscape(self):
         print('setLandscape()')
         Status().set_orientation_landscape()
-        self.imageBlender.loadLandscapeImages()
 
+        # Switch Images
+        self.imageBlender.loadLandscapeImages()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
         # self.pictureLandscape.update_image(self.picture.cameraf)
@@ -1306,29 +1279,35 @@ class MainWindow(QMainWindow):
         if event.key() == Qt.Key_Escape:
             self.close()
 
-        # Scroll Wheel
+        # Scroll Wheel - Right/Left Arrows
         elif event.key() == Qt.Key_Right:
             self.control_next()
         elif event.key() == Qt.Key_Left:
             self.control_previous()
 
-        # Skip Buttons
+        # Increase/Decrease speed
+        elif event.key() == Qt.Key_Equal:
+            self.control_speed_faster()
+        elif event.key() == Qt.Key_Minus:
+            self.control_speed_slower()
+
+        # Skip Buttons - Up/Down Arrows
         elif event.key() == Qt.Key_Up:
             self.control_skip_next()
         elif event.key() == Qt.Key_Down:
             self.control_skip_previous()
 
+        # Play/Pause
+        elif event.key() == Qt.Key_Space:
+            self.control_play_pause()
+
         # Change Mode - Time, Altitude, Color
         elif event.key() == Qt.Key_M:
             self.control_mode()
 
-        # Change Scope - Scrollwheel press
+        # Change Scope - Scroll Wheel press
         elif event.key() == Qt.Key_Shift:
             self.control_scope()
-
-        # Play/Pause
-        elif event.key() == Qt.Key_Space:
-            self.control_play_pause()
 
         # Change Orientation
         elif event.key() == Qt.Key_L:
@@ -1336,11 +1315,6 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_V:
             self.control_vertical()
 
-        # Increase/Decrease speed
-        elif event.key() == Qt.Key_Equal:
-            self.control_speed_faster()
-        elif event.key() == Qt.Key_Minus:
-            self.control_speed_slower()
         # Help Menu
         elif event.key() == Qt.Key_H:
             print('Help menu')
@@ -1375,32 +1349,30 @@ class MainWindow(QMainWindow):
         self.updateScreen()
 
     def control_next(self):
-        '''Mac App only: move to next photo (arrow keys)'''
-        pass
-        # TODO - see how this affects the Mac App
-        # The logic in here was moved to ImageBlender. Will likely need to update
-        # rotaryCount from the keyboard input
-        # self.updateScreen()
+        '''Mac/Windows app only: move to next photo (arrow keys)'''
+        Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
+        Status().set_direction_next()  # Update the direction, so upon Playing it moves in correct direction
+        global rotaryCounter
+        rotaryCounter += 1 * Status().get_speed()
 
     def control_previous(self):
-        '''Mac App only: move to previous photo (arrow keys)'''
-        pass
-        # TODO - see how this affects the Mac App
-        # The logic in here was moved to ImageBlender. Will likely need to update
-        # rotaryCount from the keyboard input
-        # self.updateScreen()
+        '''Mac/Windows app only: move to previous photo (arrow keys)'''
+        Status().set_pause()
+        Status().set_direction_prev()
+        global rotaryCounter
+        rotaryCounter -= 1 * Status().get_speed()
 
     def control_skip_next(self):
         '''Tells the ImageBlender thread to skip next'''
-        Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
-        self.imageBlender.skipNext()
-        # self.updateScreen()
+        Status().set_pause()
+        self.imageBlender.setSkipNext()
+        # self.uiUpdateScreen()
 
     def control_skip_previous(self):
         '''Tells the ImageBlender thread to skip previous'''
-        Status().set_pause()  # Causes the PlayPause thread to not increment the rotary counter
-        self.imageBlender.skipPrev()
-        # self.updateScreen()
+        Status().set_pause()
+        self.imageBlender.setSkipPrev()
+        # self.uiUpdateScreen()
 
     def control_play_pause(self):
         '''Changes StatusPlayPause(). PlayPauseThread continually checks this status'''
@@ -1418,22 +1390,18 @@ class MainWindow(QMainWindow):
         self.setVertical()
 
     def control_speed_slower(self):
-        '''Mac App only: decreases skip size for keyboard'''
-        print('-- Scroll Speed')
-        self.scrollspeed = int(self.scrollspeed / 2)
-        if self.scrollspeed < 1:
-            self.scrollspeed = 1
-        self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
-        # print(self.scrollspeed)
+        '''Mac/Windows app only: decreases skip size for keyboard'''
+        # print('-- Scroll Speed')
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            Status().decrease_speed()
+            self.scrollSpeedLabel.setText(f'{Status().get_speed()}x')
 
     def control_speed_faster(self):
-        '''Mac App only: increases skip size for keyboard'''
-        print('++ Scroll Speed')
-        self.scrollspeed = int(self.scrollspeed * 2)
-        if self.scrollspeed > 256:
-            self.scrollspeed = 256
-        self.scrollSpeedLabel.setText(f'{self.scrollspeed}x')
-        # print(self.scrollspeed)
+        '''Mac/Windows app only: increases skip size for keyboard'''
+        # print('++ Scroll Speed')
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            Status().increase_speed()
+            self.scrollSpeedLabel.setText(f'{Status().get_speed()}x')
 
     def control_help_menu(self):
         # self.helpMenu.toggleShowHide()
