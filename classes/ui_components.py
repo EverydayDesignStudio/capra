@@ -666,39 +666,50 @@ class ColorPalette(UIWidget):
 
 class AltitudeGraph(UIWidget):
     '''Altitude Graph which builds a graph of points from list of altitude values.'''
-    def __init__(self, altitudeList: list, isAltMode: bool, percent: float, currentAlt: float) -> None:
+    def __init__(self, isAltMode: bool, altitudeList: list, percent: float, currentAlt: float) -> None:
         super().__init__()
-        self.setFixedHeight(160)
+        self.setFixedHeight(180)
         self.bgcolor = QColor('#ff00ff')
 
         self.altitudeList = altitudeList
-        self.indicator = isAltMode
+        self.isAltMode = isAltMode
         self.percent = percent
         self.currentAlt = currentAlt
+
+        self.indicatorSelected = QImage('assets/indicator-selected.png')
 
     def paintEvent(self, e):
         # print('painting Altitude Graph')
 
-        DOT_DIAM = 4
-        IND_DIAM = DOT_DIAM + 6
+        DOT_DIAM = 5
+        IND_DIAM = DOT_DIAM + 5
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
 
         W = painter.device().width()
-        H = painter.device().height() - 20
+        H_PAD = 46
+        H_PAD_HALF = H_PAD/2
+        # puts padding on the drawable space, so indicator isn't cut off on top or bottom
+        H = painter.device().height() - H_PAD
+        # print(f"H = {H}")
 
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         pen = QPen()
 
+        # bg - for testing
+        # brush.setColor(QColor(9, 24, 94, 150))
+        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        # painter.fillRect(rect, brush)
+
         # Setup for painting the dots
         pen.setWidth(1)
-        pen.setColor(QColor(255, 255, 255))
+        pen.setColor(QColor(255, 255, 255, 150))
         painter.setPen(pen)
 
         brush.setStyle(Qt.SolidPattern)
-        brush.setColor(QColor(255, 255, 255))
+        brush.setColor(QColor(255, 255, 255, 150))
         painter.setBrush(brush)
 
         STEP = W / len(self.altitudeList)
@@ -709,25 +720,33 @@ class AltitudeGraph(UIWidget):
         # Draw the Graph
         i = 0
         for a in self.altitudeList:
-            x = round(FIRST_STEP + STEP * i, 1)
-            y = 10 + round(H - DOT_DIAM - ((a - MINV)/(MAXV-MINV))*(H-DOT_DIAM), 1)
+            x = FIRST_STEP + (STEP * i)
+            y = H + H_PAD_HALF - DOT_DIAM - ((a - MINV)/(MAXV-MINV))*(H-DOT_DIAM)  # used to be round
             painter.drawEllipse(x, y, DOT_DIAM, DOT_DIAM)
             i += 1
 
         # Draw the Indicator
-        pen.setWidth(3)
+        # just increasing the border instead of the IND_DIAM fixes weird
+        # rounding issues between the y of the Graph and y of the Indicator
+        pen.setWidth(4)
         pen.setColor(QColor(255, 255, 255))
         painter.setPen(pen)
-        brush.setColor(QColor(100, 100, 100))
+        brush.setColor(QColor(255, 255, 255))
         painter.setBrush(brush)
 
-        x = round(self.percent * W - IND_DIAM/2, 1)
-        y = 10 + round(H - IND_DIAM - ((self.currentAlt - MINV)/(MAXV-MINV))*(H-IND_DIAM), 1)
-        painter.drawEllipse(x, y, IND_DIAM, IND_DIAM)
+        x = (self.percent * W)
+        if len(self.altitudeList) < 128:  # if less than 128, starting step needs to be adjusted to align properly
+            x = (self.percent * W) - (STEP/2)
+        y = H + H_PAD_HALF - IND_DIAM - ((self.currentAlt - MINV)/(MAXV-MINV))*(H-IND_DIAM)
 
-    def trigger_refresh(self, altitudeList: list, isAltMode: bool, percent: float, currentAlt: float):
+        if self.isAltMode:
+            rect = QRectF(x - 48/2, y-(54/2 - IND_DIAM/2), 48, 54)
+            painter.drawImage(rect, self.indicatorSelected)
+        painter.drawEllipse(x - IND_DIAM/2, y, IND_DIAM, IND_DIAM)
+
+    def trigger_refresh(self, isAltMode: bool, altitudeList: list, percent: float, currentAlt: float):
         self.altitudeList = altitudeList
-        self.indicator = isAltMode
+        self.isAltMode = isAltMode
         self.percent = percent
         self.currentAlt = currentAlt
         self.update()
@@ -736,61 +755,79 @@ class AltitudeGraph(UIWidget):
 class ColorBar(UIWidget):
     '''Defines the color bar at bottom of the screen
     Accepts a list of colors, percent, and indicator color'''
-    def __init__(self, colorList: list, indicator: bool, percent: float, indicatorColor: QColor) -> None:
+    def __init__(self, isColorMode: bool, colorList: list, percent: float, indicatorColor: QColor) -> None:
         super().__init__()
-        self.setFixedHeight(40)
+        self.setFixedHeight(54)
         self.bgcolor = QColor('#ffffff')
 
         self.colorList = colorList
-        self.indicator = indicator
+        self.isColorMode = isColorMode
         self.percent = percent
         self.indicatorColor = indicatorColor
+        self.indicatorSelected = QImage('assets/indicator-selected.png')
 
     def paintEvent(self, e):
         # print('painting Color Bar')
-
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
 
-        # grab width & height of the whole painter
-        w = painter.device().width()
-        h = painter.device().height()
+        # grab width & height of the whole painter space
+        W = painter.device().width()
+        H = painter.device().height()
 
         # Set the values for the widget
         height = 20
-        yline = h/2 - height/2
+        yline = H/2 - height/2
 
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         pen = QPen()
 
+        # bg - for testing
+        # brush.setColor(QColor(9, 24, 94, 150))
+        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        # painter.fillRect(rect, brush)
+
         x1 = 0
-        BOXW = round(w / len(self.colorList))
+        boxw = W / len(self.colorList)
 
         for color in self.colorList:
             brush.setColor(color)
-            rect = QRect(x1, yline, BOXW, height)
-            x1 += BOXW
+            # 'boxw' + 5 - the 5 is for extra padding to make sure the bar extends enough and doesn't leave gaps
+            # sometimes for smaller hikes there's awkward gaps between color bars.
+            # The other remedy was to round 'boxw', but that led to an overall net shorter ColorBar
+            rect = QRect(x1, yline, boxw+5, height)
+            x1 += boxw
             painter.fillRect(rect, brush)
 
         # Indicator
-        if self.indicator:
-            brush.setColor(self.indicatorColor)
-            painter.setBrush(brush)
-            pen.setWidth(1)
-            pen.setColor(self.indicatorColor)
-            painter.setPen(pen)
+        brush.setColor(self.indicatorColor)
+        painter.setBrush(brush)
+        pen.setWidth(1)
+        pen.setColor(self.indicatorColor)
+        painter.setPen(pen)
 
-            x1 = w * self.percent
-            boxh = 40
-            BOXW = 20
-            y1 = h/2 - boxh/2
-            painter.drawRoundedRect(x1 - BOXW/2, y1, BOXW, boxh, 5, 5)
+        x1 = W * self.percent
+        if len(self.colorList) < 128:  # if less than 128, the starting x needs to be adjusted to align properly
+            # subtracting BOXW/2 moves the indicator back so it is centered on the respective color bar
+            x1 = W * self.percent - boxw/2
 
-    def trigger_refresh(self, colorList: list, isColorMode: bool, percent: float, indicatorColor: QColor):
+        # Highlight
+        if self.isColorMode:
+            rect = QRectF(x1 - 48/2, H/2 - 54/2, 48, 54)
+            painter.drawImage(rect, self.indicatorSelected)
+
+        # Color Indicator
+        INDH = 40
+        INDW = 20
+        y1 = H/2 - INDH/2
+                                # x, y, w, h, radius, radius
+        painter.drawRoundedRect(x1 - INDW/2, y1, INDW, INDH, 6, 6)
+
+    def trigger_refresh(self, isColorMode: bool, colorList: list, percent: float, indicatorColor: QColor):
         # print(f'ColorBar._trigger_refresh()')
         self.colorList = colorList
-        self.indicator = isColorMode
+        self.isColorMode = isColorMode
         self.percent = percent
         self.indicatorColor = indicatorColor
         # self.update()
@@ -799,42 +836,59 @@ class ColorBar(UIWidget):
 class TimeBar(UIWidget):
     '''Defines the time bar at the bottom of the screen.
     There's two styles depending whether you are in Time mode or Not'''
-    def __init__(self, color, percent: float, isTimeMode: bool) -> None:
+    def __init__(self, isTimeMode: bool, bgcolor, colorBarSize: int, percent: float) -> None:
         super().__init__()
-        self.setFixedHeight(40)
-        self.bgcolor = color
+        self.setFixedHeight(70)
+        self.bgcolor = bgcolor
+        self.colorBarSize = colorBarSize    # the amount of discrete points in the colorbar,
+                                            # so we know how to position the time bar indicator to line up
         self.percent = percent
         self.isTimeMode = isTimeMode
 
+        self.indicator = QImage('assets/indicator-time.png')
+        self.indicatorSelected = QImage('assets/indicator-time-selected.png')
+
     def paintEvent(self, e):
         # print('painting TimeBar')
-
         painter = QPainter(self)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
 
         # grab width & height of the whole painter
-        w = painter.device().width()
-        h = painter.device().height()
+        W = painter.device().width()
+        H = painter.device().height()
+        # print(f'TimeBar H: {H}')
 
         # Set the values for the widget
-        lheight = 6
-        yline = h/2 - lheight/2
+        lheight = 9
+        yline = H/2 - lheight/2
         dotdiam = 20
-        ydot = (40/2) - (dotdiam/2)
+        ydot = (H/2) - (dotdiam/2)
 
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
         pen = QPen()
 
+        # bg - for testing
+        # brush.setColor(QColor(9, 24, 94, 150))
+        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        # painter.fillRect(rect, brush)
+
         # full line
         brush.setColor(QColor(255, 255, 255, 100))
-        rect2 = QRect(0, yline, w, lheight)
+        rect2 = QRect(0, yline, W, lheight)
         painter.fillRect(rect2, brush)
         brush.setColor(QColor(255, 255, 255))
 
-        # partial fill-line
+        # If Time Mode - partial fill-line
+        stepback = (W / self.colorBarSize) / 2  # Amount to move back the Time Indicator to align with
+                                                # the ColorBar and AltitudeGraph Indicators
+
+        x = W*self.percent
+        if self.colorBarSize < 128:  # if less than 128, the starting x needs to be adjusted to align properly
+            x = W*self.percent - stepback
+
         if self.isTimeMode:
-            rect2 = QRect(0, yline, w*self.percent, lheight)
+            rect2 = QRect(0, yline, x, lheight)
             painter.fillRect(rect2, brush)
 
         # Indicator Styling
@@ -843,23 +897,29 @@ class TimeBar(UIWidget):
         painter.setPen(pen)
         brush.setStyle(Qt.SolidPattern)
         painter.setBrush(brush)
-        x = w*self.percent - dotdiam/2
 
-        # Circle
+        # Circle Indicator
+        # x = x - dotdiam/2 - 1
         # painter.drawEllipse(x, ydot, dotdiam, dotdiam)
 
-        # Triangle
-        rect = QRectF(x, ydot - 7, 20, 20)
+        # Triangle Indicator
+        # rect = QRectF(x, ydot - 7, 20, 20)
+        # path = QPainterPath()
+        # path.moveTo(rect.left() + (rect.width() / 2), rect.bottom())
+        # path.lineTo(rect.topLeft())
+        # path.lineTo(rect.topRight())
+        # path.lineTo(rect.left() + (rect.width() / 2), rect.bottom())
+        # painter.fillPath(path, brush)
 
-        path = QPainterPath()
-        path.moveTo(rect.left() + (rect.width() / 2), rect.bottom())
-        path.lineTo(rect.topLeft())
-        path.lineTo(rect.topRight())
-        path.lineTo(rect.left() + (rect.width() / 2), rect.bottom())
+        # Image Indicator
+        rect = QRectF(x - 48/2, ydot - 25, 48, 54)
+        if self.isTimeMode:
+            painter.drawImage(rect, self.indicatorSelected)
+        else:
+            painter.drawImage(rect, self.indicator)
 
-        painter.fillPath(path, brush)
-
-    def trigger_refresh(self, percent: float, isTimeMode: bool):
+    def trigger_refresh(self, isTimeMode: bool, colorBarSize: int, percent: float):
+        self.colorBarSize = colorBarSize
         self.percent = percent
         self.isTimeMode = isTimeMode
         self.update()
