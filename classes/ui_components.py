@@ -553,6 +553,66 @@ class PortraitTopLabel(UIWidget):
         painter.end()
 
 
+class ColorPaletteNew(QWidget):
+    def __init__(self, window: QMainWindow, visible: bool, colorList: list, confidentList: list) -> None:
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+        # self.layout = QVBoxLayout()
+        # self.layout.setContentsMargins(100, 100, 50, 50)
+        # self.layout.setAlignment(Qt.AlignHCenter)
+        # self.setLayout(self.layout)
+
+        # Width & Height = 160 x 40
+        self.setFixedHeight(100)
+        self.setFixedWidth(1280)
+        self.colorList = colorList
+        self.confidentList = confidentList
+        self.isVisible = visible
+
+    def paintEvent(self, e):
+        # print('painting Color Palette')
+        # print(self.previousInFocusChain())
+        if self.isVisible:
+            painter = QPainter(self)
+            brush = QBrush()
+            brush.setStyle(Qt.SolidPattern)
+            painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+            # bg - for testing
+            # brush.setColor(QColor(9, 24, 94, 150))
+            # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+            # painter.fillRect(rect, brush)
+
+            # grab width & height of the whole painter
+            widgetw = painter.device().width()
+            widgeth = painter.device().height()
+
+            brush.setColor(QColor(0, 0, 0, 150))
+            # rect = QRect(0, 0, widgetw, widgeth)
+            # rect = QRect(1280/2 - 160, 60, 160, 40)
+            # painter.fillRect(rect, brush)
+
+            total = sum(self.confidentList)
+            x = 1280/2 - 160/2
+            for i, color in enumerate(self.colorList):
+                brush.setColor(color)
+                perc = self.confidentList[i]
+                # w = round((perc / total) * widgetw, 0)
+                # rect = QRect(x, 0, w, widgeth)
+
+                w = round((perc / total) * 160, 0)
+                rect = QRect(x, 30, w, 40)
+                x += w
+                painter.fillRect(rect, brush)
+
+    def trigger_refresh(self, visible: bool, colorList: list, confidentList: list):
+        self.colorList = colorList
+        self.confidentList = confidentList
+        self.isVisible = visible
+        self.update()
+
+
 class ColorPalette(UIWidget):
     def __init__(self, colorList: list, confidentList: list, visible: bool) -> None:
         super().__init__()
