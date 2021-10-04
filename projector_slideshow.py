@@ -680,6 +680,9 @@ class MainWindow(QMainWindow):
         self.setupUI()
         self.setupSoftwareThreads()
 
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            self.setupMenuBar()
+
         if platform.system() == 'Linux':
             self.setupGPIO()
             self.setupHardwareThreads()
@@ -899,26 +902,27 @@ class MainWindow(QMainWindow):
         # self.PIN_NEOPIXELS = g.NEO1
 
         # LED indicators
-        self.ledWhite = WHITE_LEDS(g.WHITE_LED1, g.WHITE_LED2, g.WHITE_LED3)
-        self.ledWhite.turn_off()
-        if Status().get_mode() == StatusMode.TIME:
-            self.ledWhite.set_time_mode()
-        elif Status().get_mode() == StatusMode.COLOR:
-            self.ledWhite.set_color_mode()
-        elif Status().get_mode() == StatusMode.ALTITUDE:
-            self.ledWhite.set_altitude_mode()
+        if platform.system() == 'Linux':
+            self.ledWhite = WHITE_LEDS(g.WHITE_LED1, g.WHITE_LED2, g.WHITE_LED3)
+            self.ledWhite.turn_off()
+            if Status().get_mode() == StatusMode.TIME:
+                self.ledWhite.set_time_mode()
+            elif Status().get_mode() == StatusMode.COLOR:
+                self.ledWhite.set_color_mode()
+            elif Status().get_mode() == StatusMode.ALTITUDE:
+                self.ledWhite.set_altitude_mode()
 
-        self.ledRGB = RGB_LED(g.RGB2_RED, g.RGB2_GREEN, g.RGB2_BLUE)
-        self.ledRGB.turn_off()
-        # if Status().get_scope() == StatusScope.GLOBAL:
-        #     self.ledRGB.turn_teal()
+            self.ledRGB = RGB_LED(g.RGB2_RED, g.RGB2_GREEN, g.RGB2_BLUE)
+            self.ledRGB.turn_off()
+            # if Status().get_scope() == StatusScope.GLOBAL:
+            #     self.ledRGB.turn_teal()
 
-        # Test LED - which isn't visible from outside of the case
-        self.PIN_LED_TEST_RED = g.RGB1_RED
-        self.PIN_LED_TEST_GREEN = g.RGB1_GREEN
-        # self.PIN_LED_TEST_BLUE = 0  # Used for sending a signal on startup (I think)
-        GPIO.setup(self.PIN_LED_TEST_RED, GPIO.OUT)
-        GPIO.setup(self.PIN_LED_TEST_GREEN, GPIO.OUT)
+            # Test LED - which isn't visible from outside of the case
+            self.PIN_LED_TEST_RED = g.RGB1_RED
+            self.PIN_LED_TEST_GREEN = g.RGB1_GREEN
+            # self.PIN_LED_TEST_BLUE = 0  # Used for sending a signal on startup
+            GPIO.setup(self.PIN_LED_TEST_RED, GPIO.OUT)
+            GPIO.setup(self.PIN_LED_TEST_GREEN, GPIO.OUT)
 
     # Setup threads to check for hardware changes
     def setupHardwareThreads(self):
