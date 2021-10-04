@@ -447,11 +447,11 @@ class SQLController:
 
     # Time & Indicator Percentage
     # (also needed for the indicators on the other modes)
-    def ui_get_percentage_in_hike_with_mode(self, m: str, current: Picture) -> list:
+    def ui_get_percentage_in_hike_with_mode(self, m: str, current: Picture) -> float:
         sql = self.statements.ui_select_percentage_in_hike_with_mode(m, current.picture_id, current.hike_id)
         return round(self._execute_query_for_float(sql), 4)
 
-    def ui_get_percentage_in_archive_with_mode(self, m: str, current: Picture) -> list:
+    def ui_get_percentage_in_archive_with_mode(self, m: str, current: Picture) -> float:
         sql = self.statements.ui_select_percentage_in_archive_with_mode(m, current.picture_id)
         return round(self._execute_query_for_float(sql), 4)
 

@@ -785,12 +785,71 @@ class MainWindow(QMainWindow):
         # Top UI elements
         # ---------------------------------------------------------------------
         self.topUnderlay = UIUnderlay(self)
-        self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
+        # self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
         self.centerLabel = UILabelTopCenter(self, '', '')
         self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
 
         # Mode UI element
-        self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png')
+        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png')
+
+        # New Top UI
+        # ---------------------------------------------------------------------
+        self.scopeWidget = UIScope(self)
+        self.scopeWidget.opacityHide()
+
+        self.topMiddleContainer = UIContainer(self, QHBoxLayout(), Qt.AlignHCenter)
+        hspacer = QSpacerItem(100, 0)
+        self.topMiddleContainer.layout.addItem(hspacer)
+
+        # Color Palette
+        # self.palette = ColorPalette(self.picture.colors_rgb, self.picture.colors_conf, True)
+        # self.palette.setGraphicsEffect(UIEffectDropShadow())
+        # self.topMiddleContainer.layout.addWidget(self.palette)
+
+        # New Color Palette
+        self.colorpalette = ColorPaletteNew(self, False, self.picture.colors_rgb, self.picture.colors_conf)
+        self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
+
+        # Time, Color, Altitude Graphs
+        # ---------------------------------------------------------------------
+        spacer = QSpacerItem(0, 25)
+        self.bottomUIContainer = UIContainer(self, QVBoxLayout(), Qt.AlignBottom)
+
+        percent_rank = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+        print(f'Rank New: {percent_rank}')
+
+        # Speed Indicator
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            self.scrollSpeedLabel = UILabelTop(self, f'{Status().get_speed()}x', Qt.AlignLeft)
+            self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
+            self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
+
+        # Altitude Graph
+        altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+        print(altitudelist)
+        self.altitudegraph = AltitudeGraph(False, altitudelist, percent_rank, self.picture.altitude)
+        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.altitudegraph)
+        # self.bottomUIContainer.layout.addItem(spacer)
+
+        # Color Bar
+        colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+        self.colorbar = ColorBar(False, colorlist, percent_rank, self.picture.color_rgb)
+        self.colorbar.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.colorbar)
+
+        # Time Bar
+        self.timebar = TimeBar(True, QColor(62, 71, 47), len(colorlist), percent_rank)
+        self.timebar.myHide()
+        self.timebar.setGraphicsEffect(UIEffectDropShadow())
+        self.bottomUIContainer.layout.addWidget(self.timebar)
+
+        # Spacer at bottom
+        # self.bottomUIContainer.layout.addItem(spacer)
+
+        # Fullscreen Components
+        # ---------------------------------------------------------------------
+        self.helpMenu = UIHelpMenu(self)
 
         # Portrait UI
         # ---------------------------------------------------------------------
@@ -799,53 +858,6 @@ class MainWindow(QMainWindow):
         self.vlabelCenter.setGraphicsEffect(UIEffectDropShadow())
         self.portraitUIContainerTop.layout.addWidget(self.vlabelCenter)
         self.portraitUIContainerTop.hide()
-
-        # Time, Color, Altitude Graphs
-        # ---------------------------------------------------------------------
-        spacer = QSpacerItem(0, 25)
-        self.bottomUIContainer = UIContainer(self, QVBoxLayout(), Qt.AlignBottom)
-
-        rank = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
-        print(f'Rank New: {rank}')
-
-        # Speed Indicator
-        self.scrollSpeedLabel = UILabelTop(self, f'{self.scrollspeed}x', Qt.AlignLeft)
-        self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
-
-        # Color Palette
-        self.palette = ColorPalette(self.picture.colors_rgb, self.picture.colors_conf, True)
-        self.palette.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.palette)
-        self.bottomUIContainer.layout.addItem(spacer)
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            self.scrollSpeedLabel = UILabelTop(self, f'{Status().get_speed()}x', Qt.AlignLeft)
-            self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
-            self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
-
-        # Altitude Graph
-        self.altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
-        print(self.altitudelist)
-        self.altitudegraph = AltitudeGraph(self.altitudelist, True, rank, self.picture.altitude)
-        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.altitudegraph)
-        # self.bottomUIContainer.layout.addItem(spacer)
-
-        # Color Bar
-        self.colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
-        # TODO - Need data from the hike element, likely need to get the Hike on each new picture (??)
-        self.colorbar = ColorBar(self.colorlist, True, rank, self.picture.color_rgb)
-        self.colorbar.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.colorbar)
-
-        # Time Bar
-        self.timebar = TimeBar(QColor(62, 71, 47), rank, True)
-        self.timebar.myHide()
-        self.timebar.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.timebar)
-
-        # Spacer at bottom
-        self.bottomUIContainer.layout.addItem(spacer)
 
         # Setups up a UI timer for controlling the fade out of UI elements
         # ---------------------------------------------------------------------
@@ -964,7 +976,7 @@ class MainWindow(QMainWindow):
 
         # Detects when the a magnet is near the hall effect
         # This may need a custom thread that continually checks for a change in status
-        # I.E. there was a magnet near, but now there isn't
+        # i.e. there was a magnet near, but now there isn't
         buttonHallEffect = HardwareButton(self.PIN_HALL_EFFECT)
         buttonHallEffect.signals.result.connect(self.pressed_hall_effect)
         self.threadpool.start(buttonHallEffect)
@@ -1026,42 +1038,55 @@ class MainWindow(QMainWindow):
         # self.colorbar.fadeOut(time_ms)
         # self.palette.fadeOut(time_ms)
 
-    # UI Interactions
+    # UI Updates
     # -------------------------------------------------------------------------
 
-    def changeMode(self):
-        print('changeMode()')
+    def uiChangeMode(self):
+        print('uiChangeMode()')
         Status().next_mode()
 
         mode = Status().get_mode()
         if mode == StatusMode.TIME:
-            self.modeOverlay.setTime()
-            self.ledWhite.set_time_mode()
+            pass
+            # self.modeOverlay.setTime()
         elif mode == StatusMode.COLOR:
-            self.modeOverlay.setColor()
-            self.ledWhite.set_color_mode()
+            pass
+            # self.modeOverlay.setColor()
         elif mode == StatusMode.ALTITUDE:
-            self.modeOverlay.setAltitude()
-            self.ledWhite.set_altitude_mode()
+            pass
+            # self.modeOverlay.setAltitude()
 
-    def setLandscape(self):
-        print('setLandscape()')
+        # LED Lights only on Projector
+        if platform.system() == 'Linux':
+            if mode == StatusMode.TIME:
+                self.ledWhite.set_time_mode()
+            elif mode == StatusMode.COLOR:
+                self.ledWhite.set_color_mode()
+            elif mode == StatusMode.ALTITUDE:
+                self.ledWhite.set_altitude_mode()
+
+    def uiSetLandscape(self):
+        print('uiSetLandscape()')
         Status().set_orientation_landscape()
 
         # Switch Images
         self.imageBlender.loadLandscapeImages()
         self.stacklayout.setCurrentIndex(Status().get_orientation())
 
-        # self.pictureLandscape.update_image(self.picture.cameraf)
-
+        # Hide Portrait
         self.portraitUIContainerTop.hide()
+
+        # Show Landscape
         self.bottomUIContainer.show()
 
-        self.leftLabel.show()
+        # self.leftLabel.show()
+        self.scopeWidget.myShow()
         self.centerLabel.show()
         self.rightLabel.show()
 
-    def setVertical(self):
+        self.uiUpdateScreen()
+
+    def uiSetVertical(self):
         print('setVertical()')
         Status().set_orientation_vertical()
         self.imageBlender.loadPortraitImages()
@@ -1075,38 +1100,29 @@ class MainWindow(QMainWindow):
         self.portraitUIContainerTop.show()
         self.bottomUIContainer.hide()
 
-        self.leftLabel.hide()
-        self.centerLabel.hide()
-        self.rightLabel.hide()
+        # self.leftLabel.hide()
+        self.timerFadeOutUI.stop()
+        self.scopeWidget.opacityHide()
+        self.centerLabel.opacityHide()
+        self.rightLabel.opacityHide()
 
-    # Update the Screen
-    # -------------------------------------------------------------------------
-    # A slow and inefficient, but good base case for updating the UI on the screen
-    # TODO - JRW I'm quite certain that this is the bottleneck of the program!
-    def updateScreen(self):
+    # TODO - Should updating the UI be divided up into sub-functions
+    # Or since repaint is automatically called on all the widgets, does it matter?
+    def uiUpdateScreen(self):
         # self.picture.print_obj()
         # self.printCurrentMemoryUsage()
-        # self.updateImages()  # Only for the Mac App
+        pass
 
-        self.updateUITop()
-        self.updateUIBottom()
+        # TODO - comment out for faster loading and easier of testing
+        self.uiUpdateTop()
+        self.uiUpdateBottom()
 
-    # TODO - still need to have multiple blending images
-    def updateImages(self):
-        # Somewhere along this chain, all the paintEvents are called
-        # self.imageBlender.set_next_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.picture.cameraf)
-
-        # TODO on Pi -  tes to see if not having the imageBlender makes it refresh faster
-        # self.nextf_raw = Image.open(self.picture.cameraf, 'r')
-        self._load_new_images(self.picture.camera1, self.picture.camera2, self.picture.camera3, self.nextf_raw)  # JRW
-
-        # TODO - check on memory usage on Pi & Mac
-        # self.printCurrentMemoryUsage()
+    def uiUpdateScreenVertical(self):
+        pass
 
     # TODO -- Might be more resource efficient to have all the objects faded out
     # in 1 method, instead of having the fade attached to each individual class
-    # Animations
-    def updateUITop(self):
+    def uiUpdateTop(self):
         self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
 
         # Do the visualization
@@ -1116,10 +1132,13 @@ class MainWindow(QMainWindow):
         scope = Status().get_scope()
 
         if scope == StatusScope.HIKE:
-            self.leftLabel.setPrimaryText("Hikes")
+            # self.leftLabel.setPrimaryText("Hikes")
+            self.scopeWidget.setScopeHikes()
         elif scope == StatusScope.GLOBAL:
-            self.leftLabel.setPrimaryText("Archive")
-        self.leftLabel.show()
+            # self.leftLabel.setPrimaryText("Archive")
+            self.scopeWidget.setScopeArchive()
+        # self.leftLabel.show()
+        self.scopeWidget.myShow()
 
         if mode == StatusMode.TIME:
             self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
@@ -1130,22 +1149,18 @@ class MainWindow(QMainWindow):
             self.centerLabel.setSecondaryText('M')
             self.vlabelCenter.setText(f'{self.picture.uialtitude} M')
         elif mode == StatusMode.COLOR:
-            # TODO - eventually the color palette will be here, so it'll be blank
-            # self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
-            # self.centerLabel.setSecondaryText(self.picture.uitime_sec)
-            # self.vlabelCenter.setText(self.picture.uitime_hrmm)
             self.centerLabel.setPrimaryText('')
             self.centerLabel.setSecondaryText('')
             self.vlabelCenter.setText(f'Color Mode')
         self.centerLabel.show()
-        self.vlabelCenter.show()  # JAR - I think this might have been part of the issue
+        self.vlabelCenter.show()  # TODO - Is this part of issue for showing/fading?
 
         self.rightLabel.setPrimaryText(f"{self.picture.uihike}\n{self.picture.uidate}")
         self.rightLabel.show()
 
         self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
 
-    def updateUIBottom(self):
+    def uiUpdateBottom(self):
         scope = Status().get_scope()
         mode = Status().get_mode()
 
@@ -1158,38 +1173,56 @@ class MainWindow(QMainWindow):
                     altitudelist = self.uiData.altitudesSortByAltitudeForHike[hike]
                     colorlist = self.uiData.colorSortByAltitudeForHike[hike]
                     rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('alt', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
+                    self.colorpalette.trigger_refresh(False, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(True, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(False, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
                 elif mode == StatusMode.COLOR:
                     altitudelist = self.uiData.altitudesSortByColorForHike[hike]
                     colorlist = self.uiData.colorSortByColorForHike[hike]
                     rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_hike_with_mode('color', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
+                    self.colorpalette.trigger_refresh(True, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(False, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(True, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
                 elif mode == StatusMode.TIME:
                     altitudelist = self.uiData.altitudesSortByTimeForHike[hike]
                     colorlist = self.uiData.colorSortByTimeForHike[hike]
                     rank_colorbar_altgraph = rank_timebar
-                    self.timebar.trigger_refresh(rank_timebar, True)
+                    self.colorpalette.trigger_refresh(False, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(False, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(False, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(True, len(colorlist), rank_timebar)
             elif scope == StatusScope.GLOBAL:
                 rank_timebar = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
                 if mode == StatusMode.ALTITUDE:
                     altitudelist = self.uiData.altitudesSortByAltitudeForArchive
                     colorlist = self.uiData.colorSortByAltitudeForArchive
                     rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('alt', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
+                    self.colorpalette.trigger_refresh(False, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(True, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(False, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
                 elif mode == StatusMode.COLOR:
                     altitudelist = self.uiData.altitudesSortByColorForArchive
                     colorlist = self.uiData.colorSortByColorForArchive
                     rank_colorbar_altgraph = self.sql_controller.ui_get_percentage_in_archive_with_mode('color', self.picture)
-                    self.timebar.trigger_refresh(rank_timebar, False)
+                    self.colorpalette.trigger_refresh(True, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(False, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(True, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(False, len(colorlist), rank_timebar)
                 if mode == StatusMode.TIME:
                     altitudelist = self.uiData.altitudesSortByTimeForArchive
                     colorlist = self.uiData.colorSortByTimeForArchive
                     rank_colorbar_altgraph = rank_timebar
-                    self.timebar.trigger_refresh(rank_timebar, True)
+                    self.colorpalette.trigger_refresh(False, self.picture.colors_rgb, self.picture.colors_conf)
+                    self.altitudegraph.trigger_refresh(False, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
+                    self.colorbar.trigger_refresh(False, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+                    self.timebar.trigger_refresh(True, len(colorlist), rank_timebar)
 
-            self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
-            self.colorbar.trigger_refresh(colorlist, True, rank_colorbar_altgraph, self.picture.color_rgb)
-            self.altitudegraph.trigger_refresh(altitudelist, True, rank_colorbar_altgraph, self.picture.altitude)
+            # self.palette.trigger_refresh(self.picture.colors_rgb, self.picture.colors_conf, True)
+            # self.colorbar.trigger_refresh(True, colorlist, rank_colorbar_altgraph, self.picture.color_rgb)
+            # self.altitudegraph.trigger_refresh(True, altitudelist, rank_colorbar_altgraph, self.picture.altitude)
 
         else:
             pass
@@ -1339,14 +1372,14 @@ class MainWindow(QMainWindow):
     def control_mode(self):
         '''Changes the mode: Time -> Color -> Altitude ->'''
         print('Mode change')
-        self.changeMode()
-        self.updateScreen()
+        self.uiChangeMode()
+        self.uiUpdateScreen()
 
     def control_scope(self):
         '''Changes the scope: Hike -> Archive ->'''
         print('Shift Archive / Hike')
         Status().change_scope()
-        self.updateScreen()
+        self.uiUpdateScreen()
 
     def control_next(self):
         '''Mac/Windows app only: move to next photo (arrow keys)'''
@@ -1382,12 +1415,12 @@ class MainWindow(QMainWindow):
     def control_landscape(self):
         '''Changes the orientation to landscape'''
         print('setLandscape')
-        self.setLandscape()
+        self.uiSetLandscape()
 
     def control_vertical(self):
         '''Changes the orientation to vertical'''
         print('setVertical')
-        self.setVertical()
+        self.uiSetVertical()
 
     def control_speed_slower(self):
         '''Mac/Windows app only: decreases skip size for keyboard'''
