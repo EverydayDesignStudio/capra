@@ -7,5 +7,5 @@ PyQt5==5.14.2
 pytest==5.4.2
 RPi.GPIO==0.7.0
 scikit-learn==0.22.2
-opencv-python==3.4.6.27
+opencv-python==3.4.7.28
 colormath==3.0.0
