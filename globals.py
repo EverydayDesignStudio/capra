@@ -1,7 +1,7 @@
 import time
 
 def init():
-    timestr = time.strftime("%Y%m%d")
+    timestr = time.strftime("%Y%m")
 
     # *** Explorer -> Projector
     # *** Collector -> Camera
@@ -10,19 +10,21 @@ def init():
     # TODO: determine statis IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
-    IP_ADDR_PROJECTOR = '192.168.123.193'
+    # IP_ADDR_PROJECTOR = '192.168.123.193'
     # IP_ADDR_PROJECTOR = '192.168.1.193'
+    IP_ADDR_PROJECTOR = '192.168.0.106'
 
     global IP_ADDR_CAMERA
     # IP_ADDR_CAMERA = '192.168.0.149'
-    IP_ADDR_CAMERA = '192.168.123.100'
+    # IP_ADDR_CAMERA = '192.168.123.100'
     # IP_ADDR_CAMERA = '192.168.1.100'
+    IP_ADDR_CAMERA = '192.168.0.148'
 
     # Databases
     global DBNAME_MASTER
-    DBNAME_MASTER = "capra_projector.db"
+    DBNAME_MASTER = "capra_projector_aug2021.db"
     global DBNAME_MASTER_BAK
-    DBNAME_MASTER_BAK = "capra_projector_" + timestr + "_bak.db"
+    DBNAME_MASTER_BAK = "capra_projector_aug2021_" + timestr + "_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
@@ -84,7 +86,7 @@ def init():
 
     # Color detection
     global COLOR_CLUSTER
-    COLOR_CLUSTER = 10
+    COLOR_CLUSTER = 5
 
     global COLOR_DIMX
     COLOR_DIMX = 160
