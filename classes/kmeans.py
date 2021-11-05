@@ -267,53 +267,66 @@ def get_five_dominant_colors_for_picture(picturePath):
 def get_multiple_dominant_colors(image1, image2, image3, image_processing_size=None):
     """
     takes an image as input
-    returns two lists
-        i) five dominant colors of the image as a list (int values)
-        ii) list of confidence values of the same size (2 decimal places)
+    returns FOUR values
+        i) number of colors
+        ii) X number of dominant colors in HSV (int values)
+        iii) X number of dominant colors in RGB (int values)
+        iv) list of confidence values of the same size (2 decimal places)
 
-    dominant colors are found by running k means on the
-    pixels & returning the centroid of the largest cluster
+    dominant colors are found by running k-means algorithm on the pixels of an image
+    & returning the centroid of the largest cluster(s)
 
     processing time is sped up by working with a smaller image;
     this resizing can be done with the image_processing_size param
     which takes a tuple of image dims as input
 
     >>> get_multiple_dominant_colors(my_image, k, image_processing_size = (25, 25))
-    [
-        [0, 0, 254],
-        [110, 37, 188],
-        [101, 13, 241],
-        [45, 26, 181],
-        [85, 28, 133]
-    ]                                       // five dominant colors in HSV format
-
-    [0.84, 0.05, 0.05, 0.04, 0.02]          // confidence values
+    4                                                               # 4 colors
+    [[20, 79, 72], [33, 182, 38], [4, 5, 241], [139, 17, 178]]      # dominant colors in HSV
+    [[72, 65, 50], [35, 38, 11], [241, 237, 236], [174, 166, 178]]  # dominant colors in RGB
+    [268.7, 103.0, 73.79, 15.32]                                    # confidence values
 
     """
 
     k = g.COLOR_CLUSTER
+    image = None
 
     # read in image of interest
     bgr_image1 = cv2.imread(image1)
     bgr_image2 = cv2.imread(image2)
-    bgr_image3 = cv2.imread(image3)
     # convert to HSV; this is a better representation of how we see color
     hsv_image1 = cv2.cvtColor(bgr_image1, cv2.COLOR_BGR2HSV)
     hsv_image2 = cv2.cvtColor(bgr_image2, cv2.COLOR_BGR2HSV)
-    hsv_image3 = cv2.cvtColor(bgr_image3, cv2.COLOR_BGR2HSV)
 
-    # resize image if new dims provided
-    if image_processing_size is not None:
-        image1 = cv2.resize(hsv_image1, image_processing_size, interpolation=cv2.INTER_AREA)
-        image2 = cv2.resize(hsv_image2, image_processing_size, interpolation=cv2.INTER_AREA)
-        image3 = cv2.resize(hsv_image3, image_processing_size, interpolation=cv2.INTER_AREA)
+    image1 = cv2.resize(hsv_image1, image_processing_size, interpolation=cv2.INTER_AREA)
+    image2 = cv2.resize(hsv_image2, image_processing_size, interpolation=cv2.INTER_AREA)
 
     # reshape the image to be a list of pixels
     image1 = image1.reshape((image1.shape[0] * image1.shape[1], 3))
     image2 = image2.reshape((image2.shape[0] * image2.shape[1], 3))
-    image3 = image3.reshape((image3.shape[0] * image3.shape[1], 3))
 
-    image = np.concatenate((image1, image2, image3))
+    if (image3 is not None):
+        bgr_image3 = cv2.imread(image3)
+        hsv_image3 = cv2.cvtColor(bgr_image3, cv2.COLOR_BGR2HSV)
+        image3 = cv2.resize(hsv_image3, image_processing_size, interpolation=cv2.INTER_AREA)
+        image3 = image3.reshape((image3.shape[0] * image3.shape[1], 3))
+
+    if (image3 is None):
+        image = np.concatenate((image1, image2))
+    else:
+        image = np.concatenate((image1, image2, image3))
+
+    # else:
+    #     # read in image of interest
+    #     bgr_image1 = cv2.imread(image1)
+    #     # convert to HSV; this is a better representation of how we see color
+    #     hsv_image1 = cv2.cvtColor(bgr_image1, cv2.COLOR_BGR2HSV)
+    #
+    #     image1 = cv2.resize(hsv_image1, image_processing_size, interpolation=cv2.INTER_AREA)
+    #
+    #     # reshape the image to be a list of pixels
+    #     image = image1.reshape((image1.shape[0] * image1.shape[1], 3))
+
 
     # cluster and assign labels to the pixels
     clt = KMeans(n_clusters=k)
@@ -330,37 +343,40 @@ def get_multiple_dominant_colors(image1, image2, image3, image_processing_size=N
     for label in topK:
         tmp = [ int(e) for e in clt.cluster_centers_[label[0]].tolist() ]
         dominant_colors_hsv.append(tmp)
-        confidences.append(round(label[1]/TOTAL, 2))
+        base = TOTAL*3
+        confidences.append(round(label[1]/base, 2))
 
-#    print(dominant_colors_hsv)
-#    print(confidences)
-
-    # exclude colors that are similar to existing ones and with < 0.1 confidence value
     index_to_remove = set()
+    confidence_value_threshold = 0.1
+    if (len(dominant_colors_hsv) >= k):
+        # exclude colors that are similar to existing ones and with < 0.1 confidence value
+        for i in range(k):
+            color_i = dominant_colors_hsv[i]
+            color_i_hsv = HSVColor(color_i[0], color_i[1], color_i[2])
+            color_i_lab = convert_color(color_i_hsv, LabColor)
 
-    for i in range(k):
-        color_i = dominant_colors_hsv[i]
-        color_i_hsv = HSVColor(color_i[0], color_i[1], color_i[2])
-        color_i_lab = convert_color(color_i_hsv, LabColor)
+            color_i_delta = []
 
-        color_i_delta = []
+            for j in range(i+1, k):
+                color_j = dominant_colors_hsv[j]
+                color_j_hsv = HSVColor(color_j[0], color_j[1], color_j[2])
+                color_j_lab = convert_color(color_j_hsv, LabColor)
 
-        for j in range(i+1, k):
-            color_j = dominant_colors_hsv[j]
-            color_j_hsv = HSVColor(color_j[0], color_j[1], color_j[2])
-            color_j_lab = convert_color(color_j_hsv, LabColor)
+                delta_e = delta_e_cie2000(color_i_lab, color_j_lab);
 
-            delta_e = delta_e_cie2000(color_i_lab, color_j_lab);
+                color_i_delta.append(delta_e)
 
-            color_i_delta.append(delta_e)
-
-        for j in range (len(color_i_delta)):
-            if (confidences[i+j+1] < 0.2 and color_i_delta[j] < 40):
-                index_to_remove.add(i+j+1)
+            for j in range(len(color_i_delta)):
+                if (confidences[i+j+1] < confidence_value_threshold and color_i_delta[j] < 40):
+                    index_to_remove.add(i+j+1)
+    else:
+        # if the # of domcol is less than k, trim colors that are < 0.1 confidence value only
+        for i in range(len(dominant_colors_hsv)):
+            if (confidences[i] < confidence_value_threshold):
+                index_to_remove.add(i)
 
     itr = list(index_to_remove)
     itr.sort(reverse = True)
-#    print("ITR : {}".format(itr))
 
     # trim insignificant colors
     for i in range(len(itr)):
@@ -372,11 +388,5 @@ def get_multiple_dominant_colors(image1, image2, image3, image_processing_size=N
     for color_hsv in dominant_colors_hsv:
         ret = hsvToRgb(color_hsv[0], color_hsv[1], color_hsv[2])
         dominant_colors_rgb.append(ret)
-
-#    print("\n")
-#    print(dominant_colors_hsv)
-#    print(dominant_colors_rgb)
-#    print(confidences)
-
 
     return len(confidences), dominant_colors_hsv, dominant_colors_rgb, confidences
