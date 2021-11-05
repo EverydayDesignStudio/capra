@@ -4,18 +4,17 @@
 import RPi.GPIO as GPIO
 import time
 from datetime import datetime
+import globals as g
+g.init()
 # import queue
 
 PERIOD = 500
 MAXQUEUE = 5
 
 # BOARD PINS
-# RoAPin = 16    # BCM 23
-# RoBPin = 18    # BCM 24
-RoAPin = 18    # BCM 24
-RoBPin = 16    # BCM 23
-
-RoSPin = 22    # BCM 25
+RoAPin = g.ENC1_A
+RoBPin = g.ENC1_B
+RoButPin = g.BUTT_ENC1
 
 globalCounter = 0
 
@@ -35,11 +34,11 @@ Current_Direction = 0   # 0 for backward, 1 for forward
 
 
 def setup():
-    GPIO.setmode(GPIO.BOARD)       # Numbers GPIOs by physical location
+    GPIO.setmode(GPIO.BCM)  # Numbers GPIOs by BCM location
     GPIO.setup(RoAPin, GPIO.IN)    # input mode
     GPIO.setup(RoBPin, GPIO.IN)
-    GPIO.setup(RoSPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    rotaryClear()
+    GPIO.setup(RoButPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.add_event_detect(RoButPin, GPIO.FALLING, callback=clear)  # wait for falling
 
 
 def calculate_speed():
@@ -101,29 +100,28 @@ def rotaryDeal():
         # elif (multFactor):
 
         if (Current_Direction == 1):
-            globalCounter = globalCounter + 1 * multFactor
-        else:
             globalCounter = globalCounter - 1 * multFactor
+        else:
+            globalCounter = globalCounter + 1 * multFactor
 
         Last_Direction = Current_Direction
-        print('GlobalCounter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=globalCounter, d=dt, s=speed, a=multFactor, st=speedText))
+        print('Encoder counter: {g}, diff_time: {d:.4f}, speed: {s:.2f}, MultFactor: {a:.2f} ({st})'.format(g=globalCounter, d=dt, s=speed, a=multFactor, st=speedText))
 
 
 def clear(ev=None):
+    global globalCounter
     globalCounter = 0
-    print('globalCounter = {g}'.format(g=globalCounter))
+    print('Encoder counter: = {g}'.format(g=globalCounter))
     time.sleep(1)
 
 
-def rotaryClear():
-    GPIO.add_event_detect(RoSPin, GPIO.FALLING, callback=clear)  # wait for falling
-
-
 def loop():
+    print('-------- Test Rotary Encoder (speed detection) --------')
+    print('Option: Press encoder button to reset counter')
+    print('Note: There may be some (network) lag via SSH/VNC\n')
     global globalCounter
     while True:
         rotaryDeal()
-        # print 'globalCounter = %d' % globalCounter
 
 
 def destroy():

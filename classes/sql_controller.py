@@ -1,58 +1,464 @@
 # Controller to handle the projector UI and camera mainloop talking with the SQLite database
 
 import os
+import platform
 import sqlite3
 import time
-from classes.capra_data_types import Picture, Hike
+from PyQt5.QtGui import *
+from classes.capra_data_types import Picture, Hike, UIData
 from classes.sql_statements import SQLStatements
 
 
 class SQLController:
-    def __init__(self, database: str):
+    def __init__(self, database: str, directory=None):
         # TODO - be aware that this could potentially be dangerous for thread safety
         self.connection = sqlite3.connect(database, check_same_thread=False)
+        self.directory = directory
         self.connection.row_factory = sqlite3.Row
         self.statements = SQLStatements()
 
-    # Helper methods
-    # _underscores signify that they should be treated as private functions to  this class
+    # --------------------------------------------------------------------------
+    # New Functions 2020 / 2021
+    # --------------------------------------------------------------------------
+
+    # Private functions
+    def _execute_query(self, query) -> Picture:
+        '''Returns the first (row) `Picture` from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        all_rows = cursor.fetchall()
+
+        if not all_rows:
+            print("ERROR UPON CALLING QUERY:")
+            print(query)
+            return None
+        else:
+            # TESTING: used for testing the original 4 database
+            # picture = self._test_build_picture_from_row(all_rows[0])
+
+            # PRODUCTION: create Picture object from database row
+            picture = self._build_picture_from_row(all_rows[0])
+
+            return picture
+
+    def _execute_query_for_int(self, query) -> int:
+        '''Returns an integer from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        if rows is None or len(rows) == 0:
+            print(query)
+            raise ValueError('No data returned from database from _execute_query_for_int()')
+        else:
+            value = rows[0][0]
+
+        return int(value)
+
+    def _execute_query_for_float(self, query) -> float:
+        '''Returns a float from a given query'''
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        if rows is None or len(rows) == 0:
+            print(query)
+            raise ValueError('No data returned from database from _execute_query_for_float()')
+        else:
+            value = rows[0][0]
+
+        return float(value)
+
+    def _execute_query_for_anything(self, query):
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        return rows
+
+    def _test_build_picture_from_row(self, row: list) -> Picture:
+        """⚠️ DO NOT USE IN PRODUCTION
+        This is only for using to test!!!
+        Builds an old (winter 2021 verion) of Picture object from an old `pictures` row
+        ::
+
+            :param row: from `pictures` table
+            :return: Picture (old winter 2021 version)
+        """
+
+        # Finalized Database schema
+        picture = Picture(picture_id=row['picture_id'], time=row['time'], year=row['year'], month=row['month'], day=row['day'],
+                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'], timerank_global='--',
+                          altitude=row['altitude'], altrank_hike=row['altrank_hike'], altrank_global=row['altrank_global'], altrank_global_h=row['altrank_global_h'],
+                          color_hsv=row['color_hsv'], color_rgb=row['color_rgb'], colorrank_hike=row['color_rank_hike'], colorrank_global=row['color_rank_global'],
+                          colorrank_global_h=row['color_rank_global_h'], colors_count=row['colors_count'], colors_rgb=row['colors_rgb'], colors_conf=row['colors_conf'],
+                          camera1=row['camera1'], camera2=row['camera2'], camera3=row['camera3'], cameraf=row['camera_landscape'],
+                          created=row['created_date_time'], updated=row['updated_date_time'])
+
+        return picture
+
     def _build_picture_from_row(self, row: list) -> Picture:
-        picture = Picture(picture_id=row[0], time=row[1], altitude=row[2],
-                          brightness=row[3], b_rank=row[4], hue=row[5], h_rank=row[6],
-                          hue_lumosity=row[7], hl_rank=row[8], hike_id=row[9], index_in_hike=row[10],
-                          camera1=row[11], camera2=row[12], camera3=row[13], camera_land=row[14])
+        """Build Picture object from `pictures` row
+        ::
+
+            :param row: from `pictures` table
+            :return: Picture (custom object)
+        """
+
+        camera1 = self.directory + row['camera1']
+        camera2 = self.directory + row['camera2']
+        camera3 = self.directory + row['camera3']
+        cameraf = self.directory + row['camera_landscape']
+
+        # Finalized Database schema
+        picture = Picture(picture_id=row['picture_id'], time=row['time'], year=row['year'], month=row['month'], day=row['day'],
+                          minute=row['minute'], dayofweek=row['dayofweek'], hike_id=row['hike'], index_in_hike=row['index_in_hike'], timerank_global=row['time_rank_global'],
+                          altitude=row['altitude'], altrank_hike=row['altrank_hike'], altrank_global=row['altrank_global'], altrank_global_h=row['altrank_global_h'],
+                          color_hsv=row['color_hsv'], color_rgb=row['color_rgb'], colorrank_hike=row['color_rank_hike'], colorrank_global=row['color_rank_global'],
+                          colorrank_global_h=row['color_rank_global_h'], colors_count=row['colors_count'], colors_rgb=row['colors_rgb'], colors_conf=row['colors_conf'],
+                          camera1=camera1, camera2=camera2, camera3=camera3, cameraf=cameraf,
+                          created=row['created_date_time'], updated=row['updated_date_time'])
 
         return picture
 
     def _build_hike_from_row(self, row: list) -> Hike:
-        hike = Hike(hike_id=row[0], avg_altitude=row[1],
-                    avg_brightness=row[2], avg_hue=row[3], avg_hue_lumosity=row[4],
-                    start_time=row[5], end_time=row[6], pictures_num=row[7], path=row[8])
+        """Build Hike object from `hikes` row
+        ::
+
+            :param row: from `hikes` table
+            :return: Hike (custom object)
+        """
+
+        hikepath = self.directory + row['path']
+
+        # Finalized Database schema
+        hike = Hike(hike_id=row['hike_id'], avg_altitude=row['avg_altitude'], avg_altrank=row['avg_altitude_rank'],
+                    start_time=row['start_time'], start_year=row['start_year'], start_month=row['start_month'], start_day=row['start_day'], start_minute=row['start_minute'], start_dayofweek=row['start_dayofweek'],
+                    end_time=row['end_time'], end_year=row['end_year'], end_month=row['end_month'], end_day=row['end_day'], end_minute=row['end_minute'], end_dayofweek=row['end_dayofweek'],
+                    color_rgb=row['color_rgb'], color_rank=row['color_rank'], num_pictures=row['pictures'], path=hikepath, created=row['created_date_time'], updated=row['updated_date_time'])
 
         return hike
 
-    def _get_picture_from_sql_statement(self, statement: str) -> Picture:
+    # Selecting by ID and index
+    # --------------------------------------------------------------------------
+    def get_picture_with_id(self, id: int) -> Picture:
+        sql = self.statements.select_picture_by_id(id)
+        return self._execute_query(sql)
+
+    def get_hike_with_id(self, id: int) -> Hike:
+        sql = self.statements.select_hike_by_id(id)
+        rows = self._execute_query_for_anything(sql)
+
+        if not rows:
+            print("ERROR UPON QUERYING FOR HIKE:")
+            print(sql)
+            return None
+        else:
+            # Hike object was created from database row
+            hike = self._build_hike_from_row(rows[0])
+            return hike
+
+    def get_current_hike(self, current: Picture) -> Hike:
+        return self.get_hike_with_id(current.hike_id)
+
+    # TODO - write tests for all of these functions
+    # Initializing queries - used to get the initial row from the database
+    # --------------------------------------------------------------------------
+    def get_first_time_picture(self) -> Picture:
+        sql = self.statements.select_by_time_first_picture()
+        return self._execute_query(sql)
+
+    def get_last_time_picture(self) -> Picture:
+        sql = self.statements.select_by_time_last_picture()
+        return self._execute_query(sql)
+
+    def get_first_time_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_time_first_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_last_time_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_time_last_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_greatest_altitude_picture(self) -> Picture:
+        sql = self.statements.select_by_altitude_greatest_picture()
+        return self._execute_query(sql)
+
+    def get_least_altitude_picture(self) -> Picture:
+        sql = self.statements.select_by_altitude_least_picture()
+        return self._execute_query(sql)
+
+    def get_greatest_altitude_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_altitude_greatest_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    def get_least_altitude_picture_in_hike(self, hike_id: float) -> Picture:
+        sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
+        return self._execute_query(sql)
+
+    # Sizes
+    # --------------------------------------------------------------------------
+    def get_hike_size(self, current: Picture) -> int:
+        sql = self.statements.select_hike_size(current.hike_id)
+        return self._execute_query_for_int(sql)
+
+    def get_hike_size_with_id(self, hike_id: int) -> int:
+        sql = self.statements.select_hike_size(hike_id)
+        return self._execute_query_for_int(sql)
+
+    def get_archive_size(self) -> int:
+        sql = self.statements.select_archive_size()
+        return self._execute_query_for_int(sql)
+
+    # Time
+    # --------------------------------------------------------------------------
+
+    # Time in Hikes
+    def get_next_time_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_time_in_hikes(current.time, offset)
+        return self._execute_query(sql)
+
+    def get_previous_time_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_time_in_hikes(current.time, offset)
+        return self._execute_query(sql)
+
+    # Time in Global
+    def get_next_time_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_time_in_global(current.minute, current.time, offset)
+        return self._execute_query(sql)
+
+    def get_previous_time_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_time_in_global(current.minute, current.time, offset)
+        return self._execute_query(sql)
+
+    # Time Skip in Hikes
+    def get_next_time_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_time_skip_in_hikes(current.hike_id, current.time)
+        return self._execute_query(sql)
+
+    def get_previous_time_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_time_skip_in_hikes(current.hike_id, current.time)
+        return self._execute_query(sql)
+
+    # Time Skip in Global
+    def get_next_time_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_time_skip_in_global(current.minute, current.time)
+        return self._execute_query(sql)
+
+    def get_previous_time_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_time_skip_in_global(current.minute, current.time)
+        return self._execute_query(sql)
+
+    # Altitude
+    # --------------------------------------------------------------------------
+
+    # Altitude in Hikes
+    def get_next_altitude_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_altitude_in_hikes(current.altrank_global_h, offset)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_altitude_in_hikes(current.altrank_global_h, offset)
+        return self._execute_query(sql)
+
+    # Altitude in Global
+    def get_next_altitude_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_altitude_in_global(current.altrank_global, offset)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_altitude_in_global(current.altrank_global, offset)
+        return self._execute_query(sql)
+
+    # Altitude Skip in Hikes
+    def get_next_altitude_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_altitude_skip_in_hikes(current.hike_id, current.altrank_hike)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_altitude_skip_in_hikes(current.hike_id, current.altrank_hike)
+        return self._execute_query(sql)
+
+    # Altitude Skip in Global
+    def get_next_altitude_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_altitude_skip_in_global(current.altrank_global)
+        return self._execute_query(sql)
+
+    def get_previous_altitude_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_altitude_skip_in_global(current.altrank_global)
+        return self._execute_query(sql)
+
+    # Color
+    # --------------------------------------------------------------------------
+
+    # Color in Hikes
+    def get_next_color_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_color_in_hikes(current.colorrank_global_h, offset)
+        return self._execute_query(sql)
+
+    def get_previous_color_in_hikes(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_color_in_hikes(current.colorrank_global_h, offset)
+        return self._execute_query(sql)
+
+    # Color in Global
+    def get_next_color_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_next_color_in_global(current.colorrank_global, offset)
+        return self._execute_query(sql)
+
+    def get_previous_color_in_global(self, current: Picture, offset: int) -> Picture:
+        sql = self.statements.select_previous_color_in_global(current.colorrank_global, offset)
+        return self._execute_query(sql)
+
+    # Color Skip in Hikes
+    def get_next_color_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_color_skip_in_hikes(current.hike_id, current.colorrank_hike)
+        return self._execute_query(sql)
+
+    def get_previous_color_skip_in_hikes(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_color_skip_in_hikes(current.hike_id, current.colorrank_hike)
+        return self._execute_query(sql)
+
+    # Color Skip in Global
+    def get_next_color_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_next_color_skip_in_global(current.colorrank_global)
+        return self._execute_query(sql)
+
+    def get_previous_color_skip_in_global(self, current: Picture) -> Picture:
+        sql = self.statements.select_previous_color_skip_in_global(current.colorrank_global)
+        return self._execute_query(sql)
+
+    # --------------------------------------------------------------------------
+    # UI Calls (2021)
+    # --------------------------------------------------------------------------
+
+    # Preload all the UI Data into a UIData object
+    def preload_ui_data(self) -> UIData:
+        uiData = UIData()
+
+        # Load all the Hike UI data
+        # starting point in database
+        picture = self.get_picture_with_id(1)
+        starting_hike = picture.hike_id
+
+        hike = 0
+        while hike != starting_hike:
+            # Update the hike from the current picture
+            hike = picture.hike_id
+
+            # Load data for this hike
+            uiData.altitudesSortByAltitudeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('alt', picture)
+            uiData.altitudesSortByColorForHike[hike] = self.ui_get_altitudes_for_hike_sortby('color', picture)
+            uiData.altitudesSortByTimeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('time', picture)
+
+            uiData.colorSortByAltitudeForHike[hike] = self.ui_get_colors_for_hike_sortby('alt', picture)
+            uiData.colorSortByColorForHike[hike] = self.ui_get_colors_for_hike_sortby('color', picture)
+            uiData.colorSortByTimeForHike[hike] = self.ui_get_colors_for_hike_sortby('time', picture)
+
+            # iterate to next hike
+            picture = self.get_next_time_skip_in_hikes(picture)
+            hike = picture.hike_id
+
+        # Load all the Global Archive Data
+        uiData.altitudesSortByAltitudeForArchive = self.ui_get_altitudes_for_archive_sortby('alt')
+        uiData.altitudesSortByColorForArchive = self.ui_get_altitudes_for_archive_sortby('color')
+        uiData.altitudesSortByTimeForArchive = self.ui_get_altitudes_for_archive_sortby('time')
+
+        uiData.colorSortByAltitudeForArchive = self.ui_get_colors_for_archive_sortby('alt')
+        uiData.colorSortByColorForArchive = self.ui_get_colors_for_archive_sortby('color')
+        uiData.colorSortByTimeForArchive = self.ui_get_colors_for_archive_sortby('time')
+
+        return uiData
+
+    # Altitude
+    def ui_get_altitudes_for_hike_sortby(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_altitudes_for_hike_sortby(m, current.hike_id)
+
         cursor = self.connection.cursor()
-        cursor.execute(statement)
-        all_rows = cursor.fetchall()
-        picture = self._build_picture_from_row(all_rows[0])
-
-        picture.print_obj()
-
-        return picture
-
-    # Helper method for returning expected number
-    # If nothing is returned from db, return 0
-    def _get_num_from_statement(self, statement: str):
-        cursor = self.connection.cursor()
-        cursor.execute(statement)
-        row = cursor.fetchone()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
 
         # Error safety check
-        if row is None:
-            return 0
+        if rows is None:
+            raise ValueError('No data returned!')
         else:
-            return row[0]
+            altlist = list()
+            for r in rows:
+                altlist.append(float(r[0]))
+
+        return altlist
+
+    def ui_get_altitudes_for_archive_sortby(self, m: str) -> list:
+        sql = self.statements.ui_select_altitudes_for_archive_sortby(m)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            altlist = list()
+            for r in rows:
+                altlist.append(float(r[0]))
+
+        return altlist
+
+    # Colors
+    def ui_get_colors_for_hike_sortby(self, m: str, current: Picture) -> list:
+        sql = self.statements.ui_select_colors_for_hike_sortby(m, current.hike_id)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            colorlist = list()
+            for r in rows:
+                c = r[0].split(',')
+                color = QColor(int(c[0]), int(c[1]), int(c[2]))
+                # print(color.red())
+
+                colorlist.append(color)
+
+            return colorlist
+
+    def ui_get_colors_for_archive_sortby(self, m: str) -> list:
+        sql = self.statements.ui_select_colors_for_archive_sortby(m)
+
+        cursor = self.connection.cursor()
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        # Error safety check
+        if rows is None:
+            raise ValueError('No data returned!')
+        else:
+            colorlist = list()
+            for r in rows:
+                c = r[0].split(',')
+                color = QColor(int(c[0]), int(c[1]), int(c[2]))
+                colorlist.append(color)
+
+            return colorlist
+
+    # Time & Indicator Percentage
+    # (also needed for the indicators on the other modes)
+    def ui_get_percentage_in_hike_with_mode(self, m: str, current: Picture) -> float:
+        sql = self.statements.ui_select_percentage_in_hike_with_mode(m, current.picture_id, current.hike_id)
+        return round(self._execute_query_for_float(sql), 4)
+
+    def ui_get_percentage_in_archive_with_mode(self, m: str, current: Picture) -> float:
+        sql = self.statements.ui_select_percentage_in_archive_with_mode(m, current.picture_id)
+        return round(self._execute_query_for_float(sql), 4)
+
+    # --------------------------------------------------------------------------
+    # TODO REMOVE - Eventually go through and remove all the old methods that aren't needed anymore
+    # likely it will be most of them
+    # --------------------------------------------------------------------------
 
     # Projector
     # --------------------------------------------------------------------------
@@ -76,6 +482,41 @@ class SQLController:
                 print('Color in hikes is not implemented yet')
                 return current_picture
 
+    # Helper method for returning expected number
+    # If nothing is returned from db, return 0
+    def _get_num_from_statement(self, statement: str):
+        cursor = self.connection.cursor()
+        cursor.execute(statement)
+        row = cursor.fetchone()
+
+        # Error safety check
+        if row is None:
+            return 0
+        else:
+            return row[0]
+
+    # Projector
+    # --------------------------------------------------------------------------
+    # def get_next_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
+    #     if is_across_hikes:     # Across all hikes: rotary encoder is pressed
+    #         if mode == 0:       # Time
+    #             return self.next_time_picture_across_hikes(current_picture)
+    #         elif mode == 1:     # Altitude
+    #             return self.next_altitude_picture_across_hikes(current_picture)
+    #         elif mode == 2:     # Color
+    #             # TODO return self.next_color_picture_across_hikes(current_picture)
+    #             print('Color across hikes not implemented yet')
+    #             return current_picture
+    #     else:                   # In current hike: rotary encoder not pressed
+    #         if mode == 0:       # Time
+    #             return self.next_time_picture_in_hike(current_picture)
+    #         elif mode == 1:     # Altitude
+    #             return self.next_altitude_picture_in_hike(current_picture)
+    #         elif mode == 2:     # Color
+    #             # TODO return self.next_altitude_picture_in_hike(current_picture)
+    #             print('Color in hikes is not implemented yet')
+    #             return current_picture
+
     def get_previous_picture(self, current_picture: Picture, mode: int, is_across_hikes: bool) -> Picture:
         if is_across_hikes:     # Across all hikes: rotary encoder is pressed
             if mode == 0:       # Time
@@ -97,14 +538,6 @@ class SQLController:
                 return current_picture
 
     # Time - across hikes
-    def get_first_time_picture(self) -> Picture:
-        sql = self.statements.select_by_time_first_picture()
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_last_time_picture(self) -> Picture:
-        sql = self.statements.select_by_time_last_picture()
-        return self._get_picture_from_sql_statement(sql)
-
     def next_time_picture_across_hikes(self, current_picture: Picture) -> Picture:
         cursor = self.connection.cursor()
         cursor.execute(self.statements.select_by_time_next_picture(current_picture.time))
@@ -124,14 +557,6 @@ class SQLController:
             return self._build_picture_from_row(all_rows[0])
 
     # Time - in a hike
-    def get_first_time_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_time_first_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_last_time_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_time_last_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
     def next_time_picture_in_hike(self, current_picture: Picture) -> Picture:
         cursor = self.connection.cursor()
         h = current_picture.hike_id
@@ -155,15 +580,6 @@ class SQLController:
             return self.get_last_time_picture_in_hike(hike_id=h)
         else:  # there is a next time picture
             return self._build_picture_from_row(all_rows[0])
-
-    # Altitude - get starting picture
-    def get_greatest_altitude_picture(self) -> Picture:
-        sql = self.statements.select_by_altitude_greatest_picture()
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_least_altitude_picture(self) -> Picture:
-        sql = self.statements.select_by_altitude_least_picture()
-        return self._get_picture_from_sql_statement(sql)
 
     # Altitude - next & previous across hikes
     def next_altitude_picture_across_hikes(self, current_picture: Picture) -> Picture:
@@ -211,15 +627,6 @@ class SQLController:
         else:  # there is a previous picture
             return self._build_picture_from_row(all_rows[0])
 
-    # Altitude - greatest & least in a hike
-    def get_greatest_altitude_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_altitude_greatest_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
-    def get_least_altitude_picture_in_hike(self, hike_id: float) -> Picture:
-        sql = self.statements.select_by_altitude_least_picture_in_hike(hike_id)
-        return self._get_picture_from_sql_statement(sql)
-
     # Altitude - next & previous in a hike
     def next_altitude_picture_in_hike(self, current_picture: Picture) -> Picture:
         cursor = self.connection.cursor()
@@ -266,23 +673,10 @@ class SQLController:
         else:  # there is a previous picture in hike
             return self._build_picture_from_row(all_rows[0])
 
-    # Hikes
+
+    # NOTE : Everything down is verified as needed, don't touch
+
     # --------------------------------------------------------------------------
-    def get_size_of_hike(self, current_picture: Picture) -> int:
-        cursor = self.connection.cursor()
-        h = current_picture.hike_id
-        cursor.execute(self.statements.select_size_of_hike(hike_id=h))
-        row = cursor.fetchone()
-        size = int(row[0])
-        return size
-
-    def get_current_hike(self, current_picture: Picture) -> Hike:
-        cursor = self.connection.cursor()
-        h = current_picture.hike_id
-        cursor.execute(self.statements.select_hike_by_id(hike_id=h))
-        all_rows = cursor.fetchall()
-        return self._build_hike_from_row(all_rows[0])
-
     # Camera
     # --------------------------------------------------------------------------
     def _get_time_since_last_hike(self) -> float:

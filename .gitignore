@@ -4,7 +4,17 @@
 
 #SQL
 *.db
+*.sqbpro
+
+# Visual Studio Code
+.vscode
 
 # Finder
 .DS_Store
+/capra-storage
+/hike10-partial
+
+# UI Helpers / Testing
+assets/blended.jpg
+assets/cam2f2.jpg
 

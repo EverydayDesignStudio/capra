@@ -15,8 +15,15 @@ Individual Make commands, if manually needed
 
 
 ----------------------------Projector----------------------------
-[make projector]		installs dependencies and creates db
-[make projector_db]		creates a new database along file storage
+[make projector]		install dependencies, setup services, create db
+
+[make projector_startup_pin]	*only run once* : enable UART in /boot/config.txt
+[make projector_services]	load services to be run on startup
+[make projector_db]		create a new database along with file storage
+
+
+----------------------------Tests----------------------------
+[make test_projector_software]	runs software tess for the slideshow application
 
 endef
 
@@ -34,9 +41,21 @@ endef
 projector:
 	$(call PROJECTOR_INSTALL)
 	./setup/create_db_projector.py
+	sudo ./setup/enable_startup_pin.py
+	./services/init-projector-services
+
+projector_install:
+	$(call PROJECTOR_INSTALL)
 
 projector_db:
 	./setup/create_db_projector.py
+
+projector_services:
+	./services/init-projector-services
+
+projector_startup_pin:
+	sudo ./setup/enable_startup_pin.py
+
 
 # -------------- Camera --------------
 define CAMERA_INSTALL
@@ -70,3 +89,8 @@ camera_db:
 
 camera_services:
 	./services/init-camera-services
+
+
+# -------------- Tests --------------
+test_projector_software:
+	./tests/run_projector_software_tests

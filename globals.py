@@ -6,8 +6,11 @@ def init():
     # *** Explorer -> Projector
     # *** Collector -> Camera
 
+    # Transfer
+    # --------------------------------------------------------------------------
+
     # IP Addresses
-    # TODO: determine statis IP addrs for the camera and the projector
+    # TODO: change for deployment - determine static IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
     # IP_ADDR_PROJECTOR = '192.168.123.193'
@@ -21,6 +24,7 @@ def init():
     IP_ADDR_CAMERA = '192.168.0.148'
 
     # Databases
+    # TODO: change for deployment
     global DBNAME_MASTER
     DBNAME_MASTER = "capra_projector_aug2021.db"
     global DBNAME_MASTER_BAK
@@ -30,40 +34,21 @@ def init():
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
-    DBNAME_CAMERA = "capra_camera.db"
+    # DBNAME_CAMERA = "capra_camera.db"
     # TODO: change this
-    # DBNAME_CAMERA = "capra_camera_test.db"
+    DBNAME_CAMERA = "capra_camera_test.db"
 #    DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed.db"
     # DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed_demo.db"
     global DBNAME_CAMERA_BAK
     DBNAME_CAMERA_BAK = "capra_camera_test_" + timestr + "_bak.db"
-
-    # Hall Effect Sensor
-    global HALL_EFFECT_PIN
-    HALL_EFFECT_PIN = 26
-
-    global HALL_EFFECT
-    global PREV_HALL_VALUE
-    HALL_EFFECT = None
-    PREV_HALL_VALUE = False
-
-    global HALL_BOUNCE_LIMIT
-    global HALL_BOUNCE_TIMER
-    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
-    HALL_BOUNCE_TIMER = None
-
-    global FILENAME
-    global FILENAME_FULLSIZE
-    FILENAME = "[!\.]*_cam[1-3].jpg"
-    FILENAME_FULLSIZE = "[!\.]*_cam2f.jpg"
 
     # Paths
     global DATAPATH_CAMERA
     DATAPATH_CAMERA = '/home/pi/capra-storage/'
 
     global DATAPATH_PROJECTOR
-    # TODO: update existing projector path by adding an extra slash '/'
-    DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+    # DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+    DATAPATH_PROJECTOR = '/media/pi/capra-hd3/jordan/'
 
     global CAPRAPATH_PROJECTOR
     CAPRAPATH_PROJECTOR = '/home/pi/capra/'
@@ -76,6 +61,22 @@ def init():
 
     global PATH_TRANSFER_ANIMATION_DB
     PATH_TRANSFER_ANIMATION_DB = DATAPATH_PROJECTOR + DBNAME_TRANSFER_ANIMATION
+
+    # Regex for picture names
+    global FILENAME
+    global FILENAME_ROTATED
+    FILENAME = "[!\.]*_cam[1-3].jpg"
+    FILENAME_ROTATED = "[!\.]*_cam2r.jpg"
+
+    # Hall Effect sensor statuses
+    global HALL_EFFECT
+    global PREV_HALL_VALUE
+    HALL_EFFECT = None
+    PREV_HALL_VALUE = False
+    global HALL_BOUNCE_LIMIT
+    global HALL_BOUNCE_TIMER
+    HALL_BOUNCE_LIMIT = 3000    # in milliseconds
+    HALL_BOUNCE_TIMER = None
 
     # Flags
     global flag_start_transfer
@@ -93,6 +94,64 @@ def init():
 
     global COLOR_DIMY
     COLOR_DIMY = 95
+
+    # Projector
+    # --------------------------------------------------------------------------
+
+    # Projector Pins
+    global PROJ_UART
+    PROJ_UART = 14          # BOARD - 8 (used to be RGB1_BLUE)
+
+    global HALL_EFFECT_PIN
+    HALL_EFFECT_PIN = 26    # BOARD - 37
+    global BUTT_MODE
+    BUTT_MODE = 20          # BOARD - 38
+    global BUTT_PLAY_PAUSE
+    BUTT_PLAY_PAUSE = 5     # BOARD - 29
+    global BUTT_PREV        # Eagle says this is NEXT
+    BUTT_PREV = 6           # BOARD - 31
+    global BUTT_NEXT        # Eagle says this is PREV
+    BUTT_NEXT = 13          # BOARD - 33
+    global BUTT_OFF
+    BUTT_OFF = 4            # BOARD - 7
+    global BUTT_ON
+    BUTT_ON = 3             # BOARD - 5
+
+    global ACCEL
+    ACCEL = 0x1d            # Accelerometer - change to 0x1e if you have soldered the address jumper
+    global ACCEL_SCL
+    ACCEL_SCL = 3           # BOARD - 5
+    global ACCEL_SDA
+    ACCEL_SDA = 2           # BOARD - 3
+
+    global BUTT_ENC1
+    BUTT_ENC1 = 25          # BOARD - 22
+    global ENC1_A
+    ENC1_A = 23             # BOARD - 16
+    global ENC1_B
+    ENC1_B = 24             # BOARD - 18
+
+    global NEO1
+    NEO1 = 18               # BOARD - 12
+
+    global WHITE_LED1
+    WHITE_LED1 = 19         # BOARD - 35
+    global WHITE_LED2
+    WHITE_LED2 = 16         # BOARD - 36
+    global WHITE_LED3
+    WHITE_LED3 = 21         # BOARD - 40
+
+    global RGB1_RED
+    RGB1_RED = 15           # BOARD - 10
+    global RGB1_GREEN
+    RGB1_GREEN = 17         # BOARD - 11
+
+    global RGB2_RED
+    RGB2_RED = 7            # BOARD - 26
+    global RGB2_GREEN
+    RGB2_GREEN = 8          # BOARD - 24
+    global RGB2_BLUE
+    RGB2_BLUE = 11          # BOARD - 23
 
     # Camera
     # --------------------------------------------------------------------------
