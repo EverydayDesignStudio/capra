@@ -206,6 +206,13 @@ class WorkerSignals(QObject):
     results = pyqtSignal(object, object, object, object)
     progress = pyqtSignal(int)
 
+    '''
+    Defines status which is checked for in infinite loop
+    By setting to True, the thread will quit,
+    and closing of the program won't hang
+    '''
+    terminate = False
+
 
 class RotaryEncoder(QRunnable):
     '''Custom thread for the rotary coder, so no signal is ever lost'''
@@ -392,10 +399,15 @@ class PlayPause(QRunnable):
     def __init__(self, *args, **kwargs):
         super(PlayPause, self).__init__()
 
+        self.signals = WorkerSignals()  # Holds a terminate status, used to kill thread
+
     def run(self):
         global rotaryCounter
 
         while True:
+            if self.signals.terminate:  # Garbage collection
+                break
+
             if Status().get_playpause() == StatusPlayPause.PLAY:
                 if Status().get_direction() == StatusDirection.NEXT:
                     rotaryCounter += 1 * Status().get_speed()
@@ -413,10 +425,11 @@ class ImageBlender(QRunnable):
         # This thread holds an instance of the SQLController
         self.sql_controller = sql_cntrl
         # Thread maintains and updates the Picture instance
-        self.picture = picture
+        self.picture = picture  # TODO - should I pass in the picture or just access it
 
         # Needed setup
         self.signals = WorkerSignals()  # Setups signals that will be used to send data back to MainWindow
+                                        # Holds a terminate status, used to garbage collect threads
         self._skipNextStatus = False  # setter via setSkipNext(), decides if _control_rotary_next() is called
         self._skipPrevStatus = False  # setter via setSkipPrev(), decides if _control_rotary_prev() is called
 
@@ -589,8 +602,10 @@ class ImageBlender(QRunnable):
 
     def _emit_result_update_image_and_alpha(self):
         '''Emits signal to MainWindow which calls `_new_picture_loaded()`'''
-        self.signals.result.emit(self.picture)
-        self.alpha = self.ALPHA_RESET
+        self.signals.result.emit(self.picture)  # Emits back to MainWindow
+        self.alpha = self.ALPHA_RESET  # Reset the alpha
+
+        # Locally change the next raw image
         if Status().get_orientation() == StatusOrientation.LANDSCAPE:
             try:
                 self.nextf_raw = Image.open(self.picture.cameraf, 'r')
@@ -610,6 +625,9 @@ class ImageBlender(QRunnable):
         '''Continually runs blending images together, emiting images back to MainWindow
         signals end up calling: `_new_picture_loaded()`, `_load_new_images()`, `_finished_image_blend()`'''
         while True:
+            if self.signals.terminate:  # Garbage collection
+                break
+
             # SQLController will only be called if there has been a hardware signal
             # Otherwise, it simply blends the image if alpha is < 0.65
             if self._skipNextStatus == True:
@@ -640,6 +658,7 @@ class ImageBlender(QRunnable):
                     self._control_rotary_previous(abs(change))
                     self._emit_result_update_image_and_alpha()  # NOTE - emit
 
+            # Blending happens here
             if self.alpha < self.ALPHA_UPPERBOUND:
                 print('blend')
                 # Increments the alpha, so the image will slowly blend
@@ -649,6 +668,7 @@ class ImageBlender(QRunnable):
                 # self.alpha += 0.0001
                 # self.alpha += 0.04
                 self.alpha += self.ALPHA_INCREMENT
+
                 # Only blends the landscape photo or portrait photos depending on the mode
                 if Status().get_orientation() == StatusOrientation.LANDSCAPE:
                     try:
@@ -685,6 +705,7 @@ class MainWindow(QMainWindow):
         # Test counter variable to see the frame rate
         self.blendCount = 0
 
+        # self.checkForCamera()  # TODO - implement Camera detection via Hall Effect sensor
         self.loadSavedState()  # Loads the state of last picture, mode, and scope
         self.setupDB()  # Mac/Windows shows the database dialog
         self.setupWindowLayout(self.picture)
@@ -988,6 +1009,7 @@ class MainWindow(QMainWindow):
         '''Loads the newly blended image from the background thread into the UIImages on the MainWindow \n
         image 1, 2, 3 are strings to the path location
         imagef is an raw Image.open()'''
+        # TODO - update this class description
 
         # Test variable to show how many times it blends the two images, not necessarily in 1 second though
         self.blendCount += 1
@@ -1310,6 +1332,7 @@ class MainWindow(QMainWindow):
     def keyPressEvent(self, event):
         # Closing App
         if event.key() == Qt.Key_Escape:
+            self.garbageCollection()
             self.close()
 
         # Scroll Wheel - Right/Left Arrows
@@ -1440,6 +1463,14 @@ class MainWindow(QMainWindow):
         # self.helpMenu.toggleShowHide()
         self.helpMenu.toggleShowHideWithFade()
 
+    def closeEvent(self, event):
+        '''User clicked the red X'''
+        self.garbageCollection()
+
+    def garbageCollection(self):
+        self.imageBlender.signals.terminate = True
+        self.playPauseThread.signals.terminate = True
+
     # Testing
     # -------------------------------------------------------------------------
     def loopThroughAllPictures(self):
@@ -1454,31 +1485,11 @@ class MainWindow(QMainWindow):
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
 
-# This is to make it not crash on closing, however still throws: 39120 segmentation fault
-app = None
-
-
-def main():
-    global app
-    app = QApplication(sys.argv)
-
-    # screen = app.primaryScreen()
-    # print('Screen: %s' % screen.name())
-    # size = screen.size()
-    # print('Size: %d x %d' % (size.width(), size.height()))
-    # rect = screen.availableGeometry()
-    # print('Available: %d x %d' % (rect.width(), rect.height()))
-
-    window = MainWindow()
-
-    if platform.system() == 'Darwin' or platform.system() == 'Windows':
-        window.show()
-    elif platform.system() == 'Linux':
-        # window.showFullScreen()
-        window.show()
-
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
+app = QApplication(sys.argv)
+window = MainWindow()
+if platform.system() == 'Darwin' or platform.system() == 'Windows':
+    window.show()
+elif platform.system() == 'Linux':
+    # window.showFullScreen()
+    window.show()
+app.exec_()
