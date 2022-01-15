@@ -67,11 +67,21 @@ class UIWindowWidget(QWidget):
         # helpImage.setGraphicsEffect(self._opacity)
 
     def fadeOut(self, duration: int):
-        """Fades out the label over passed in duration (milliseconds)"""
+        """Fades out the widget over passed in duration (milliseconds)"""
         self.setGraphicsEffect(self.fadeEffect)
         self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
         self.anim.setStartValue(1)
         self.anim.setEndValue(0)
+        self.anim.setDuration(duration)
+        self.anim.start()
+        self.update()
+
+    def fadeIn(self, duration: int):
+        """Fades in the widget over passed in duration (milliseconds)"""
+        self.setGraphicsEffect(self.fadeEffect)
+        self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
         self.anim.setDuration(duration)
         self.anim.start()
         self.update()
@@ -150,6 +160,7 @@ class UILabelTopCenter(QWidget):
         super().__init__(window, *args, **kwargs)
 
         self.resize(1280, 110)
+        self.move(0, 15)
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignHCenter)
         # layout.setAlignment(Qt.AlignTop)
@@ -923,6 +934,260 @@ class TimeBar(UIWidget):
         self.percent = percent
         self.isTimeMode = isTimeMode
         self.update()
+
+
+# Transfer Animation Components
+# -----------------------------------------------------------------------------
+class TimeBarTransfer(QWidget):
+    '''Defines the time bar for transfer'''
+    def __init__(self, window: QMainWindow, percent: float) -> None:
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+
+        self.setFixedHeight(70)
+        self.setFixedWidth(1280)
+        self.move(0, 640)
+
+        self.colorBarSize = 1280    # the amount of discrete points in the colorbar,
+                                    # so we know how to position the time bar indicator to line up
+        self.percent = percent
+        self.isTimeMode = True
+
+        self.indicator = QImage('assets/indicator-time-transfer.png')
+
+    def paintEvent(self, e):
+        # print('painting TimeBar')
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        # grab width & height of the whole painter
+        W = painter.device().width()
+        H = painter.device().height()
+        # print(f'TimeBar H: {H}')
+
+        # Set the values for the widget
+        lheight = 9
+        yline = H/2 - lheight/2
+        dotdiam = 20
+        ydot = (H/2) - (dotdiam/2)
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        # bg - for testing
+        # brush.setColor(QColor(9, 24, 94, 150))
+        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        # painter.fillRect(rect, brush)
+
+        # full line
+        brush.setColor(QColor(255, 255, 255, 150))
+        rect2 = QRect(0, yline, W, lheight)
+        painter.fillRect(rect2, brush)
+        brush.setColor(QColor(255, 255, 255))
+
+        # Indicator Styling
+        pen.setWidth(1)
+        pen.setColor(QColor(255, 255, 255))
+        painter.setPen(pen)
+        brush.setStyle(Qt.SolidPattern)
+        painter.setBrush(brush)
+
+        # Image Indicator
+        x = W*self.percent
+        rect = QRectF(x - 48/2, ydot - 25, 48, 54)
+        painter.drawImage(rect, self.indicator)
+
+    def trigger_refresh(self, isTimeMode: bool, colorBarSize: int, percent: float):
+        self.colorBarSize = colorBarSize
+        self.percent = percent
+        self.isTimeMode = isTimeMode
+        self.update()
+
+
+class AltitudeGraphTransferQWidget(QWidget):
+    def __init__(self, window: QMainWindow, isAltMode: bool, altitudeList: list, currentAlt: float) -> None:
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+
+        self.setFixedHeight(500)
+        self.setFixedWidth(1280)
+        self.move(0, 110)
+
+        self.altitudeList = altitudeList
+        self.isAltMode = isAltMode
+        self.currentAlt = currentAlt
+
+        self.H_PAD = 50
+
+        self.indicatorSelected = QImage('assets/indicator-selected.png')
+
+    def paintEvent(self, e):
+        # print('painting Altitude Graph')
+
+        DOT_DIAM = 5
+        IND_DIAM = DOT_DIAM + 5
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        W = painter.device().width()
+        self.H_PAD = 0  # TODO - used to be 46, make sure this doesn't cause an issue
+        H_PAD_HALF = self.H_PAD/2
+        # puts padding on the drawable space, so indicator isn't cut off on top or bottom
+        H = painter.device().height() - self.H_PAD
+        # print(f"H = {H}")
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        # bg - for testing
+        # brush.setColor(QColor(255, 24, 94, 150))
+        # rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        # painter.fillRect(rect, brush)
+
+        # Setup for painting the dots
+        pen.setWidth(1)
+        pen.setColor(QColor(255, 255, 255, 150))
+        painter.setPen(pen)
+
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(QColor(255, 255, 255, 150))
+        painter.setBrush(brush)
+
+        STEP = W / len(self.altitudeList)
+        FIRST_STEP = STEP/2 - DOT_DIAM/2
+        MINV = min(self.altitudeList)
+        MAXV = max(self.altitudeList)
+
+        # Draw the Graph
+        i = 0
+        for a in self.altitudeList:
+            x = FIRST_STEP + (STEP * i)
+            y = H + H_PAD_HALF - DOT_DIAM - ((a - MINV)/(MAXV-MINV))*(H-DOT_DIAM)  # used to be round
+            painter.drawEllipse(x, y, DOT_DIAM, DOT_DIAM)
+            i += 1
+
+        # Calculate the line position
+        # H-percent*H : figures out the position
+        # - 2 : adjusts for the weight of the line
+        y = H - ( ((self.currentAlt - MINV)/(MAXV-MINV)) * (H-4) )
+        print(H)
+        self.linePosY = y
+        print("Line PosY:")
+        print(self.linePosY)
+
+    def trigger_refresh(self, isAltMode: bool, altitudeList: list):
+        self.altitudeList = altitudeList
+        self.isAltMode = isAltMode
+        self.update()
+
+
+class ColorBarTransfer(QWidget):
+    def __init__(self, window: QMainWindow, isColorMode: bool, colorList: list) -> None:
+        super().__init__(window)
+
+        self.resize(window.width(), window.height())
+
+        self.setFixedHeight(30)
+        self.setFixedWidth(1280)
+        self.move(0, 640)
+
+        self.colorList = colorList
+        self.isColorMode = isColorMode  # TODO - maybe remove this during linting?
+
+    def paintEvent(self, e):
+        # print('painting Color Bar')
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        # grab width & height of the whole painter space
+        W = painter.device().width()
+        H = painter.device().height()
+
+        # Set the values for the widget
+        height = 30
+        yline = H/2 - height/2
+
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        pen = QPen()
+
+        # bg - for testing
+        brush.setColor(QColor(255, 50, 50, 150))
+        rect = QRect(0, 0, painter.device().width(), painter.device().height())
+        painter.fillRect(rect, brush)
+
+        x1 = 0
+        boxw = W / len(self.colorList)
+
+        for color in self.colorList:
+            brush.setColor(color)
+            # 'boxw' + 5 - the 5 is for extra padding to make sure the bar extends enough and doesn't leave gaps
+            # sometimes for smaller hikes there's awkward gaps between color bars.
+            # The other remedy was to round 'boxw', but that led to an overall net shorter ColorBar
+            rect = QRect(x1, yline, boxw+5, height)
+            x1 += boxw
+            painter.fillRect(rect, brush)
+
+    def trigger_refresh(self, isColorMode: bool, colorList: list):
+        # print(f'ColorBar._trigger_refresh()')
+        self.colorList = colorList
+        self.isColorMode = isColorMode
+        self.update()
+
+
+class BackgroundColor(QWidget):
+    def __init__(self, window, layout, alignment, color: QColor, *args, **kwargs):
+        super().__init__(window, *args, **kwargs)
+
+        self.resize(window.width(), window.height())
+        self.layout = layout
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setAlignment(alignment)
+        self.setLayout(self.layout)
+        self.color = color
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+
+        # grab width & height of the whole painter
+        w = painter.device().width()
+        h = painter.device().height()
+
+        # TESTING
+        # brush.setColor(QColor(9, 24, 94, 255))
+        brush.setColor(self.color)
+        rect = QRect(0, 0, w, h)
+        painter.fillRect(rect, brush)
+
+    def changeColor(self, color):
+        self.color = color
+        self.update()
+
+
+# Simple wrapper of QLabel, for a scaled center image
+class CenterImage(QLabel):
+    def __init__(self, mainWindow, path: str, *args, **kwargs):
+        # super(QLabel, self).__init__(*args, **kwargs)
+        super().__init__(mainWindow)
+
+        # QLabel.__init__(self, mainWindow)
+        self.resize(1280, 720)
+        pixmap = QPixmap(path)
+        pixmap = pixmap.scaledToWidth(550)
+        self.setPixmap(pixmap)
+
+    def updateImage(self, path: str):
+        pixmap = QPixmap(path)
+        pixmap = pixmap.scaledToWidth(550)
+        self.setPixmap(pixmap)
 
 
 # UI Effects
