@@ -1,3 +1,4 @@
+## python version 3.9.7
 import colorsys
 from sklearn.cluster import KMeans  # pip install -U scikit-learn
 from collections import Counter
@@ -34,7 +35,7 @@ BASEPATH_DEST = None
 src_db_name = None
 dest_db_name = None
 
-DBTYPE = 'projector'   # 'camera' or 'projector'
+DBTYPE = 'camera'   # 'camera' or 'projector'
 
 # need this indexes hardcoded for the python helper function
 # *** These are indexes at the destDB (projector), so the srcDB type doesn't matter
@@ -45,20 +46,30 @@ INDEX_IN_HIKE_INDEX = 8
 
 # TODO: set DB and PATH accordingly
 if (DBTYPE == 'projector'):
-    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
-    src_db_name = "capra_projector_jan2021_min_AllHikes.db"
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
+    # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
 
-    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer/"
-    dest_db_name = "capra_projector_apr2021_min_test_full.db"
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-camera-originals/capra-storage1/"
+    # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
 
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-camera/capra-storage2/"
+    src_db_name = "capra_projector_jun2021_min_test2.db"
+
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector/"
+    dest_db_name = "capra_projector_jun2021_min_test_0708.db"
 
 else:
-    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
+    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
+    # src_db_name = "capra_camera.db"
+    #
+    # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
+    # dest_db_name = "capra_projector_apr2021_min_camera_full.db"
+
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-sam-camera/"
     src_db_name = "capra_camera.db"
 
-    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
-    dest_db_name = "capra_projector_apr2021_min_camera_full.db"
-
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-sam-projector/"
+    dest_db_name = "capra_projector_sam_sep2021.db"
 
 
 ####################################################
@@ -100,11 +111,9 @@ def timenow():
 def getDBControllers():
     global dbSRCController, dbDESTController
 
-    # TODO: create DB if not exist
-
     dbSRCController = SQLController(database=SRCDBPATH)
 
-    # TODO: if dest does not exist, create a new DB
+    # TODO: if dest does not exist, create a new DB by copying the skeleton file
     dbDESTController = SQLController(database=DESTDBPATH)
 
 
@@ -241,6 +250,7 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
     camera3 = "/hike{}/{}_cam3.jpg".format(h, idx)
     camera2f = "/hike{}/{}_cam2f.jpg".format(h, idx)
 
+    # print("pic {} -> {}".format(row_src['index_in_hike'], validRowCount))
 
     commit = [round(row_src['time'], 0),
                 picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
@@ -389,7 +399,7 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
 def filterZeroBytePicturesFromSrc():
     global dbSRCController
 
-    print("[{}] Checking 0 byte pictures in the source directory before start transferring.. {}".format(timenow()))
+    print("[{}] Checking 0 byte pictures in the source directory before start transferring..".format(timenow()))
 
     latest_src_hikeID = dbSRCController.get_last_hike_id()
     latest_dest_hikeID = dbDESTController.get_last_hike_id()
@@ -400,11 +410,11 @@ def filterZeroBytePicturesFromSrc():
     delCount = 0
 
     while currHike <= latest_src_hikeID:
-        print("[{}] ### Checking hike {}".format(currHike))
+        print("[{}] ### Checking hike {}".format(timenow(), currHike))
         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
 
         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-        print("[{}] ### Hike {} originally has {} rows".format(currHike, totalCountHike))
+        print("[{}] ### Hike {} originally has {} rows".format(timenow(), currHike, totalCountHike))
 
         if (not os.path.isdir(srcPath)):
             currHike += 1
@@ -491,21 +501,22 @@ def buildHike(currHike):
             index_in_hike += 1
             continue
 
-        # TODO: extract row data only when files are already transferred
+        # TODO: if pictures exist on the Projector AND the row exists in the destDB, extract the data only
         # if (os.path.exists(picPathCam1_dest) and
         #     os.path.exists(picPathCam2_dest) and
         #     os.path.exists(picPathCam2f_dest) and
         #     os.path.exists(picPathCam3_dest)):
-        #     domColorsHike_hsv.append(dbDESTController.get_picture_dominant_color(row[0], 'hsv'))
+        #     extract_data_and_continue()
         #     continue
+
+
+        # TODO: if pictures exist on the Projector but no row data in the destDB, skip transfer but extract the data from the srcDB
+
 
         # if (not os.path.exists(picPathCam1) or not os.path.exists(picPathCam2) or not os.path.exists(picPathCam3)):
         if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
             index_in_hike += 1
             continue
-
-        ### TODO: check 0 byte photos and filter them!!
-
 
         if (index_in_hike <= maxRows and index_in_hike % 200 == 0):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
@@ -595,7 +606,7 @@ def buildHike(currHike):
         commits[fileName][17] = dummyGlobalColorRank
         commits[fileName][18] = globalCounter_h + colrank
 
-#        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(index_in_hike, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
+#        print("[{}] altRank: {}, altRankG: {}, altRankG_h: {}, tcolRank: {}, colRankG: {}, colRankG_h: {}".format(i, altrank, dummyGlobalAltRank, str(globalCounter_h + altrank), colrank, dummyGlobalColorRank, str(globalCounter_h + colrank)))
 
         dummyGlobalColorRank -= 1
         dummyGlobalAltRank -= 1
@@ -615,6 +626,8 @@ def buildHike(currHike):
     hikeEndDatetime = datetime.datetime.fromtimestamp(endTime)
     domColorHike_rgb = hsvToRgb(domColorHike_hsv[0], domColorHike_hsv[1], domColorHike_hsv[2])
 
+    #  Columns for HIKES
+    #
     #     HIKE_ID, avg_altitude, AVG_ALTITUDE_RANK,
     #     START_TIME, start_year, start_month, start_day, start_minute, start_dayofweek,
     #     END_TIME, end_year, end_month, end_day, end_minute, end_dayofweek,
@@ -630,7 +643,7 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     validRowCount, defaultHikePath, created_timestamp)
 
-    # create color spectrum for the current hike
+    # create a color spectrum for this hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
@@ -653,8 +666,138 @@ def main():
     global COLOR_HSV_INDEX
 
     # TODO: initialize DB if does not exist
-
     getDBControllers()
+
+    ## update path in hikes
+    # srcConnection = dbSRCController.connection
+    # srcCursor = srcConnection.cursor()
+    # destConnection = dbDESTController.connection
+    # destCursor = destConnection.cursor()
+    #
+    # statement = 'SELECT picture_id, hike, camera1, camera2, camera3, camera_landscape FROM pictures where hike < 40'
+    #
+    # statement = 'select * from pictures'
+    # destCursor.execute(statement)
+    # allRows = destCursor.fetchall()
+    # # print(hikeRows)
+    # for row in allRows:
+    #     pID = row[0]
+    #     hike = row[1]
+    #     camera1 = row[2]
+    #     camera2 = row[3]
+    #     camera3 = row[4]
+    #     camera2f = row[5]
+    #
+    #     c1 = camera1.split('/')
+    #     res1 = "/{}/{}".format(c1[-2], c1[-1])
+    #
+    #     c2 = camera2.split('/')
+    #     res2 = "/{}/{}".format(c2[-2], c2[-1])
+    #
+    #     c3 = camera3.split('/')
+    #     res3 = "/{}/{}".format(c3[-2], c3[-1])
+    #
+    #     cf = camera2f.split('/')
+    #     resf = "/{}/{}".format(cf[-2], cf[-1])
+    #
+    #     statement = 'update pictures set camera1 = "{c1}", camera2 = "{c2}", camera3 = "{c3}", camera_landscape = "{cf}" where picture_id = {pid}'.format(c1=res1, c2=res2, c3=res3, cf=resf, pid=pID)
+    #     # destCursor.execute(statement)
+    #
+    # # destConnection.commit()
+    #
+    # statement = 'SELECT picture_id, hike, camera1, camera2, camera3, camera_landscape FROM pictures where hike > 40'
+    # destCursor.execute(statement)
+    # allRows = destCursor.fetchall()
+    # # print(hikeRows)
+    # for row in allRows:
+    #     pID = row[0]
+    #     hike = row[1]
+    #     camera2 = row[3]
+    #     i = camera2.split('/')[-1]
+    #     index = i.split('_')[0]
+    #
+    #     res1 = "/hike{}/{}_cam1.jpg".format(hike, index)
+    #     res2 = "/hike{}/{}_cam2.jpg".format(hike, index)
+    #     res3 = "/hike{}/{}_cam3.jpg".format(hike, index)
+    #     resf = "/hike{}/{}_cam2f.jpg".format(hike, index)
+    #
+    #     statement = 'update pictures set camera1 = "{c1}", camera2 = "{c2}", camera3 = "{c3}", camera_landscape = "{cf}" where picture_id = {pid}'.format(c1=res1, c2=res2, c3=res3, cf=resf, pid=pID)
+    #     # destCursor.execute(statement)
+    #
+    # # destConnection.commit()
+    # destConnection.close()
+    #
+    # exit()
+    #
+    #     # statement = 'select time, picture_id, index_in_hike from pictures where hike = {}'.format(hike)
+    #     # destCursor.execute(statement)
+    #     # pictureRows = destCursor.fetchall()
+    #     # count = 1
+    #     # for row in pictureRows:
+    #     #     # print(row)
+    #     #     statement = 'UPDATE pictures SET index_in_hike = {i}, time = {t} WHERE picture_id = {id}'.format(i=count, t = round(row[0], 0), id=row[1])
+    #     #     # print(statement)
+    #     #     destCursor.execute(statement)
+    #     #
+    #     #     count += 1
+    #
+    # destConnection.commit()
+    # destConnection.close()
+    # exit()
+
+    #
+    # for row in hikeRows:
+    #     # avg_altitude = 1
+    #     # start_time = 3
+    #     # end_time = 9
+    #     # path = 20
+    #     avg_alt = round(row[1], 2)
+    #     stime = round(row[3], 0)
+    #     etime = round(row[9], 0)
+    #     path = '/media/pi/capra-hd/hike{}/'.format(str(row[0]))
+    #     statement = 'UPDATE hikes SET avg_altitude = {a}, start_time = {st}, end_time = {et}, path = "{p}" \
+    #                 WHERE hike_id = {id}'.format(a=avg_alt, st=stime, et=etime, p=path, id=row[0])
+    #
+    #     print(statement)
+    #     destCursor.execute(statement)
+    #
+    # destConnection.commit()
+
+    # --------------------------
+    # UPDATE pictures SET hike = {} WHERE hike = {}
+    # UPDATE pictures SET picture_id = picture_id + {}
+    # --------------------------
+
+    # ## update camera1, camera2, camera3, camera_landscape in pictures
+    # statement = 'SELECT * FROM pictures ORDER BY time ASC'
+    # destCursor.execute(statement)
+    # pictureRows = destCursor.fetchall()
+
+    #
+    # for row in pictureRows:
+    #     # time = 1
+    #     # camera1 = 23
+    #     # camera2 = 24
+    #     # camera3 = 25
+    #     # camera_landscape = 26
+    #     time = round(row[1], 0)
+    #     c1 = '/media/pi/capra-hd/hike{}/{}_cam1.jpg'.format(str(row[7]), str(row[8]))
+    #     c2 = '/media/pi/capra-hd/hike{}/{}_cam2.jpg'.format(str(row[7]), str(row[8]))
+    #     c3 = '/media/pi/capra-hd/hike{}/{}_cam3.jpg'.format(str(row[7]), str(row[8]))
+    #     cl = '/media/pi/capra-hd/hike{}/{}_cam2f.jpg'.format(str(row[7]), str(row[8]))
+    #     statement = 'UPDATE pictures SET time = {t}, camera1 = "{c1}", camera2 = "{c2}", camera3 = "{c3}", camera_landscape="{cl}" \
+    #                 WHERE picture_id = {id}'.format(t=time, c1=c1, c2=c2, c3=c3, cl=cl, id=row[0])
+    #
+    #     # print(statement)
+    #     destCursor.execute(statement)
+    #
+    # destConnection.commit()
+    # destConnection.close()
+    #
+    # exit()
+
+    # filter out zero byte pictures in the source DB upon starting
+    filterZeroBytePicturesFromSrc()
 
     latest_src_hikeID = dbSRCController.get_last_hike_id()
     latest_dest_hikeID = dbDESTController.get_last_hike_id()
@@ -670,6 +813,17 @@ def main():
     masterTimer = time.time()
 
     while currHike <= latest_src_hikeID:
+        #
+        # if (currHike > 2):
+        #     break
+        #
+        # validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
+        # numValidRows = len(validRows)
+        # maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
+        #
+        # print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
+        # print("[{}] Expected valid row count: {}".format(timenow(), str(numValidRows)))
+        #
 
         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
@@ -724,6 +878,7 @@ def main():
 
     ### At this point, all hikes are processed.
 
+    ### TODO: remove TRUE for the final code
     # calculate global ranks for pictures, only when there is new data
     if (True or NEW_DATA):
         rankTimer = time.time()

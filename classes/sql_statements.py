@@ -470,9 +470,7 @@ class SQLStatements:
     # --------------------------------------------------------------------------
 
     # Altitude Graph in hikes
-    def ui_select_altitudes_for_hike_sortby(self, mode: str, hike: int) -> str:
-        size = 128.0  # variable to change size of the returned altitude list
-
+    def ui_select_altitudes_for_hike_sortby(self, mode: str, hike: int, idxList: str) -> str:
         if mode == 'alt':
             ordering = 'altrank_hike ASC'
         elif mode == 'color':
@@ -482,19 +480,11 @@ class SQLStatements:
         else:
             raise ValueError('Expected a str parameter which was not given.')
 
-        # Uses mod(altrank_hike) so the picture_ids are the same across color bar and altitude graph
-        statement = 'SELECT altitude, mod(altrank_hike, (SELECT count(*) FROM pictures WHERE hike={h})/{sz}) AS mod_val \
-	    FROM pictures WHERE hike={h} AND mod_val < 1.0 ORDER BY {o};'.format(h=hike, sz=size, o=ordering)
-
+        statement = 'SELECT altitude FROM pictures WHERE hike = {h} AND index_in_hike IN {iL} ORDER BY {o}'.format(h=hike, iL=idxList, o=ordering)
         return statement
 
     # Altitude Graph in archive
-    def ui_select_altitudes_for_archive_sortby(self, mode: str) -> str:
-        # variables to change size of returned altitudes
-        # size - a bit larger, to ensure that we always have exactly what the limit is
-        size = 1281.0
-        limit = 1280.0
-
+    def ui_select_altitudes_for_archive_sortby(self, mode: str, idxList: str) -> str:
         if mode == 'alt':
             ordering = 'altrank_global ASC'
         elif mode == 'color':
@@ -504,16 +494,11 @@ class SQLStatements:
         else:
             raise ValueError('Expected a str parameter which was not given.')
 
-        # Uses mod(altrank_global) so the picture_ids are the same across color bar and altitude graph
-        statement = 'SELECT altitude, mod(altrank_global, (SELECT count(*) FROM pictures)/{sz}) AS mod_val \
-	    FROM pictures WHERE mod_val < 1.0 ORDER BY {o} LIMIT {l};'.format(sz=size, l=limit, o=ordering)
-
+        statement = 'SELECT altitude FROM pictures WHERE index_in_hike IN {iL} ORDER BY {o}'.format(iL=idxList, o=ordering)
         return statement
 
     # Color Bar in hikes
-    def ui_select_colors_for_hike_sortby(self, mode: str, hike: int) -> str:
-        size = 128.0  # variable to change size of returned colors
-
+    def ui_select_colors_for_hike_sortby(self, mode: str, hike: int, idxList: str) -> str:
         if mode == 'alt':
             ordering = 'altrank_hike ASC'
         elif mode == 'color':
@@ -523,19 +508,11 @@ class SQLStatements:
         else:
             raise ValueError('Expected a str parameter which was not given.')
 
-        # Uses mod(altrank_hike) so the picture_ids are the same across color bar and altitude graph
-        statement = 'SELECT color_rgb, mod(altrank_hike, (SELECT count(*) FROM pictures WHERE hike={h})/{sz}) AS mod_val \
-	    FROM pictures WHERE hike={h} AND mod_val < 1.0 ORDER BY {o};'.format(h=hike, sz=size, o=ordering)
-
+        statement = 'SELECT color_rgb FROM pictures WHERE hike = {h} AND index_in_hike IN {iL} ORDER BY {o}'.format(h=hike, iL=idxList, o=ordering)
         return statement
 
     # Color Bar in archive
-    def ui_select_colors_for_archive_sortby(self, mode: str) -> str:
-        # variables to change size of returned colors
-        # size - a bit larger, to ensure that we always have exactly what the limit is
-        size = 1281.0
-        limit = 1280.0
-
+    def ui_select_colors_for_archive_sortby(self, mode: str, idxList: str) -> str:
         if mode == 'alt':
             ordering = 'altrank_global ASC'
         elif mode == 'color':
@@ -545,13 +522,10 @@ class SQLStatements:
         else:
             raise ValueError('Expected a str parameter which was not given.')
 
-        # Uses mod(altrank_global) so the picture_ids are the same across color bar and altitude graph
-        statement = 'SELECT color_rgb, mod(altrank_global, (SELECT count(*) FROM pictures)/{sz}) AS mod_val \
-	    FROM pictures WHERE mod_val < 1.0 ORDER BY {o} LIMIT {l};'.format(sz=size, l=limit, o=ordering)
-
+        statement = 'SELECT color_rgb FROM pictures WHERE index_in_hike IN {iL} ORDER BY {o}'.format(iL=idxList, o=ordering)
         return statement
 
-    # Time Bar & Indicators Percentage in hikes 
+    # Time Bar & Indicators Percentage in hikes
     # (also needed for the indicators on the other modes)
     def ui_select_percentage_in_hike_with_mode(self, mode: str, picture_id: int, hike: int) -> str:
         if mode == 'alt':
@@ -568,7 +542,7 @@ class SQLStatements:
 
         return statement
 
-    # Time Bar & Indicators Percentage in archive 
+    # Time Bar & Indicators Percentage in archive
     # (also needed for the indicators on the other modes)
     def ui_select_percentage_in_archive_with_mode(self, mode: str, picture_id: int) -> str:
         if mode == 'alt':

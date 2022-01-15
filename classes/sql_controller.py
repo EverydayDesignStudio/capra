@@ -1,6 +1,7 @@
 # Controller to handle the projector UI and camera mainloop talking with the SQLite database
 
 import os
+import math
 import platform
 import sqlite3
 import time
@@ -327,6 +328,34 @@ class SQLController:
         sql = self.statements.select_previous_color_skip_in_global(current.colorrank_global)
         return self._execute_query(sql)
 
+
+    # --------------------------------------------------------------------------
+    # UI Helper Function (2021)
+    # --------------------------------------------------------------------------
+
+    def chooseIndexes(self, totalPictureCount: int, modSize: float) -> str:
+        res = []
+
+        if (totalPictureCount <= modSize):
+            res_ints = [str(i) for i in range(1, totalPictureCount+1)]
+            idxList = "(" + ",".join(res_ints) + ")"
+            return idxList
+
+        i = 0
+        val = 0
+        # The only downsize is that the first photo is rarely included but the last photo is highly likely to be included.
+        # We could adjust this by tweaking the starting index a little bit but it's not a huge concern yet.
+        while (val < totalPictureCount and i < modSize):
+            i += 1
+            val = int(i * (totalPictureCount / modSize))
+            res.append(val)
+
+        # idxListSize = len(res)
+        res_ints = [str(int) for int in res]
+        idxList = "(" + ",".join(res_ints) + ")"
+
+        return idxList
+
     # --------------------------------------------------------------------------
     # UI Calls (2021)
     # --------------------------------------------------------------------------
@@ -345,33 +374,48 @@ class SQLController:
             # Update the hike from the current picture
             hike = picture.hike_id
 
-            # Load data for this hike
-            uiData.altitudesSortByAltitudeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('alt', picture)
-            uiData.altitudesSortByColorForHike[hike] = self.ui_get_altitudes_for_hike_sortby('color', picture)
-            uiData.altitudesSortByTimeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('time', picture)
+            # pre-determine which indexes to retrieve for a hike
+            cursor = self.connection.cursor()
+            cursor.execute(self.statements.select_hike_size(hike))
+            hikeSize = cursor.fetchone()[0]
+            # print(hikeSize)
+            idxList = self.chooseIndexes(int(hikeSize), 128.0)
+            uiData.indexListForHike[hike] = idxList
 
-            uiData.colorSortByAltitudeForHike[hike] = self.ui_get_colors_for_hike_sortby('alt', picture)
-            uiData.colorSortByColorForHike[hike] = self.ui_get_colors_for_hike_sortby('color', picture)
-            uiData.colorSortByTimeForHike[hike] = self.ui_get_colors_for_hike_sortby('time', picture)
+            # Load data for this hike
+            uiData.altitudesSortByAltitudeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('alt', picture, idxList)
+            uiData.altitudesSortByColorForHike[hike] = self.ui_get_altitudes_for_hike_sortby('color', picture, idxList)
+            uiData.altitudesSortByTimeForHike[hike] = self.ui_get_altitudes_for_hike_sortby('time', picture, idxList)
+
+            uiData.colorSortByAltitudeForHike[hike] = self.ui_get_colors_for_hike_sortby('alt', picture, idxList)
+            uiData.colorSortByColorForHike[hike] = self.ui_get_colors_for_hike_sortby('color', picture, idxList)
+            uiData.colorSortByTimeForHike[hike] = self.ui_get_colors_for_hike_sortby('time', picture, idxList)
 
             # iterate to next hike
             picture = self.get_next_time_skip_in_hikes(picture)
             hike = picture.hike_id
 
-        # Load all the Global Archive Data
-        uiData.altitudesSortByAltitudeForArchive = self.ui_get_altitudes_for_archive_sortby('alt')
-        uiData.altitudesSortByColorForArchive = self.ui_get_altitudes_for_archive_sortby('color')
-        uiData.altitudesSortByTimeForArchive = self.ui_get_altitudes_for_archive_sortby('time')
+        # pre-determine which indexes to retrieve for the archive
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_archive_size())
+        archiveSize = cursor.fetchone()[0]
+        idxList = self.chooseIndexes(int(archiveSize), 1280.0)
+        uiData.indexListForArchive = idxList
 
-        uiData.colorSortByAltitudeForArchive = self.ui_get_colors_for_archive_sortby('alt')
-        uiData.colorSortByColorForArchive = self.ui_get_colors_for_archive_sortby('color')
-        uiData.colorSortByTimeForArchive = self.ui_get_colors_for_archive_sortby('time')
+        # Load all the Global Archive Data
+        uiData.altitudesSortByAltitudeForArchive = self.ui_get_altitudes_for_archive_sortby('alt', idxList)
+        uiData.altitudesSortByColorForArchive = self.ui_get_altitudes_for_archive_sortby('color', idxList)
+        uiData.altitudesSortByTimeForArchive = self.ui_get_altitudes_for_archive_sortby('time', idxList)
+
+        uiData.colorSortByAltitudeForArchive = self.ui_get_colors_for_archive_sortby('alt', idxList)
+        uiData.colorSortByColorForArchive = self.ui_get_colors_for_archive_sortby('color', idxList)
+        uiData.colorSortByTimeForArchive = self.ui_get_colors_for_archive_sortby('time', idxList)
 
         return uiData
 
     # Altitude
-    def ui_get_altitudes_for_hike_sortby(self, m: str, current: Picture) -> list:
-        sql = self.statements.ui_select_altitudes_for_hike_sortby(m, current.hike_id)
+    def ui_get_altitudes_for_hike_sortby(self, m: str, current: Picture, idxList: str) -> list:
+        sql = self.statements.ui_select_altitudes_for_hike_sortby(m, current.hike_id, idxList)
 
         cursor = self.connection.cursor()
         cursor.execute(sql)
@@ -387,8 +431,8 @@ class SQLController:
 
         return altlist
 
-    def ui_get_altitudes_for_archive_sortby(self, m: str) -> list:
-        sql = self.statements.ui_select_altitudes_for_archive_sortby(m)
+    def ui_get_altitudes_for_archive_sortby(self, m: str, idxList: str) -> list:
+        sql = self.statements.ui_select_altitudes_for_archive_sortby(m, idxList)
 
         cursor = self.connection.cursor()
         cursor.execute(sql)
@@ -405,8 +449,8 @@ class SQLController:
         return altlist
 
     # Colors
-    def ui_get_colors_for_hike_sortby(self, m: str, current: Picture) -> list:
-        sql = self.statements.ui_select_colors_for_hike_sortby(m, current.hike_id)
+    def ui_get_colors_for_hike_sortby(self, m: str, current: Picture, idxList: str) -> list:
+        sql = self.statements.ui_select_colors_for_hike_sortby(m, current.hike_id, idxList)
 
         cursor = self.connection.cursor()
         cursor.execute(sql)
@@ -426,8 +470,8 @@ class SQLController:
 
             return colorlist
 
-    def ui_get_colors_for_archive_sortby(self, m: str) -> list:
-        sql = self.statements.ui_select_colors_for_archive_sortby(m)
+    def ui_get_colors_for_archive_sortby(self, m: str, idxList: str) -> list:
+        sql = self.statements.ui_select_colors_for_archive_sortby(m, idxList)
 
         cursor = self.connection.cursor()
         cursor.execute(sql)

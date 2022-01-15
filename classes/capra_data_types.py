@@ -226,6 +226,8 @@ class UIData:
         super().__init__()
 
         # Hikes UI data
+        self.indexListForHike = {}
+
         self.altitudesSortByAltitudeForHike = {}
         self.altitudesSortByColorForHike = {}
         self.altitudesSortByTimeForHike = {}
@@ -235,6 +237,8 @@ class UIData:
         self.colorSortByTimeForHike = {}
 
         # Archive UI data
+        self.indexListForArchive = []
+
         self.altitudesSortByAltitudeForArchive = []
         self.altitudesSortByColorForArchive = []
         self.altitudesSortByTimeForArchive = []

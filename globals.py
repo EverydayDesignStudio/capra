@@ -1,4 +1,7 @@
+import time
+
 def init():
+    timestr = time.strftime("%Y%m")
 
     # *** Explorer -> Projector
     # *** Collector -> Camera
@@ -10,30 +13,34 @@ def init():
     # TODO: change for deployment - determine static IP addrs for the camera and the projector
     global IP_ADDR_PROJECTOR
     # IP_ADDR_PROJECTOR = '192.168.0.127'
-    IP_ADDR_PROJECTOR = '192.168.123.193'
+    # IP_ADDR_PROJECTOR = '192.168.123.193'
     # IP_ADDR_PROJECTOR = '192.168.1.193'
+    IP_ADDR_PROJECTOR = '192.168.0.106'
 
     global IP_ADDR_CAMERA
     # IP_ADDR_CAMERA = '192.168.0.149'
-    IP_ADDR_CAMERA = '192.168.123.100'
+    # IP_ADDR_CAMERA = '192.168.123.100'
     # IP_ADDR_CAMERA = '192.168.1.100'
+    IP_ADDR_CAMERA = '192.168.0.148'
 
     # Databases
     # TODO: change for deployment
     global DBNAME_MASTER
-    DBNAME_MASTER = 'capra_projector_jun2021_min_test_0708.db'
+    DBNAME_MASTER = "capra_projector_aug2021.db"
     global DBNAME_MASTER_BAK
-    DBNAME_MASTER_BAK = "capra_projector_bak.db"
+    DBNAME_MASTER_BAK = "capra_projector_aug2021_" + timestr + "_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
     # DBNAME_CAMERA = "capra_camera.db"
-    # TODO: change for deployment
+    # TODO: change this
     DBNAME_CAMERA = "capra_camera_test.db"
+#    DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed.db"
+    # DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed_demo.db"
     global DBNAME_CAMERA_BAK
-    DBNAME_CAMERA_BAK = "capra_camera_test_bak.db"
+    DBNAME_CAMERA_BAK = "capra_camera_test_" + timestr + "_bak.db"
 
     # Paths
     global DATAPATH_CAMERA
@@ -80,7 +87,7 @@ def init():
 
     # Color detection
     global COLOR_CLUSTER
-    COLOR_CLUSTER = 10
+    COLOR_CLUSTER = 5
 
     global COLOR_DIMX
     COLOR_DIMX = 160

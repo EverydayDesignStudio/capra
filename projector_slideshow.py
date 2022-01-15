@@ -74,7 +74,7 @@ class StatusScope(IntEnum):
 
 
 class StatusMode(IntEnum):
-    '''The order as described by the integer values is the order 
+    '''The order as described by the integer values is the order
     in which the modes will change'''
     __order__ = 'TIME COLOR ALTITUDE'
     TIME = 0
@@ -846,7 +846,7 @@ class MainWindow(QMainWindow):
             self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
 
         # Altitude Graph
-        altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture)
+        altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture, self.uiData.indexListForHike[self.picture.hike_id])
         print(altitudelist)
         self.altitudegraph = AltitudeGraph(False, altitudelist, percent_rank, self.picture.altitude)
         self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
@@ -854,7 +854,7 @@ class MainWindow(QMainWindow):
         # self.bottomUIContainer.layout.addItem(spacer)
 
         # Color Bar
-        colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture)
+        colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture, self.uiData.indexListForHike[self.picture.hike_id])
         self.colorbar = ColorBar(False, colorlist, percent_rank, self.picture.color_rgb)
         self.colorbar.setGraphicsEffect(UIEffectDropShadow())
         self.bottomUIContainer.layout.addWidget(self.colorbar)
@@ -1189,7 +1189,7 @@ class MainWindow(QMainWindow):
         if self.preload:
             print('use the preloaded UIData')
             if scope == StatusScope.HIKE:
-                hike = self.picture.hike_id 
+                hike = self.picture.hike_id
                 rank_timebar = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
                 if mode == StatusMode.ALTITUDE:
                     altitudelist = self.uiData.altitudesSortByAltitudeForHike[hike]
