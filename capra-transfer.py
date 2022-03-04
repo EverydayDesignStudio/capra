@@ -52,18 +52,19 @@ threads = []
 threadPool = None
 
 # ### Database location ###
+
+# Projector
 CAPRAPATH = g.CAPRAPATH_PROJECTOR
 DATAPATH = g.DATAPATH_PROJECTOR
-CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
-CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 PROJECTOR_DB = DATAPATH + g.DBNAME_MASTER
 PROJECTOR_BAK_DB = DATAPATH + g.DBNAME_MASTER_BAK
-WHITE_IMAGE = DATAPATH + "white.jpg"
 
-BASEPATH_SRC = None
-BASEPATH_DEST = None
-src_db_name = None
-dest_db_name = None
+# Camera
+CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
+CAMERA_DB_REMOTE = g.DATAPATH_CAMERA + g.DBNAME_CAMERA
+CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
+
+WHITE_IMAGE = DATAPATH + "white.jpg"
 
 
 # need this indexes hardcoded for the python helper function
@@ -72,57 +73,15 @@ ALTITUDE_INDEX = 10
 COLOR_INDEX_HSV = 14
 INDEX_IN_HIKE_INDEX = 8
 
-### TODO: This will be removed once the script is fully translated on the Pi
-DROPBOX = "/Users/myoo/Dropbox/"
-DBTYPE = 'camera'   # 'camera' or 'projector'
-if (DBTYPE == 'projector'):
-    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
-    # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
-
-    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-camera-originals/capra-storage1/"
-    # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
-
-    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2_test/"
-    src_db_name = "capra_projector_jun2021_min_test2.db"
-
-    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer_full/"
-    dest_db_name = "capra_projector_jun2021_min_test_0708.db"
-
-else:
-    # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan2/"
-    # src_db_name = "capra_camera.db"
-    #
-    # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
-    # dest_db_name = "capra_projector_apr2021_min_camera_full.db"
-
-    BASEPATH_SRC = DROPBOX + "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-pi-test-1/"
-    src_db_name = "capra_camera.db"
-
-    # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-will/"
-    # dest_db_name = "capra_projector_will_0716_truncated_test.db"
-
-    BASEPATH_DEST = g.DATAPATH_PROJECTOR
-    dest_db_name = "capra_projector_aug2021.db"
-
-#######################################################################
-#######################################################################
-
 CLUSTERS = 5        # assumes X number of dominant colors in a pictures
 REPETITION = 8
 
-### TODO: move constant variables to globals.py
-DROPBOX = "/Users/myoo/Dropbox/"
-
-# WHITE_IMAGE = DROPBOX + BASEPATH_DEST + "white.jpg"
+# place holder variables for buildling file paths
 srcPath = ""
 destPath = ""
-SRCDBPATH_REMOTE = BASEPATH_SRC + src_db_name
-SRCDBPATH = DATAPATH + src_db_name
-DESTDBPATH = DATAPATH + dest_db_name
 
 dbSRCController = None
 dbDESTController = None
-
 
 FILENAME = "[!\.]*_cam[1-3].jpg"
 FILENAME_FULLSIZE = "[!\.]*_cam2f.jpg"
@@ -274,16 +233,16 @@ def updateDB():
 def copy_remote_db():
     ### TODO: uncomment the following line when testing with the actual camera
     # subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
-    # print('"myoo@' + g.IP_ADDR_CAMERA + ":" + escape_whitespace(SRCDBPATH_REMOTE) + '"')
-    print('"myoo@' + g.IP_ADDR_CAMERA + ":" + SRCDBPATH_REMOTE + '"')
+    # print('"myoo@' + g.IP_ADDR_CAMERA + ":" + escape_whitespace(CAMERA_DB_REMOTE) + '"')
+    print('"myoo@' + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE + '"')
 
-    if (exists_remote(SRCDBPATH_REMOTE)):
+    if (exists_remote(CAMERA_DB_REMOTE)):
         print("@@ Found the remote DB!")
     else:
         print("@@ Did NOT locate the remote DB! :\\")
 
     # '--no-perms', '--rsh="ssh"', '--rsync-path=/usr/local/bin/rsync'
-    subprocess.Popen(['rsync', '--rsync-path=/usr/local/bin/rsync', '--protect-args', '--no-perms', '--inplace', '-AI', '--rsh="ssh"', '"myoo@' + g.IP_ADDR_CAMERA + ":" + SRCDBPATH_REMOTE + '"', "/media/pi/capra-hd1/"], stdout=subprocess.PIPE)
+    subprocess.Popen(['rsync', '--rsync-path=/usr/local/bin/rsync', '--protect-args', '--no-perms', '--inplace', '-AI', '--rsh="ssh"', '"myoo@' + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE + '"', "/media/pi/capra-hd1/"], stdout=subprocess.PIPE)
     time.sleep(1)
     return
 
@@ -310,10 +269,10 @@ def getDBControllers():
     # # a copy of aster projector db
     # p2DBController = SQLController(database=PROJECTOR_BAK_DB)
 
-    dbSRCController = SQLController(database=SRCDBPATH)
+    dbSRCController = SQLController(database=CAMERA_DB)
 
     # TODO: if dest does not exist, create a new DB by copying the skeleton file
-    dbDESTController = SQLController(database=DESTDBPATH)
+    dbDESTController = SQLController(database=PROJECTOR_DB)
 
 
 #######################################################################

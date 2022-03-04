@@ -15,40 +15,40 @@ def init():
     # IP_ADDR_PROJECTOR = '192.168.0.127'
     # IP_ADDR_PROJECTOR = '192.168.123.193'
     # IP_ADDR_PROJECTOR = '192.168.1.193'
-    IP_ADDR_PROJECTOR = '192.168.0.106'
+    IP_ADDR_PROJECTOR = '192.168.0.179'
 
     global IP_ADDR_CAMERA
     # IP_ADDR_CAMERA = '192.168.0.149'
     # IP_ADDR_CAMERA = '192.168.123.100'
     # IP_ADDR_CAMERA = '192.168.1.100'
-    IP_ADDR_CAMERA = '192.168.0.148'
+    IP_ADDR_CAMERA = '192.168.0.110'
 
     # Databases
     # TODO: change for deployment
     global DBNAME_MASTER
-    DBNAME_MASTER = "capra_projector_aug2021.db"
+    DBNAME_MASTER = "capra_projector_test_179.db"
     global DBNAME_MASTER_BAK
-    DBNAME_MASTER_BAK = "capra_projector_aug2021_" + timestr + "_bak.db"
+    DBNAME_MASTER_BAK = "capra_projector_test_179_" + timestr + "_bak.db"
 
     global DBNAME_TRANSFER_ANIMATION
     DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
 
     global DBNAME_CAMERA
-    # DBNAME_CAMERA = "capra_camera.db"
+    DBNAME_CAMERA = "capra_camera.db"
     # TODO: change this
-    DBNAME_CAMERA = "capra_camera_test.db"
+    # DBNAME_CAMERA = "capra_camera_test.db"
 #    DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed.db"
     # DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed_demo.db"
     global DBNAME_CAMERA_BAK
-    DBNAME_CAMERA_BAK = "capra_camera_test_" + timestr + "_bak.db"
+    DBNAME_CAMERA_BAK = "capra_camera_" + timestr + "_bak.db"
 
     # Paths
     global DATAPATH_CAMERA
     DATAPATH_CAMERA = '/home/pi/capra-storage/'
 
     global DATAPATH_PROJECTOR
-    # DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
-    DATAPATH_PROJECTOR = '/media/pi/capra-hd3/jordan/'
+    DATAPATH_PROJECTOR = '/media/pi/capra-hd/'
+    # DATAPATH_PROJECTOR = '/media/pi/capra-hd3/jordan/'
 
     global CAPRAPATH_PROJECTOR
     CAPRAPATH_PROJECTOR = '/home/pi/capra/'
