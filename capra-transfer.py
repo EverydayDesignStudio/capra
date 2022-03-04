@@ -232,17 +232,13 @@ def updateDB():
 
 def copy_remote_db():
     ### TODO: uncomment the following line when testing with the actual camera
-    # subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":/media/pi/capra-hd/capra_camera_test.db", "/media/pi/capra-hd/"], stdout=subprocess.PIPE)
-    # print('"myoo@' + g.IP_ADDR_CAMERA + ":" + escape_whitespace(CAMERA_DB_REMOTE) + '"')
-    print('"myoo@' + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE + '"')
+    subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE, DATAPATH], stdout=subprocess.PIPE)
 
     if (exists_remote(CAMERA_DB_REMOTE)):
         print("@@ Found the remote DB!")
     else:
         print("@@ Did NOT locate the remote DB! :\\")
 
-    # '--no-perms', '--rsh="ssh"', '--rsync-path=/usr/local/bin/rsync'
-    subprocess.Popen(['rsync', '--rsync-path=/usr/local/bin/rsync', '--protect-args', '--no-perms', '--inplace', '-AI', '--rsh="ssh"', '"myoo@' + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE + '"', "/media/pi/capra-hd1/"], stdout=subprocess.PIPE)
     time.sleep(1)
     return
 
@@ -303,14 +299,12 @@ def escape_whitespace(path_string):
 
 def exists_remote(path):
     # TODO: update the username when testing with the actual camera
-    # return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0    # https://tldp.org/LDP/abs/html/fto.html
-    return subprocess.call(['ssh', 'myoo@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0
+    return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0    # https://tldp.org/LDP/abs/html/fto.html
 
 
 def exists_non_zero_remote(path):
     # TODO: update the username when testing with the actual camera
-    # return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0
-    return subprocess.call(['ssh', 'myoo@' + g.IP_ADDR_CAMERA, 'test -s ' + pipes.quote(path)]) == 0
+    return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0
 
 
 def count_files_in_directory(path, pattern):
