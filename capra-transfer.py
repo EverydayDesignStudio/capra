@@ -1,28 +1,38 @@
-import globals as g
-import glob                                         # File path pattern matching
+import glob     # File path pattern matching
 import os
 import sys
 import os.path
 import datetime
-import cv2  # pip install opencv-python : for resizing image
+import cv2      # pip install opencv-python : for resizing image
+import time
+import sqlite3      # Database Library
+import subprocess
+import pipes        # Deploy RSyncs
+import traceback
+from operator import itemgetter
+from pathlib import Path
+import logging
+import RPi.GPIO as GPIO
+
+# image & color processing
+from PIL import ImageTk, Image      # Pillow image functions
+from math import sqrt
+from colorsys import rgb_to_hsv
+import numpy as np
+
+# threading
 import threading
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
-import time
-import sqlite3                                      # Database Library
-import subprocess
-import pipes                                 # Deploy RSyncs
-import traceback
-import RPi.GPIO as GPIO
-from PIL import ImageTk, Image                      # Pillow image functions
-from pathlib import Path
+
+# custom modules
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.sql_statements import SQLStatements
-from classes.kmeans import get_dominant_colors_for_picture
+from classes.kmeans import get_multiple_dominant_colors
 from classes.kmeans import get_dominant_color_1D
 from classes.kmeans import hsvToRgb
-import logging
+import globals as g
 g.init()
 
 VERBOSE = False
@@ -61,7 +71,8 @@ PROJECTOR_BAK_DB = DATAPATH + g.DBNAME_MASTER_BAK
 
 # Camera
 CAMERA_DB = DATAPATH + g.DBNAME_CAMERA
-CAMERA_DB_REMOTE = g.DATAPATH_CAMERA + g.DBNAME_CAMERA
+CAMERAPATH_REMOTE = g.DATAPATH_CAMERA
+CAMERA_DB_REMOTE = CAMERAPATH_REMOTE + g.DBNAME_CAMERA
 CAMERA_BAK_DB = DATAPATH + g.DBNAME_CAMERA_BAK
 
 WHITE_IMAGE = DATAPATH + "white.jpg"
@@ -186,14 +197,6 @@ def current_milli_time():
     return int(round(time.time() * 1000))
 
 
-# (h [0-180], s[1-255], v[1-255])
-# returns a list: [r, b, g]
-def hsvToRgb(h, s, v):
-    color_rgb = colorsys.hsv_to_rgb(h/180., s/255., v/255.)
-    ret = list(map(lambda a : round(a*255), list(color_rgb)))
-    return ret
-
-
 def formatColors(colors):
     res = ""
     for color in colors:
@@ -231,11 +234,10 @@ def updateDB():
 
 
 def copy_remote_db():
-    ### TODO: uncomment the following line when testing with the actual camera
-    subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE, DATAPATH], stdout=subprocess.PIPE)
 
     if (exists_remote(CAMERA_DB_REMOTE)):
         print("@@ Found the remote DB!")
+        subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE, DATAPATH], stdout=subprocess.PIPE)
     else:
         print("@@ Did NOT locate the remote DB! :\\")
 
@@ -255,7 +257,6 @@ def make_backup_remote_db():
 
 # 1. make db connections
 def getDBControllers():
-    # global cDBController, pDBController, p2DBController
     global dbSRCController, dbDESTController
 
     # # this will be a local db, copied from camera
@@ -280,13 +281,6 @@ def build_hike_path(path, hikeID, makeNew=False):
     if makeNew and not os.path.exists(res):
         os.makedirs(res, mode=0o755)
     return res
-
-
-def build_picture_path(path, index, camNum, rotated=False):
-    insert = ""
-    if (rotated):
-        insert = "f"
-    return path + str(index) + '_cam' + str(camNum) + insert + '.jpg'
 
 
 def escape_whitespace(path_string):
@@ -349,8 +343,8 @@ def generatePics(colors_sorted, name: str, path: str):
 
 
 def sortby_hue_luminosity(r, g, b, repetitions=1):
-    lum = math.sqrt(0.241 * r + 0.691 * g + 0.068 * b)
-    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    lum = sqrt(0.241 * r + 0.691 * g + 0.068 * b)
+    h, s, v = rgb_to_hsv(r, g, b)
 
     h2 = int(h * repetitions)
     # h2 = h * repetitions
@@ -369,11 +363,6 @@ def sortby_hue_luminosity(r, g, b, repetitions=1):
     return (h2, lum)
 
 
-def splitColor(item):
-    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 14 - color_hsv
-    return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
-
-
 #######################################################################
 #####                  RANKING-RELATED FUNCTIONS                  #####
 #######################################################################
@@ -386,6 +375,12 @@ def sort_by_alts(data, alt_index, index_in_hike):
         rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 8 - index_in_hike
 
     return rankList
+
+
+def splitColor(item):
+    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 14 - color_hsv
+    return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
+
 
 
 def sort_by_colors(data, color_index_hsv, index_in_hike):
@@ -546,11 +541,11 @@ def filterZeroBytePicturesFromSrc():
     delCount = 0
 
     while currHike <= latest_src_hikeID:
-        print("[{}] ### Checking hike {}".format(currHike))
-        srcPath = build_hike_path(BASEPATH_SRC, currHike)
+        print("[{}] ### Checking hike {}".format(timenow(), currHike))
+        srcPath = build_hike_path(CAMERAPATH_REMOTE, currHike)
 
         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-        print("[{}] ### Hike {} originally has {} rows".format(currHike, totalCountHike))
+        print("[{}] ### Hike {} originally has {} rows".format(timenow(), currHike, totalCountHike))
 
         if (not os.path.isdir(srcPath)):
             currHike += 1
@@ -578,7 +573,7 @@ def filterZeroBytePicturesFromSrc():
                 # res = srcCursor.fetchall()
                 # print (res)
 
-                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(row['index_in_hike']))
+                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(timenow(), row['index_in_hike']))
 
                 dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
                 delCount += 1
@@ -586,8 +581,8 @@ def filterZeroBytePicturesFromSrc():
         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
 
         if (delCount > 0):
-            print("[{}] {} rows deleted".format(delCount))
-            print("[{}] Hike {} now has {} rows".format(currHike, totalCountHike))
+            print("[{}] {} rows deleted".format(timenow(), delCount))
+            print("[{}] Hike {} now has {} rows".format(timenow(), currHike, totalCountHike))
 
             dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
 
@@ -613,7 +608,8 @@ def buildHike(currHike):
     domColorsHike_hsv = []
     pics = {}
     commits = {}
-    # commits = []
+    threads = []
+    threadPool = ThreadPoolExecutor(max_workers=5)
 
     validRowCount = 0           ### This is the 'corrected' numValidRows (may 14)
     index_in_hike = 0
@@ -638,11 +634,6 @@ def buildHike(currHike):
 
         row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
-        # picPathCam1 = build_picture_path(currHike, index_in_hike, 1)
-        # picPathCam2 = build_picture_path(currHike, index_in_hike, 2)
-        # picPathCam2f = build_picture_path(currHike, index_in_hike, 2, True)
-        # picPathCam3 = build_picture_path(currHike, index_in_hike, 3)
-
         picPathCam1_src = srcPath + "{}_cam1.jpg".format(index_in_hike)
         picPathCam2_src = srcPath + "{}_cam2.jpg".format(index_in_hike)
         picPathCam2f_src = srcPath + "{}_cam2f.jpg".format(index_in_hike)
@@ -660,7 +651,7 @@ def buildHike(currHike):
         # TODO: if pictures exist on the Projector but no row data in the destDB, skip transfer but extract the data from the srcDB
 
         # if (not os.path.exists(picPathCam1) or not os.path.exists(picPathCam2) or not os.path.exists(picPathCam3)):
-        if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
+        if (not exists_remote(picPathCam1_src) or not exists_remote(picPathCam2_src)):
             index_in_hike += 1
             continue
 
@@ -693,10 +684,8 @@ def buildHike(currHike):
             tmp = row_src['camera2'].split('/')
             srcFilePathBlob = srcPath + tmp[4][:-5] + '*'
 
-            # '--remove-source-files',
-            ### TODO: remove and correctly update all DROPBOX paths
-            # rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
-            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'myoo@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
+            # TODO: '--remove-source-files'
+            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
             rsync_status.wait()
 
             # report if rsync is failed
@@ -713,6 +702,7 @@ def buildHike(currHike):
 
         avgAlt += int(row_src['altitude'])
 
+        # rotate and resize, copy those to the dest folder
         img = None
         img_res = None
         # resize and rotate for newly added pictures
@@ -850,8 +840,8 @@ def start_transfer():
     # filter out zero byte pictures in the source DB upon starting
     filterZeroBytePicturesFromSrc()
 
-    latest_master_hikeID = pDBController.get_last_hike_id()
-    latest_remote_hikeID = cDBController.get_last_hike_id()
+    latest_master_hikeID = dbDESTController.get_last_hike_id()
+    latest_remote_hikeID = dbSRCController.get_last_hike_id()
     print("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
     print("[{}] @@@ # hikes on Camera: {}".format(timenow(), str(latest_remote_hikeID)))
     logger.info("[{}] @@@ # hikes on Projector: {}".format(timenow(), str(latest_master_hikeID)))
@@ -877,8 +867,8 @@ def start_transfer():
         #     logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
         #     return
 
-            ### TODO: update constants
-        srcPath = build_hike_path(BASEPATH_SRC, currHike)
+        ### TODO: update constants
+        srcPath = build_hike_path(CAMERAPATH_REMOTE, currHike)
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
 
         if (currExpectedHikeSize is None):
@@ -1449,8 +1439,6 @@ def main():
 
                 print("[{}] Creating DB controllers..".format(timenow()))
                 getDBControllers()
-
-                exit()
 
                 start_transfer()
                 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
