@@ -568,10 +568,10 @@ def buildHike(currHike):
             #     "/home/pi/capra-storage/hike1/1_cam2.jpg"
             #      --> "/home/pi/capra-storage/hike1/1_cam*"
 
-            # srcFilePathBlob = row_src['camera2'][:-5] + '*'
+            # srcFilePathBlob = row_src['camera2'][:-5] + {index} + "_cam" + '*'
 
             tmp = row_src['camera2'].split('/')
-            srcFilePathBlob = srcPath + tmp[4][:-5] + '*'
+            srcFilePathBlob = srcPath + tmp[4][:-5] + str(index_in_hike) + "_cam" + '*'
 
             # TODO: '--remove-source-files'
             rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
