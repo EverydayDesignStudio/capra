@@ -234,7 +234,6 @@ def updateDB():
 
 
 def copy_remote_db():
-
     if (exists_remote(CAMERA_DB_REMOTE)):
         print("@@ Found the remote DB!")
         subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE, DATAPATH], stdout=subprocess.PIPE)
