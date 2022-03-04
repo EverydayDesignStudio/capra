@@ -3,6 +3,7 @@ import os
 import sys
 import os.path
 import datetime
+import shutil
 import cv2      # pip install opencv-python : for resizing image
 import time
 import sqlite3      # Database Library
@@ -225,20 +226,18 @@ def updateDB():
     line = proc.stdout.readline()
     if line != b'':
         # there are new incoming changes in DB
-        print("## Updated DB detected. Starting the transfer process...")
         return True
     else:
         # two databases are identical
-        print("## DB is still fresh.")
         return False
 
 
 def copy_remote_db():
     if (exists_remote(CAMERA_DB_REMOTE)):
-        print("@@ Found the remote DB!")
+        print("[{}] @@ Found the remote DB. Copying over..".format(timenow()))
         subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', "pi@" + g.IP_ADDR_CAMERA + ":" + CAMERA_DB_REMOTE, DATAPATH], stdout=subprocess.PIPE)
     else:
-        print("@@ Did NOT locate the remote DB! :\\")
+        print("[{}] @@ Did NOT locate the remote DB! :\\".format(timenow()))
 
     time.sleep(1)
     return
@@ -261,7 +260,11 @@ def getDBControllers():
     # this is a locally saved db, copied from camera
     dbSRCController = SQLController(database=CAMERA_DB)
 
-    # TODO: if dest does not exist, create a new DB by copying and renaming the skeleton file
+    #if dest does not exist, create a new DB by copying and renaming the skeleton file
+    if (not os.path.exists(PROJECTOR_DB)):
+        src_file = DATAPATH + g.DBNAME_INIT
+        shutil.copy(src_file, DATAPATH + g.DBNAME_MASTER) # copy the file to destination dir
+
     dbDESTController = SQLController(database=PROJECTOR_DB)
 
 
@@ -937,9 +940,9 @@ def main():
                 if (os.path.exists(CAMERA_DB) and
                     os.path.exists(CAMERA_BAK_DB) and
                     not updateDB()):
-                    print("@@ DB is still fresh!")
+                    print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
                 else:
-                    print("@@ DB needs to be synced!")
+                    print("[{}] ## Updated DB detected. Start transferring new data..".format(timenow()))
 
                 print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
                 copy_remote_db()

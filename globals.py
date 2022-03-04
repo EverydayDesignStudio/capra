@@ -27,18 +27,15 @@ def init():
     # TODO: change for deployment
     global DBNAME_MASTER
     DBNAME_MASTER = "capra_projector_test_179.db"
+
     global DBNAME_MASTER_BAK
     DBNAME_MASTER_BAK = "capra_projector_test_179_" + timestr + "_bak.db"
 
-    global DBNAME_TRANSFER_ANIMATION
-    DBNAME_TRANSFER_ANIMATION = "capra_transfer_animation.db"
+    global DBNAME_INIT
+    DBNAME_INIT = "capra_projector_init.db"
 
     global DBNAME_CAMERA
     DBNAME_CAMERA = "capra_camera.db"
-    # TODO: change this
-    # DBNAME_CAMERA = "capra_camera_test.db"
-#    DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed.db"
-    # DBNAME_CAMERA = "capra_projector_clean_july2020_trimmed_demo.db"
     global DBNAME_CAMERA_BAK
     DBNAME_CAMERA_BAK = "capra_camera_" + timestr + "_bak.db"
 
@@ -59,8 +56,6 @@ def init():
     global PATH_PROJECTOR_DB
     PATH_PROJECTOR_DB = DATAPATH_PROJECTOR + DBNAME_MASTER
 
-    global PATH_TRANSFER_ANIMATION_DB
-    PATH_TRANSFER_ANIMATION_DB = DATAPATH_PROJECTOR + DBNAME_TRANSFER_ANIMATION
 
     # Regex for picture names
     global FILENAME
