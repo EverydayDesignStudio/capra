@@ -49,6 +49,8 @@ RETRY_MAX = 5
 
 STOP = False
 
+TWO_CAM = False         # special variable to transfer hikes with only two cameras (for Jordan's 9 early hikes)
+
 currHike = -1
 globalCounter_h = 0
 dummyGlobalColorRank = -1
@@ -255,12 +257,15 @@ def make_backup_remote_db():
 
 # 1. make db connections
 def getDBControllers():
-    global dbSRCController, dbDESTController
+    global dbSRCController, dbSRCController_remote, dbDESTController
 
     # this is a locally saved db, copied from camera
     dbSRCController = SQLController(database=CAMERA_DB)
 
-    #if dest does not exist, create a new DB by copying and renaming the skeleton file
+    # the remote database in the camera
+    dbSRCController_remote = SQLController(database=CAMERA_DB_REMOTE)
+
+    # if dest does not exist, create a new DB by copying and renaming the skeleton file
     if (not os.path.exists(PROJECTOR_DB)):
         src_file = DATAPATH + g.DBNAME_INIT
         shutil.copy(src_file, DATAPATH + g.DBNAME_MASTER) # copy the file to destination dir
@@ -292,7 +297,7 @@ def exists_remote(path):
 
 
 def exists_non_zero_remote(path):
-    return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -e ' + pipes.quote(path)]) == 0
+    return subprocess.call(['ssh', 'pi@' + g.IP_ADDR_CAMERA, 'test -s ' + pipes.quote(path)]) == 0
 
 
 def count_files_in_directory(path, pattern):
@@ -429,65 +434,11 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
                 camera1, camera2, camera3, camera2f, row_src['created_date_time']]
 
     return commit, colors_hsv[0]
-
-
-def filterZeroBytePicturesFromSrc():
-    global dbSRCController
-
-    print("[{}] Checking 0 byte pictures in the source directory before start transferring..".format(timenow()))
-
-    latest_src_hikeID = dbSRCController.get_last_hike_id()
-    latest_dest_hikeID = dbDESTController.get_last_hike_id()
-    print("[{}] ## hikes from Source: {}".format(timenow(), str(latest_src_hikeID)))
-    print("[{}] ## hikes at Dest: {}".format(timenow(), str(latest_dest_hikeID)))
-
-    currHike = 1
-    delCount = 0
-
-    while currHike <= latest_src_hikeID:
-        print("[{}] ### Checking hike {}".format(timenow(), currHike))
-        srcPath = build_hike_path(CAMERAPATH_REMOTE, currHike)
-
-        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-        print("[{}] ### Hike {} originally has {} rows".format(timenow(), currHike, totalCountHike))
-
-        if (not os.path.isdir(srcPath)):
-            currHike += 1
-            continue
-
-        allRows = dbSRCController.get_pictures_of_selected_hike(currHike)
-
-        for row in allRows:
-            picPathCam1_src = srcPath + "{}_cam1.jpg".format(row['index_in_hike'])
-            picPathCam2_src = srcPath + "{}_cam2.jpg".format(row['index_in_hike'])
-            picPathCam3_src = srcPath + "{}_cam3.jpg".format(row['index_in_hike'])
-
-            ### !! Potential bottle-neck - making 6 calls for a single condition check
-            if (exists_remote(picPathCam1_src) and not exists_non_zero_remote(picPathCam1_src) or
-                exists_remote(picPathCam2_src) and not exists_non_zero_remote(picPathCam2_src) or
-                exists_remote(picPathCam3_src) and not exists_non_zero_remote(picPathCam3_src)):
-
-                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(timenow(), row['index_in_hike']))
-
-                dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
-                delCount += 1
-
-        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-
-        if (delCount > 0):
-            print("[{}] {} rows deleted".format(timenow(), delCount))
-            print("[{}] Hike {} now has {} rows".format(timenow(), currHike, totalCountHike))
-
-            dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
-
-        # commit changes only when a given hike is fully scanned
-        dbSRCController.connection.commit()
-        currHike += 1
-
+    
 
 ## this is essentially the main function
 def buildHike(currHike):
-    global dbSRCController, dbDESTController
+    global dbSRCController, dbSRCController_remote, dbDESTController
     global srcPath, destPath
     global dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter, globalCounter_h
 
@@ -504,11 +455,14 @@ def buildHike(currHike):
     threads = []
     threadPool = ThreadPoolExecutor(max_workers=5)
 
-    validRowCount = 0           ### This is the 'corrected' numValidRows (may 14)
+    validRowCount = 0           ### This is the 'corrected' numValidRows [May 14, 2021]
     index_in_hike = 0
     validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
     numValidRows = len(validRows)
     maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
+
+    deleteCount = 0             ### to track rows that contain 0 byte pictures in the remote database
+    deleteTimestamps = []       ### timestamps of rows to delete
 
     print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
     print("[{}] Expected valid row count: {}".format(timenow(), str(numValidRows)))
@@ -529,7 +483,6 @@ def buildHike(currHike):
 
         picPathCam1_src = srcPath + "{}_cam1.jpg".format(index_in_hike)
         picPathCam2_src = srcPath + "{}_cam2.jpg".format(index_in_hike)
-        picPathCam2f_src = srcPath + "{}_cam2f.jpg".format(index_in_hike)
         picPathCam3_src = srcPath + "{}_cam3.jpg".format(index_in_hike)
 
         picPathCam1_dest = destPath + "{}_cam1.jpg".format(index_in_hike)
@@ -541,50 +494,103 @@ def buildHike(currHike):
             index_in_hike += 1
             continue
 
-        # TODO: if pictures exist on the Projector but no row data in the destDB, skip transfer but extract the data from the srcDB
-
-        if (not exists_remote(picPathCam1_src) or not exists_remote(picPathCam2_src)):
-            index_in_hike += 1
-            continue
-
         if (index_in_hike <= maxRows and index_in_hike % 200 == 0):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
 
+        # Transfer, resize and rotate pictures from remote only if there is no local copy.
+        # To ensure having a local copy can be done by checking if cam2f exists.
+        if (not os.path.exists(picPathCam2f_dest)):
 
-        isNew = False
-        # transfer pictures only when the paths do not exist on the projector
-        if (not os.path.exists(picPathCam1_dest)
-            or not os.path.exists(picPathCam2_dest)
-            or not os.path.exists(picPathCam3_dest)):
+            if (not exists_remote(picPathCam1_src) or not exists_remote(picPathCam2_src)):
+                index_in_hike += 1
+                continue
 
-            # remove partially transferred files
-            if (os.path.exists(picPathCam1_dest)
-                or os.path.exists(picPathCam2_dest)
-                or os.path.exists(picPathCam3_dest)):
+            # check for 0 byte pictures
+            #   if spotted, increase deleteCounter and delete those rows
+            #   from the remote camera db and the local camera db before proceeding to the next hike
+            ## 436
+            if (not exists_non_zero_remote(picPathCam1_src) or not exists_non_zero_remote(picPathCam2_src) or
+                (not TWO_CAM and not exists_non_zero_remote(picPathCam3_src))):
+                print("[{}] \t Row {} has a missing picture. Deleting a row..".format(timenow(), index_in_hike))
+                deleteCount += 1
+                deleteTimestamps.append(row_src['time'])
+                index_in_hike += 1
+                continue
 
-                tmpPath = picPathCam1_dest[:-5]
-                for tmpfile in glob.glob(tmpPath + '*'):
-                    os.remove(tmpfile)
+            isNew = False
+            # transfer pictures only when the paths do not exist on the projector
+            if (not os.path.exists(picPathCam1_dest)
+                or not os.path.exists(picPathCam2_dest)
+                or not os.path.exists(picPathCam3_dest)):
 
-            isNew = True
-            # grab a set of three pictures for each row using regEx
-            #     "/home/pi/capra-storage/hike1/1_cam2.jpg"
-            #      --> "/home/pi/capra-storage/hike1/1_cam*"
+                # remove partially transferred files
+                if (os.path.exists(picPathCam1_dest)
+                    or os.path.exists(picPathCam2_dest)
+                    or os.path.exists(picPathCam3_dest)):
 
-            # srcFilePathBlob = row_src['camera2'][:-5] + {index} + "_cam" + '*'
+                    tmpPath = picPathCam1_dest[:-5]
+                    for tmpfile in glob.glob(tmpPath + '*'):
+                        os.remove(tmpfile)
 
-            tmp = row_src['camera2'].split('/')
-            srcFilePathBlob = srcPath + tmp[4][:-5] + str(index_in_hike) + "_cam" + '*'
+                isNew = True
+                # grab a set of three pictures for each row using regEx
+                #     "/home/pi/capra-storage/hike1/1_cam2.jpg"
+                #      --> "/home/pi/capra-storage/hike1/1_cam*"
 
-            # TODO: '--remove-source-files'
-            rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
-            rsync_status.wait()
+                # srcFilePathBlob = row_src['camera2'][:-5] + {index} + "_cam" + '*'
 
-            # report if rsync is failed
-            if (rsync_status.returncode != 0):
-                print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
-                logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
+                tmp = row_src['camera2'].split('/')
+                srcFilePathBlob = srcPath + tmp[4][:-5] + str(index_in_hike) + "_cam" + '*'
 
+                # TODO: '--remove-source-files'
+                rsync_status = subprocess.Popen(['rsync', '--ignore-existing', '-avA', '--no-perms', '--rsh="ssh"', 'pi@' + g.IP_ADDR_CAMERA + ':' + srcFilePathBlob, destPath], stdout=subprocess.PIPE)
+                rsync_status.wait()
+
+                # report if rsync is failed
+                if (rsync_status.returncode != 0):
+                    print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
+                    logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
+
+
+            # rotate and resize, copy those to the dest folder
+            img = None
+            img_res = None
+            # resize and rotate for newly added pictures
+            #    1. make a copy of pic2 as pic2'f'
+            if (not os.path.exists(picPathCam2f_dest)):
+                img = Image.open(picPathCam2_dest)
+                img_res = img.copy()
+                img_res.save(picPathCam2f_dest)
+
+            #    2. resize to 427x720 and rotate 90 deg
+            try:
+                if (not os.path.exists(picPathCam1_dest)):
+                    img = Image.open(picPathCam1_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam1_dest)
+
+                if (not os.path.exists(picPathCam2_dest)):
+                    img = Image.open(picPathCam2_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam2_dest)
+
+                if (not os.path.exists(picPathCam3_dest)):
+                    if (not TWO_CAM):
+                        img = Image.open(picPathCam3_src)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                        img_res.save(picPathCam3_dest)
+                    else:
+                        img = Image.open(WHITE_IMAGE)
+                        img_res = img.copy().rotate(90, expand=True)
+                        img_res.save(picPathCam3_dest)
+            except:
+                print("!! Hike {} @ row {} has truncated pictures. Skipping a row..".format(currHike, index_in_hike))
+                index_in_hike += 1
+                continue
+
+
+        # increment the validRowCounter since we have successfully trasferred the pictures for this row
+        validRowCount += 1
 
         # update timestamps
         if (row_src['time'] < startTime):
@@ -594,48 +600,7 @@ def buildHike(currHike):
 
         avgAlt += int(row_src['altitude'])
 
-        # rotate and resize, copy those to the dest folder
-        img = None
-        img_res = None
-        # resize and rotate for newly added pictures
-        #    1. make a copy of pic2 as pic2'f'
-        if (not os.path.exists(picPathCam2f_dest)):
-            img = Image.open(picPathCam2_dest)
-            img_res = img.copy()
-            img_res.save(picPathCam2f_dest)
-
-        #    2. resize to 427x720 and rotate 90 deg
-        try:
-            if (not os.path.exists(picPathCam1_dest) or
-                not os.path.exists(picPathCam2_dest) or
-                not os.path.exists(picPathCam2f_dest) or
-                not os.path.exists(picPathCam3_dest)):
-
-                img = Image.open(picPathCam1_src)
-                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                img_res.save(picPathCam1_dest)
-
-                img = Image.open(picPathCam2_src)
-                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                img_res.save(picPathCam2_dest)
-
-                if (os.path.exists(picPathCam3_src)):
-                    img = Image.open(picPathCam3_src)
-                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                    img_res.save(picPathCam3_dest)
-                else:
-                    img = Image.open(WHITE_IMAGE)
-                    img_res = img.copy().rotate(90, expand=True)
-                    img_res.save(picPathCam3_dest)
-        except:
-            print("!! Hike {} @ row {} has truncated pictures. Skipping a row..".format(currHike, index_in_hike))
-            index_in_hike += 1
-            continue
-
-        # increment the validRowCounter since we have successfully trasferred the pictures for this row
-        validRowCount += 1
-
-        if (not os.path.exists(picPathCam3_src)):
+        if (TWO_CAM):
             picPathCam3_dest = None
 
         threads.append(threadPool.submit(dominantColorWrapper, currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, picPathCam3_dest, (DIMX, DIMY)))
@@ -710,6 +675,24 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     validRowCount, defaultHikePath, created_timestamp)
 
+    # delete rows with 0 byte pictures from local and remote camera dbs
+    if (deleteCount > 0):
+
+        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+        totalCountHike_remote = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+
+        # extra guard to double check the total number of pictures
+        if (totalCountHike - deleteCount == validRowCount and
+            totalCountHike_remote - deleteCount == validRowCount):
+            for timestamp in deleteTimestamps:
+                # local copy of camera db
+                dbSRCController.delete_picture_of_given_timestamp(timestamp)
+                # original db in remote
+                dbSRCController_remote.delete_picture_of_given_timestamp(timestamp)
+
+            dbSRCController.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
+            dbSRCController_remote.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
+
     # create a color spectrum for this hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
@@ -725,9 +708,6 @@ def start_transfer():
     global rsync_status, hall_effect
     global logger
     global threads, threadPool, STOP
-
-    # filter out zero byte pictures in the source DB upon starting
-    filterZeroBytePicturesFromSrc()
 
     latest_master_hikeID = dbDESTController.get_last_hike_id()
     latest_remote_hikeID = dbSRCController.get_last_hike_id()
