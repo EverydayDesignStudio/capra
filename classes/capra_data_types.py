@@ -23,10 +23,21 @@ class CapraDataType:
         ::
 
             :param timestamp: Unix timestamp
-            :return str: ':24'
+            :return str: ':24 PM'
         """
         t = datetime.fromtimestamp(timestamp)
         s = t.strftime(':%S %p')
+        return s
+
+    def _parse_am_pm(self, timestamp: float) -> str:
+        """Parses timestamp into AM or PM
+        ::
+
+            :param timestamp: Unix timestamp
+            :return str: 'PM'
+        """
+        t = datetime.fromtimestamp(timestamp)
+        s = t.strftime(' %p')
         return s
 
     def _parse_date(self, timestamp: float) -> str:
@@ -148,6 +159,7 @@ class Picture(CapraDataType):
         # Labels for the UI
         self.uitime_hrmm = self._parse_hr_min(self.time)
         self.uitime_sec = self._parse_sec(self.time)
+        self.uitime_ampm = self._parse_am_pm(self.time)
         self.uidate = self._parse_date(self.time)
         self.uihike = self._parse_hike(self.hike_id)
         self.uialtitude = str(int(self.altitude))

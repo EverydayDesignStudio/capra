@@ -7,6 +7,9 @@ from sqlite3.dbapi2 import Error
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PIL import Image
+
+from classes.capra_data_types import Picture
 
 # TODO - add rotatable widget container
 
@@ -999,10 +1002,8 @@ class TimeBarTransfer(QWidget):
         rect = QRectF(x - 48/2, ydot - 25, 48, 54)
         painter.drawImage(rect, self.indicator)
 
-    def trigger_refresh(self, isTimeMode: bool, colorBarSize: int, percent: float):
-        self.colorBarSize = colorBarSize
+    def trigger_refresh(self, percent: float):
         self.percent = percent
-        self.isTimeMode = isTimeMode
         self.update()
 
 
@@ -1173,21 +1174,105 @@ class BackgroundColor(QWidget):
 
 
 # Simple wrapper of QLabel, for a scaled center image
-class CenterImage(QLabel):
-    def __init__(self, mainWindow, path: str, *args, **kwargs):
-        # super(QLabel, self).__init__(*args, **kwargs)
-        super().__init__(mainWindow)
+# class CenterImage(QLabel):
+#     def __init__(self, mainWindow, path: str, *args, **kwargs):
+#         # super(QLabel, self).__init__(*args, **kwargs)
+#         super().__init__(mainWindow)
 
-        # QLabel.__init__(self, mainWindow)
-        self.resize(1280, 720)
-        pixmap = QPixmap(path)
-        pixmap = pixmap.scaledToWidth(550)
-        self.setPixmap(pixmap)
+#         # QLabel.__init__(self, mainWindow)
+#         self.resize(1280, 720)
+#         pixmap = QPixmap(path)
+#         pixmap = pixmap.scaledToWidth(550)
+#         self.setPixmap(pixmap)
 
-    def updateImage(self, path: str):
-        pixmap = QPixmap(path)
-        pixmap = pixmap.scaledToWidth(550)
-        self.setPixmap(pixmap)
+#     def updateImage(self, path: str):
+#         pixmap = QPixmap(path)
+#         pixmap = pixmap.scaledToWidth(550)
+#         self.setPixmap(pixmap)
+
+
+class TransferCenterImage(QWidget):
+    '''Alternates between the 2 images for a smooth fading experience'''
+    def __init__(self, window: QMainWindow, picture: Picture) -> None:
+        super().__init__(window)
+        self.resize(window.width(), window.height())
+
+        # Used to cover up UI components behind it
+        self._bgImg = _CenterImage(window, 'assets/black.png')
+
+        # Alternates between the images for a smooth fading experience
+        self._centerImg2 = _CenterImage(window, 'assets/black.png')
+        self._centerImg1 = _CenterImage(window, picture.cameraf)
+
+        self.currentImg = self._centerImg1
+
+    def fadeNewImage(self, picture: Picture):
+        # Create a new color bg to hide the UI elements behind the image
+        hexcode = picture.color_rgb.name()
+        im = Image.new("RGB", (1280, 720), hexcode)
+        im.save("assets/transferBg.png")
+        self._bgImg.setImage('assets/transferBg.png')
+
+        # Fade the top two images
+        if self.currentImg == self._centerImg1:
+            # Change img2, fadeout img1, fadein img2, switch current to img2
+            self._centerImg2.setImage(picture.cameraf)
+            self._centerImg1.fadeout()
+            self._centerImg2.fadein()
+            self.currentImg = self._centerImg2
+
+        elif self.currentImg == self._centerImg2:
+            self._centerImg1.setImage(picture.cameraf)
+            self._centerImg2.fadeout()
+            self._centerImg1.fadein()
+            self.currentImg = self._centerImg1
+
+        else:
+            print('ERROR fading between transfer center images')
+
+
+class _CenterImage(QWidget):
+    '''Defines a center image for transfer animation February 2022'''
+    def __init__(self, window: QMainWindow, path: str) -> None:
+        super().__init__(window)
+        self.resize(window.width(), window.height())
+        # self.setFixedHeight(720)
+        # self.setFixedWidth(1280)
+        # self.move(0, 640)
+
+        self.image = QImage(path)
+
+    def paintEvent(self, e):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
+
+        # Set the values for the widget
+        rectx = (painter.device().width() / 2) - (550/2)
+        recty = (painter.device().height() / 2) - (310/2)
+        rect = QRectF(rectx, recty, 550, 310)
+        painter.drawImage(rect, self.image)
+
+    def setImage(self, path: str):
+        self.image = QImage(path)
+        self.update()
+
+    def fadein(self):
+        fadeEffect = QGraphicsOpacityEffect()
+        self.setGraphicsEffect(fadeEffect)
+        self.anim = QPropertyAnimation(fadeEffect, b"opacity")
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
+        self.anim.setDuration(2000)
+        self.anim.start()
+
+    def fadeout(self):
+        fadeEffect = QGraphicsOpacityEffect()
+        self.setGraphicsEffect(fadeEffect)
+        self.anim = QPropertyAnimation(fadeEffect, b"opacity")
+        self.anim.setStartValue(1)
+        self.anim.setEndValue(0)
+        self.anim.setDuration(2000)
+        self.anim.start()
 
 
 # UI Effects

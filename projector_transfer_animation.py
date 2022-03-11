@@ -5,7 +5,6 @@ from sqlite3.dbapi2 import connect
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PIL import Image
 
 from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
@@ -13,6 +12,53 @@ from classes.ui_components import *
 
 import globals as g
 g.init()
+
+global globalPicture
+
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+    Supported signals are:
+
+    finished
+        No data passed, just a notifier of completion
+    error
+        `tuple` (exctype, value, traceback.format_exc() )
+    result
+        `object` data returned from processing, anything
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    '''
+    Defines status which is checked for in infinite loop
+    By setting to True, the thread will quit,
+    and closing of the program won't hang
+    '''
+    terminate = False
+
+
+class NewPictureThread(QRunnable):
+    '''Thread to continually get a new Picture from the database; simulates the transfer script'''
+    def __init__(self, sql_cntrl: SQLController, *args, **kwargs):
+        super(NewPictureThread, self).__init__()
+        self.signals = WorkerSignals()  # Holds a terminate status, used to kill thread
+
+        # Holds an instance of the SQLController
+        self.sql_controller = sql_cntrl
+
+        # TODO - could also use WorkerSignals as a way to tell MainWindow about new Picture
+        # self.signals = WorkerSignals()
+
+    def run(self):
+        while True:
+            if self.signals.terminate:  # Garbage collection
+                break
+
+            global globalPicture
+            globalPicture = self.sql_controller.get_random_picture()
+            time.sleep(3)  # TODO - test options; maybe 30s in real program
 
 
 class MainWindow(QMainWindow):
@@ -22,29 +68,69 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Capra Transfer Animation")
         self.setGeometry(0, 0, 1280, 720)
 
-        # Selects 4 pictures: self.picture, self.picture2, self.picture3, self.picture4
-        self.setupDBGetPictures()
+        # Setups up database connection depending on the system
+        self.setupSQLController()
+
+        # Setup Bg Thread for getting picture from Database
+        self.threadpool = QThreadPool()
+        self.threadpool.setMaxThreadCount(1)
+        self.newPictureThread = NewPictureThread(self.sql_controller)
+        self.threadpool.start(self.newPictureThread)
 
         # Setup BG color
-        c1 = QColor(9, 24, 94, 255)
-        # self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, c1)
+        # c1 = QColor(9, 24, 94, 255)
         self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, self.picture.color_rgb)
 
         self.setupColorWidgets(self.picture)
         self.setupAltitudeLabel(self.picture)
         self.setupTimeLabelAndBar(self.picture)
 
-        self.setupCenterImage(self.picture)
-        # self.fadeMoveInColorWidgets()
-        # self.fadeMoveOutColorWidgets()
+        self.superCenterImg = TransferCenterImage(self, self.picture)
 
-        self.setupAltitudeGraphAndLine(self.picture, 500)
+        self.setupAltitudeGraphAndLine(self.picture)
         self.altitudegraph.hide()
         self.centerLabel.opacityHide()
         self.line.hide()
 
+        # Setup QTimer for checking for new Picture
+        self.handlerCounter = 1
+        self.timerAnimationHandler = QTimer()
+        self.timerAnimationHandler.timeout.connect(self.animationHandler)
+        self.timerAnimationHandler.start(7000)
+
+    def animationHandler(self):
+        self.fadeOutTimer = QTimer()
+        self.fadeOutTimer.setSingleShot(True)
+
+        if self.handlerCounter % 4 == 1:  # Color
+            self.fadeMoveInColorWidgets()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutColorWidgets)
+        elif self.handlerCounter % 4 == 2:  # Altitude
+            self.fadeMoveInAltitudeEverything()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutAltitudeEverything)
+        elif self.handlerCounter % 4 == 3:  # Time
+            self.fadeMoveInTime()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutTime)
+        elif self.handlerCounter % 4 == 0:  # New Picture: image, bg color, ui elements
+            global globalPicture
+            self.picture = globalPicture
+
+            # Update UI Elements
+            self.updateColorWidgets(self.picture)
+            self.updateTimeLabelAndBar(self.picture)
+            self.updateAltitudeLabelAndGraph(self.picture)
+            # self.setupTimeLabelAndBar(self.picture)
+            # self.setupAltitudeLabel(self.picture)
+
+            # Change Image and Background
+            self.superCenterImg.fadeNewImage(self.picture)
+            self.bgcolor.changeColor(self.picture.color_rgb)
+
+        self.fadeOutTimer.start(3500)
+        self.handlerCounter += 1
+
     # Database connection - previous db with UI data
-    def setupDBGetPictures(self):
+    def setupSQLController(self):
         '''Initializes the database connection.\n
         If on Mac/Windows give dialog box to select database,
         otherwise it will use the global defined location for the database'''
@@ -64,65 +150,39 @@ class MainWindow(QMainWindow):
         print(self.database)
         print(self.directory)
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
-        self.picture = self.sql_controller.get_picture_with_id(28300)
-        self.picture2 = self.sql_controller.get_picture_with_id(27500)
-        self.picture3 = self.sql_controller.get_picture_with_id(12000)
-        self.picture4 = self.sql_controller.get_picture_with_id(10700)
+
+        # self.picture = self.sql_controller.get_picture_with_id(20000) # 28300
+        self.picture = self.sql_controller.get_random_picture()
+
+        # self.picture2 = self.sql_controller.get_picture_with_id(27500)
+        # self.picture3 = self.sql_controller.get_picture_with_id(12000)
+        # self.picture4 = self.sql_controller.get_picture_with_id(10700)
         # 10700, 11990, 12000, 15000, 20000, 27100, 27200, 27300, 27500, 28300
 
-        # TESTING - comment out to speed up program load time
+        # TODO - should we preload all the UI Data?
         # self.uiData = self.sql_controller.preload_ui_data()
         # self.preload = True
-
-    # Center Image
-    def setupCenterImage(self, picture: Picture):
-        '''Setup the window size, title, and container layout'''
-        pagelayout = QVBoxLayout()
-        pagelayout.setAlignment(Qt.AlignCenter)
-        # pagelayout.setContentsMargins(0, 0, 0, 0)
-
-        # old bg Color
-        # self.setStyleSheet("background-color: #440100;")
-        # self.setStyleSheet("background-color:rgb(255, 100, 75, 0);")
-        # rgb = self.picture.color_rgb.getRgb()
-        # style = "background-color:rgb{val};".format(val=rgb)
-        # self.setStyleSheet(style)
-
-        self.centerImg = CenterImage(self, picture.cameraf)
-        pagelayout.addWidget(self.centerImg)
-
-        # Add central widget
-        centralWidget = QWidget()
-        centralWidget.setLayout(pagelayout)
-        self.setCentralWidget(centralWidget)
-
-    def updateCenterImage(self, picture: Picture):
-        # self.centerImg = CenterImage(self, picture.cameraf)
-        self.centerImg.updateImage(picture.cameraf)
-
-    def fadeInCenterImage(self):
-        # CenterImg
-        fadeEffect2 = QGraphicsOpacityEffect()
-        self.centerImg.setGraphicsEffect(fadeEffect2)
-        self.anim3 = QPropertyAnimation(fadeEffect2, b"opacity")
-        self.anim3.setStartValue(0)
-        self.anim3.setEndValue(1)
-        self.anim3.setDuration(2000)
-        self.anim3.start()
 
     # Time Mode
     def setupTimeLabelAndBar(self, picture: Picture):
         self.timeLabel = UILabelTopCenter(self, '', '')
         self.timeLabel.setPrimaryText(picture.uitime_hrmm)
-        self.timeLabel.setSecondaryText(picture.uitime_sec)
+        self.timeLabel.setSecondaryText(picture.uitime_ampm)
 
-        percent_rank = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
+        percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
         self.timebar = TimeBarTransfer(self, percent_rank)
 
         self.timeLabel.opacityHide()
         self.timebar.hide()
 
-    def fadeInTime(self):
+    def updateTimeLabelAndBar(self, picture: Picture):
+        self.timeLabel.setPrimaryText(picture.uitime_hrmm)
+        self.timeLabel.setSecondaryText(picture.uitime_ampm)
+
+        percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+        self.timebar.trigger_refresh(percent_rank)
+
+    def fadeMoveInTime(self):
         self.timeLabel.show()
         self.timebar.show()
 
@@ -144,15 +204,24 @@ class MainWindow(QMainWindow):
 
         self.update()
 
-    def fadeOutTime(self):
-        # Move in top label
+    def fadeMoveOutTime(self):
+        # Move out time label
         self.animMoveOutTimeLabel = QPropertyAnimation(self.timeLabel, b"geometry")
         self.animMoveOutTimeLabel.setDuration(2000)
         self.animMoveOutTimeLabel.setStartValue(QRect(0, 15, 1280, 110))
         self.animMoveOutTimeLabel.setEndValue(QRect(0, 360, 1280, 110))
         self.animMoveOutTimeLabel.start()
 
-        # Fade in the timebar
+        # Fade out time label - issue with interferring with other effects
+        # fadeOutTimeLabel = QGraphicsOpacityEffect()
+        # self.timeLabel.setGraphicsEffect(fadeOutTimeLabel)
+        # self.animFadeOutTimeLabel = QPropertyAnimation(fadeOutTimeLabel, b"opacity")
+        # self.animFadeOutTimeLabel.setStartValue(1)
+        # self.animFadeOutTimeLabel.setEndValue(0)
+        # self.animFadeOutTimeLabel.setDuration(2000)
+        # self.animFadeOutTimeLabel.start()
+
+        # Fade out the timebar
         fadeTimebar = QGraphicsOpacityEffect()
         self.timebar.setGraphicsEffect(fadeTimebar)
         self.animFadeOutAltitudeGraph = QPropertyAnimation(fadeTimebar, b"opacity")
@@ -161,18 +230,19 @@ class MainWindow(QMainWindow):
         self.animFadeOutAltitudeGraph.setDuration(2000)
         self.animFadeOutAltitudeGraph.start()
 
+        self.update()
+
     # Altitude Mode
     def setupAltitudeLabel(self, picture: Picture):
         self.centerLabel = UILabelTopCenter(self, '', 'M')
         self.centerLabel.setPrimaryText(picture.uialtitude)
 
-        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
-        self.colorbar = ColorBarTransfer(self, True, colorlist)
+    def setupAltitudeGraphAndLine(self, picture: Picture):
+        archiveSize = self.sql_controller.get_archive_size()
+        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+        altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
 
-        self.hideColorWidgets()
-
-    def setupAltitudeGraphAndLine(self, picture: Picture, currentAlt):
-        altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt')
+        currentAlt = picture.altitude
 
         altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
         altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
@@ -193,7 +263,11 @@ class MainWindow(QMainWindow):
 
         self.line.setGeometry(0, int(self.linePosY), 1280, 3)
 
-    def fadeInAltitudeEverything(self):
+    def updateAltitudeLabelAndGraph(self, picture: Picture):
+        self.centerLabel.setPrimaryText(picture.uialtitude)
+        self.setupAltitudeGraphAndLine(picture)
+
+    def fadeMoveInAltitudeEverything(self):
         self.altitudegraph.show()
         self.centerLabel.show()
         self.line.show()
@@ -232,7 +306,7 @@ class MainWindow(QMainWindow):
 
         self.update()
 
-    def fadeOutAltitudeEverything(self):
+    def fadeMoveOutAltitudeEverything(self):
         # Label
         self.animMoveOutAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
         self.animMoveOutAltitudeValue.setDuration(2000)
@@ -265,7 +339,10 @@ class MainWindow(QMainWindow):
         self.colorpalette = ColorPaletteNew(self, True, picture.colors_rgb, picture.colors_conf)
         self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
 
-        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color')
+        archiveSize = self.sql_controller.get_archive_size()
+        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+
+        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
         self.colorbar = ColorBarTransfer(self, True, colorlist)
 
         self.hideColorWidgets()
@@ -336,53 +413,40 @@ class MainWindow(QMainWindow):
         # Closing App
         if event.key() == Qt.Key_Escape:
             self.close()
-
         elif event.key() == Qt.Key_1:
             print('1')
-            self.bgcolor.changeColor(self.picture.color_rgb)
-            self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, self.picture.color_rgb)
+            # self.bgcolor.changeColor(self.picture.color_rgb)
         elif event.key() == Qt.Key_2:
             print('2')
-            self.fadeMoveInColorWidgets()
+            # self.fadeMoveInColorWidgets()
         elif event.key() == Qt.Key_3:
             print('3')
-            self.fadeMoveOutColorWidgets()
+            # self.fadeMoveOutColorWidgets()
         elif event.key() == Qt.Key_4:
             print('4')
-            self.fadeInAltitudeEverything()
+            # self.fadeMoveInAltitudeEverything()
         elif event.key() == Qt.Key_5:
             print('5')
-            self.fadeOutAltitudeEverything()
+            # self.fadeMoveOutAltitudeEverything()
         elif event.key() == Qt.Key_6:
             print('6')
-            self.fadeInTime()
+            # self.fadeMoveInTime()
         elif event.key() == Qt.Key_7:
             print('7')
-            self.fadeOutTime()
+            # self.fadeMoveOutTime()
         elif event.key() == Qt.Key_8:
             print('8')
-            self.updateColorWidgets(self.picture3)
-            self.updateCenterImage(self.picture3)
-            self.bgcolor.changeColor(self.picture.color_rgb)
-            # self.showColorWidgets(self.picture3)
-            # self.showCenterImage(self.picture3)
         elif event.key() == Qt.Key_9:
             print('9')
-            self.fadeInCenterImage()
-            # self.showColorWidgets(self.picture4)
-            # self.updateColorWidgets(self.picture4)
         elif event.key() == Qt.Key_0:
             print('0')
-            self.colorpalette.hide()
-
-        elif event.key() == Qt.Key_A:
-            print('A')
-
-        elif event.key() == Qt.Key_T:
-            print('T')
 
     def closeEvent(self, event):
         print('User has clicked the red X')
+        self.garbageCollection()
+
+    def garbageCollection(self):
+        self.newPictureThread.signals.terminate = True
 
 
 app = QApplication(sys.argv)
