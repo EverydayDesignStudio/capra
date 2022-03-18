@@ -245,6 +245,11 @@ def copy_remote_db():
     return
 
 
+def copy_local_camera_db_to_remote():
+    subprocess.Popen(['rsync', '--inplace', '-avAI', '--no-perms', '--rsh="ssh"', CAMERA_DB ,"pi@" + g.IP_ADDR_CAMERA + ":" + CAMERAPATH_REMOTE], stdout=subprocess.PIPE)
+    return
+
+
 def copy_master_db():
     subprocess.Popen(['cp', PROJECTOR_DB, PROJECTOR_BAK_DB], stdout=subprocess.PIPE)
     return
@@ -616,6 +621,9 @@ def buildHike(currHike):
         commits[fileName] = commit
     threadPool.shutdown(wait=True)
 
+    print("[{}] ### Copying pictures for hike {} done! {} valid rows out of {} rows.".format(timenow(), currHike, maxRows, validRowCount))
+    print("[{}] ### Post-processing begins, calculating ranks..".format(timenow()))
+
     ### Post-processing
     # attach color ranking within the current hike
     # then, upsert rows
@@ -648,6 +656,7 @@ def buildHike(currHike):
         commit = tuple(commits[fileName])
         dbDESTController.upsert_picture(*commit)
 
+    print("[{}] ### Generating metadata for Hike {}...".format(timenow(), currHike))
     # make a row for the hike table with postprocessed values
     avgAlt /= validRowCount
     domColorHike_hsv = []
@@ -675,8 +684,10 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     validRowCount, defaultHikePath, created_timestamp)
 
-    # delete rows with 0 byte pictures from local and remote camera dbs
+    # delete rows with 0 byte pictures from the referenced camera DB in local
+    # (remote db will be synced by copying the local copy of the camera db when the transfer is done)
     if (deleteCount > 0):
+        print("[{}] ## Deleting {} rows from hike {} ...".format(timenow(), deleteCount, currHike))
 
         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
         totalCountHike_remote = dbSRCController.get_pictures_count_of_selected_hike(currHike)
@@ -687,11 +698,7 @@ def buildHike(currHike):
             for timestamp in deleteTimestamps:
                 # local copy of camera db
                 dbSRCController.delete_picture_of_given_timestamp(timestamp)
-                # original db in remote
-                dbSRCController_remote.delete_picture_of_given_timestamp(timestamp)
-
             dbSRCController.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
-            dbSRCController_remote.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
 
     # create a color spectrum for this hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
@@ -937,6 +944,11 @@ def main():
                 start_transfer()
                 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
                 logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
+
+                # if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
+                # sync the remote db by overwriting with the updated camera db on the projector
+                if (updateDB()):
+                    copy_local_camera_db_to_remote()
 
                 # if transfer is successfully finished pause running until camera is dismounted and re-mounted
                 print("## Transfer finished. Pause the script")
