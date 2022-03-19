@@ -439,7 +439,7 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
                 camera1, camera2, camera3, camera2f, row_src['created_date_time']]
 
     return commit, colors_hsv[0]
-    
+
 
 ## this is essentially the main function
 def buildHike(currHike):
@@ -608,10 +608,22 @@ def buildHike(currHike):
         if (TWO_CAM):
             picPathCam3_dest = None
 
-        threads.append(threadPool.submit(dominantColorWrapper, currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, picPathCam3_dest, (DIMX, DIMY)))
+        # If a row is found in DB, load it, rather than running the color algorithm again
+        if (dbDESTController.get_picture_count_at_timestamp(row_src['time']) > 0):
+            commit = dbDESTController.get_picture_at_timestamp(row_src['time'])
+            fileName = "{}_camN".format(commit[7])  # index_in_hike
+            commits[fileName] = commit
+
+            domCol_hsv = [int(i) for i in commit[13].split(',')]  # color_hsv
+            domColorsHike_hsv.append(domCol_hsv)
+
+        else:
+            threads.append(threadPool.submit(dominantColorWrapper, currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, picPathCam3_dest, (DIMX, DIMY)))
 
         dummyGlobalCounter += 1
         index_in_hike += 1
+
+    print("[{}] ### Waiting for futures..".format(timenow()))
 
     # wait for threads to finish
     for thread in futures.as_completed(threads):
@@ -621,7 +633,7 @@ def buildHike(currHike):
         commits[fileName] = commit
     threadPool.shutdown(wait=True)
 
-    print("[{}] ### Copying pictures for hike {} done! {} valid rows out of {} rows.".format(timenow(), currHike, maxRows, validRowCount))
+    print("[{}] ### Copying pictures for hike {} done! {} valid rows out of {} rows.".format(timenow(), currHike, validRowCount, maxRows))
     print("[{}] ### Post-processing begins, calculating ranks..".format(timenow()))
 
     ### Post-processing
@@ -697,7 +709,9 @@ def buildHike(currHike):
             totalCountHike_remote - deleteCount == validRowCount):
             for timestamp in deleteTimestamps:
                 # local copy of camera db
-                dbSRCController.delete_picture_of_given_timestamp(timestamp)
+                # ** making a sequence of commits may lock the database,
+                #    so let it commit when hike will be updated outside the loop in the next line
+                dbSRCController.delete_picture_of_given_timestamp(timestamp, delayedCommit=True)
             dbSRCController.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
 
     # create a color spectrum for this hike

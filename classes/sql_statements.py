@@ -857,7 +857,11 @@ class SQLStatements:
         statement = 'SELECT pictures FROM hikes WHERE hike_id == {}'.format(hike_id)
         return statement
 
-    def get_picture_with_timestamp(self, time: float):
+    def get_picture_at_timestamp(self, time: float):
+        statement = 'SELECT * FROM pictures WHERE time == {}'.format(time)
+        return statement
+
+    def get_picture_count_at_timestamp(self, time: float):
         statement = 'SELECT count(*) FROM pictures WHERE time == {}'.format(time)
         return statement
 

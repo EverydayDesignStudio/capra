@@ -956,11 +956,17 @@ class SQLController:
 
         return ret
 
-    def get_picture_at_timestamp(self, time: float):
+    def get_picture_count_at_timestamp(self, time: float):
         cursor = self.connection.cursor()
-        cursor.execute(self.statements.get_picture_with_timestamp(time=time))
+        cursor.execute(self.statements.get_picture_count_at_timestamp(time=time))
         res = cursor.fetchone()
         return res[0]
+
+    def get_picture_at_timestamp(self, time: float):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_picture_at_timestamp(time=time))
+        res = cursor.fetchall()
+        return list(res[0][1:-1])
 
     def get_hikerow_by_index(self, hike_id: int, index_in_hike: int):
         cursor = self.connection.cursor()
