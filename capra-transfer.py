@@ -556,7 +556,6 @@ def buildHike(currHike):
                     print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
                     logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
 
-
             # rotate and resize, copy those to the dest folder
             img = None
             img_res = None
@@ -589,10 +588,22 @@ def buildHike(currHike):
                         img_res = img.copy().rotate(90, expand=True)
                         img_res.save(picPathCam3_dest)
             except:
-                print("!! Hike {} @ row {} has truncated pictures. Skipping a row..".format(currHike, index_in_hike))
+                print("!! Hike {} @ row {} has truncated pictures, could not rotate. Skipping a row..".format(currHike, index_in_hike))
+                deleteCount += 1
+                deleteTimestamps.append(row_src['time'])
+
+                # remove corrupted pictures
+                if os.path.isfile(picPathCam1_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam2_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam2f_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam3_dest):
+                    os.remove(picPathCam1_dest)
+
                 index_in_hike += 1
                 continue
-
 
         # increment the validRowCounter since we have successfully trasferred the pictures for this row
         validRowCount += 1
