@@ -992,3 +992,23 @@ class SQLStatements:
     def update_hikes_total_picture_count_of_given_hike(self, picCount: int, hike: int):
         statement = 'update hikes set pictures = {} where hike_id = {}'.format(picCount, hike)
         return statement
+
+
+    ### Post-processing Validation by Counting Negative Rank Rows
+
+    ### Pictures
+    def get_picture_negative_rank_count(self, hike: int):
+        statement = 'SELECT count(*) FROM pictures WHERE hike == {} AND \
+                        (time_rank_global < 0 OR \
+                         altrank_hike < 0 OR \
+                         altrank_global < 0 OR \
+                         altrank_global_h < 0 OR \
+                         color_rank_hike < 0 OR \
+                         color_rank_global < 0 OR \
+                         color_rank_global_h < 0)'.format(hike)
+        return statement
+
+    # avg_alt_rank, color_rank
+    def get_hike_rank_values(self, hike_id: int):
+        statement = 'SELECT avg_altitude_rank, color_rank FROM hikes WHERE hike_id == {}'.format(hike_id)
+        return statement

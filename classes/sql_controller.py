@@ -1118,3 +1118,21 @@ class SQLController:
         cursor.execute(self.statements.update_hikes_total_picture_count_of_given_hike(picCount, hike))
         if (not delayedCommit):
             self.connection.commit()
+
+
+    ### Validate post-processing by detecting negative ranks
+    def validate_hike_negative_rank_count_pictures(self, hike: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_picture_negative_rank_count(hike))
+        res = cursor.fetchone()[0]
+        return res
+
+    def validate_hike_get_hike_ranks(self, hike_id: int):
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.get_hike_rank_values(hike_id))
+        ret = cursor.fetchone()
+        if (ret is None):
+            res = None
+        else:
+            res = [ret[0], ret[1]]
+        return res
