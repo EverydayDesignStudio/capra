@@ -58,7 +58,6 @@ dummyGlobalAltRank = -1
 dummyGlobalCounter = 0
 
 COLOR_HSV_INDEX = -1    # used in the sortColor helper function
-NEW_DATA = False        # is there any updated data coming in?
 
 commits = []        # deferred commits due to concurrency
 threads = []
@@ -384,7 +383,7 @@ def sort_by_alts(data, alt_index, index_in_hike):
 
 
 def splitColor(item):
-    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 14 - color_hsv
+    tmp = itemgetter(COLOR_HSV_INDEX)(item)      # 14 - color_hsv, 1 - color_hsv for global ranking
     return sortby_hue_luminosity(float(tmp.split(",")[0]), float(tmp.split(",")[1]), float(tmp.split(",")[2]), REPETITION)
 
 
@@ -462,6 +461,7 @@ def buildHike(currHike):
     global rsync_status, hall_effect
     global logger
     global threads, threadPool, STOP
+    global COLOR_HSV_INDEX
 
     avgAlt = 0
     startTime = 9999999999
@@ -646,7 +646,7 @@ def buildHike(currHike):
         dummyGlobalCounter += 1
         index_in_hike += 1
 
-    print("[{}] ### Waiting for futures..".format(timenow()))
+    print("[{}] ### Waiting for Futures..".format(timenow()))
 
     # wait for threads to finish
     for thread in futures.as_completed(threads):
@@ -654,10 +654,14 @@ def buildHike(currHike):
         domColorsHike_hsv.append(domCol_hsv)
         fileName = "{}_camN".format(commit[7])
         commits[fileName] = commit
+
+        if (commit[7] % 200 == 0):
+            print("[{}]   Checkpoint for Futures at {}".format(timenow(), str(commit[7])))
+
     threadPool.shutdown(wait=True)
 
     print("[{}] ### Copying pictures for hike {} done! {} valid rows out of {} rows.".format(timenow(), currHike, validRowCount, maxRows))
-    print("[{}] ### Post-processing begins, calculating ranks..".format(timenow()))
+    print("[{}] ### Post-processing begins, calculating ranks within the hike..".format(timenow()))
 
     ### Post-processing
     # attach color ranking within the current hike
@@ -742,6 +746,110 @@ def buildHike(currHike):
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
     print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, validRowCount))
+    print("[{}] ### Now processing global ranks across all hikes and pictures before moving on to the next hike..".format(timenow()))
+
+
+    ### [Mar 31, 2022]
+    # Calculate global ranks when each hike is fully transferred
+    # This may be computationally inefficient but to make sure there is not to have partially-computed ranks at any point of time during the transfer
+    # Because the slideshow will break if any of the rankings is missing.
+    rankTimer = time.time()
+
+    globalTimeList = []
+    globalAltList = []
+    globalColorList = []
+    # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
+    COLOR_HSV_INDEX = 1
+
+    ### global ranks for pictures
+    rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
+    for i in range(len(rows_dst)):
+        row_dst = rows_dst[i]
+        globalTimeList.append((row_dst[0], row_dst[4]))
+        globalAltList.append((row_dst[0], row_dst[1]))
+        globalColorList.append((row_dst[0], row_dst[2]))
+
+    globalTimeList.sort(key= itemgetter(1, 0))
+    for i in range(len(globalTimeList)):
+        row_dst = globalTimeList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_TimeRank(row_dst[0], rank)
+
+    globalAltList.sort(key=lambda data: data[1])
+    for i in range(len(globalAltList)):
+        row_dst = globalAltList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_AltRank(row_dst[0], rank)
+
+    globalColorList.sort(key=splitColor)
+    for i in range(len(globalColorList)):
+        row_dst = globalColorList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
+
+    # create color spectrum for globalColor and globalColor_h
+    colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
+    generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DATAPATH)
+
+    colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
+    generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DATAPATH)
+
+    ## update alt and color global_h rankings for Pictures
+    # altrank_global_h
+    altSortedHikes = dbDESTController.get_hikes_by_avg_altrank()
+    rankIndex = 1
+
+    for res in altSortedHikes:
+        hike = res[0]
+        # picsInHike = res[1]       # for debugging
+        rows = dbDESTController.get_pictures_of_specific_hike_by_altrank(hike)
+
+        for row in rows:
+            pID = row[0]
+            dbDESTController.update_pictures_altrank_global_h(rankIndex, pID)
+            rankIndex += 1
+            # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
+
+    # color_rank_global_h
+    colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
+    rankIndex = 1
+
+    for res in colorSortedHikes:
+        hike = res[0]
+        # picsInHike = res[1]       # for debugging
+        rows = dbDESTController.get_pictures_of_specific_hike_by_color_rank(hike)
+
+        for row in rows:
+            pID = row[0]
+            dbDESTController.update_pictures_color_rank_global_h(rankIndex, pID)
+            rankIndex += 1
+            # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
+
+
+    ### global ranks for hikes
+    globalAltList.clear()
+    globalColorList.clear()
+
+    rows_dst = dbDESTController.get_hikes_global_ranking_raw_data()
+    for i in range(len(rows_dst)):
+        row_dst = rows_dst[i]
+        globalAltList.append((row_dst[0], row_dst[1]))
+        globalColorList.append((row_dst[0], row_dst[2]))
+
+    globalAltList.sort(key=lambda data: data[1])
+    for i in range(len(globalAltList)):
+        row_dst = globalAltList[i]
+        rank = i + 1
+        dbDESTController.update_hikes_global_AltRank(row_dst[0], rank)
+
+    globalColorList.sort(key=splitColor)
+    for i in range(len(globalColorList)):
+        row_dst = globalColorList[i]
+        rank = i + 1
+        dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
+
+    print("[{}] --- Global ranking took {} seconds.".format(timenow(), str(time.time() - rankTimer)))
+    print("[{}] --- Moving on to the next hike!".format(timenow()))
 
 
 def start_transfer():
@@ -801,22 +909,22 @@ def start_transfer():
             continue
 
         else:
-            NEW_DATA = True
             hikeTimer = time.time()
 
             destPath = build_hike_path(DATAPATH, currHike, True)
             expectedCheckSumTotal = currExpectedHikeSize * 4
             checkSum_transferred, checkSum_rotated, checkSum_total = compute_checksum(destPath, currHike)
+            isHikeFullyProcessed = check_hike_postprocessing(currHike)
 
             print("[{}] Hike {}: {} files transferred from SRC, {} files expected".format(timenow(), str(currHike), str(checkSum_transferred), str(currExpectedHikeSize*3)))
             print("[{}] Hike {}: {} files expected at DEST, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
-            print("[{}] Hike {}: post-processing status: {}".format(timenow(), str(currHike), str(check_hike_postprocessing(currHike))))
+            print("[{}] Hike {}: post-processing status: {}".format(timenow(), str(currHike), str(isHikeFullyProcessed)))
 
             # 2. if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
             # also check if DB is updated to post-processed values as well
             if (checkSum_transferred == currExpectedHikeSize * 3 and
                 expectedCheckSumTotal == checkSum_total and
-                check_hike_postprocessing(currHike)):
+                isHikeFullyProcessed):
 
                 print("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
                 logger.info("[{}]     # Hike {} fully transferred. Proceeding to the next hike...".format(timenow(), str(currHike)))
@@ -831,110 +939,6 @@ def start_transfer():
             currHike += 1
             globalCounter_h += currExpectedHikeSize
 
-
-    ### At this point, all hikes are processed.
-
-    ### TODO: remove TRUE for the final code
-    # calculate global ranks for pictures, only when there is new data
-    if (True or NEW_DATA):
-        rankTimer = time.time()
-
-        globalTimeList = []
-        globalAltList = []
-        globalColorList = []
-        # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
-        COLOR_HSV_INDEX = 1
-
-        ### global ranks for pictures
-        rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
-        for i in range(len(rows_dst)):
-            row_dst = rows_dst[i]
-            globalTimeList.append((row_dst[0], row_dst[4]))
-            globalAltList.append((row_dst[0], row_dst[1]))
-            globalColorList.append((row_dst[0], row_dst[2]))
-
-        globalTimeList.sort(key= itemgetter(1, 0))
-        for i in range(len(globalTimeList)):
-            row_dst = globalTimeList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_TimeRank(row_dst[0], rank)
-
-        globalAltList.sort(key=lambda data: data[1])
-        for i in range(len(globalAltList)):
-            row_dst = globalAltList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_AltRank(row_dst[0], rank)
-
-        globalColorList.sort(key=splitColor)
-        for i in range(len(globalColorList)):
-            row_dst = globalColorList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
-
-        # create color spectrum for globalColor and globalColor_h
-        colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
-        generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DATAPATH)
-
-        colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
-        generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DATAPATH)
-
-        ## update alt and color global_h rankings for Pictures
-        # altrank_global_h
-        altSortedHikes = dbDESTController.get_hikes_by_avg_altrank()
-        rankIndex = 1
-
-        for res in altSortedHikes:
-            hike = res[0]
-            # picsInHike = res[1]       # for debugging
-            rows = dbDESTController.get_pictures_of_specific_hike_by_altrank(hike)
-
-            for row in rows:
-                pID = row[0]
-                dbDESTController.update_pictures_altrank_global_h(rankIndex, pID)
-                rankIndex += 1
-                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
-
-        # color_rank_global_h
-        colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
-        rankIndex = 1
-
-        for res in colorSortedHikes:
-            hike = res[0]
-            # picsInHike = res[1]       # for debugging
-            rows = dbDESTController.get_pictures_of_specific_hike_by_color_rank(hike)
-
-            for row in rows:
-                pID = row[0]
-                dbDESTController.update_pictures_color_rank_global_h(rankIndex, pID)
-                rankIndex += 1
-                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
-
-
-        ### global ranks for hikes
-        globalAltList.clear()
-        globalColorList.clear()
-
-        rows_dst = dbDESTController.get_hikes_global_ranking_raw_data()
-        for i in range(len(rows_dst)):
-            row_dst = rows_dst[i]
-            globalAltList.append((row_dst[0], row_dst[1]))
-            globalColorList.append((row_dst[0], row_dst[2]))
-
-        globalAltList.sort(key=lambda data: data[1])
-        for i in range(len(globalAltList)):
-            row_dst = globalAltList[i]
-            rank = i + 1
-            dbDESTController.update_hikes_global_AltRank(row_dst[0], rank)
-
-        globalColorList.sort(key=splitColor)
-        for i in range(len(globalColorList)):
-            row_dst = globalColorList[i]
-            rank = i + 1
-            dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
-
-        NEW_DATA = False
-
-    print("[{}] --- Global ranking took {} seconds".format(timenow(), str(time.time() - rankTimer)))
     print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
 
     STOP = True
