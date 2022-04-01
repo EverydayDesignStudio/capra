@@ -962,11 +962,11 @@ def main():
     global RETRY, TRANSFER_DONE
 
     # readHallEffectThread()
+    createLogger()
 
     while True:
         # HALL_EFFECT_ON.wait()
         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
-        createLogger()
         TRANSFER_DONE = False
         start_time = time.time()
         try:
@@ -979,6 +979,10 @@ def main():
                 #     HALL_EFFECT_ON.clear()
                 #     continue
 
+                # Start by copying the remote DB over to the projector
+                print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
+                copy_remote_db()
+
                 if (os.path.exists(CAMERA_DB) and
                     os.path.exists(CAMERA_BAK_DB) and
                     not updateDB()):
@@ -989,9 +993,6 @@ def main():
 
                 else:
                     print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
-
-                print("[{}] \t Copying the camera DB over to the Projector..".format(timenow()))
-                copy_remote_db()
 
                 # copy the current snapshot of master DB for checking references
                 print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
