@@ -48,7 +48,6 @@ rsync_status = None
 RETRY = 0
 RETRY_MAX = 5
 
-STOP = False
 TRANSFER_DONE = False
 
 TWO_CAM = False         # special variable to transfer hikes with only two cameras (for Jordan's 9 early hikes)
@@ -229,7 +228,7 @@ def roundToHundredth(lst):
 #####                     DATABASE FUNCTIONS                      #####
 #######################################################################
 
-def updateDB():
+def isDBNotInSync():
     proc = subprocess.Popen(["sqldiff", CAMERA_DB, CAMERA_BAK_DB], stdout=subprocess.PIPE)
     line = proc.stdout.readline()
     if line != b'':
@@ -467,7 +466,7 @@ def buildHike(currHike):
 
     global rsync_status, hall_effect
     global logger
-    global threads, threadPool, STOP
+    global threads, threadPool
     global COLOR_HSV_INDEX, TRANSFER_DONE
 
     avgAlt = 0
@@ -493,15 +492,15 @@ def buildHike(currHike):
 
     while (index_in_hike <= maxRows + 2):   # allow a loose upper bound (max + 2) to handle the last index
 
-        # # check the connection before processing a new row
-        # if (not g.HALL_EFFECT):
-        #     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     return
-        # if (not isCameraUp()):
-        #     print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-        #     logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-        #     return
+        # check the connection before processing a new row
+        if (not g.HALL_EFFECT):
+            print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            return
+        if (not isCameraUp()):
+            print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            return
 
         row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
@@ -532,7 +531,6 @@ def buildHike(currHike):
             # check for 0 byte pictures
             #   if spotted, increase deleteCounter and delete those rows
             #   from the remote camera db and the local camera db before proceeding to the next hike
-            ## 436
             if (not exists_non_zero_remote(picPathCam1_src) or not exists_non_zero_remote(picPathCam2_src) or
                 (not TWO_CAM and not exists_non_zero_remote(picPathCam3_src))):
                 print("[{}] \t Row {} has a missing picture. Deleting a row..".format(timenow(), index_in_hike))
@@ -866,7 +864,7 @@ def start_transfer():
 
     global rsync_status, hall_effect
     global logger
-    global threads, threadPool, STOP
+    global threads, threadPool
 
     latest_master_hikeID = dbDESTController.get_last_hike_id()
     latest_remote_hikeID = dbSRCController.get_last_hike_id()
@@ -883,27 +881,25 @@ def start_transfer():
     dummyGlobalCounter = 1
     masterTimer = time.time()
 
-    # 3. determine how many hikes should be transferred
     while currHike <= latest_remote_hikeID:
 
-        # if (not g.HALL_EFFECT):
-        #     print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-        #     return
-        # if (not isCameraUp()):
-        #     print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-        #     logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-        #     return
+        # Check signals upon processing each hike
+        if (not g.HALL_EFFECT):
+            print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
+            return
+        if (not isCameraUp()):
+            print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+            return
 
-        ### TODO: update constants
         srcPath = build_hike_path(CAMERAPATH_REMOTE, currHike)
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
 
         if (currExpectedHikeSize is None):
             currExpectedHikeSize = 0
 
-        # 1. skip empty hikes
-        #       + also skip small hikes (< 20) [Jul 8, 2021]
+        # Skip empty or small hikes that have less than 20 rows [Jul 8, 2021]
         if (currExpectedHikeSize == 0):
             print("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
             logger.info("[{}] Hike {} is empty. Proceeding to the next hike...".format(timenow(), str(currHike)))
@@ -914,6 +910,7 @@ def start_transfer():
             print("[{}] Hike {} seems to be very small (Only {} rows). Skipping the hike...".format(timenow(), str(currHike), str(currExpectedHikeSize)))
             currHike += 1
             continue
+
 
         else:
             hikeTimer = time.time()
@@ -927,7 +924,7 @@ def start_transfer():
             print("[{}] Hike {}: {} files expected at DEST, {} files exist".format(timenow(), str(currHike), str(expectedCheckSumTotal), str(checkSum_total)))
             print("[{}] Hike {}: post-processing status: {}".format(timenow(), str(currHike), str(isHikeFullyProcessed)))
 
-            # 2. if a hike is fully transferred, resized and rotated, then skip the transfer for this hike
+            # If a hike is fully transferred, resized and rotated, then skip the transfer for this hike
             # also check if DB is updated to post-processed values as well
             if (checkSum_transferred == currExpectedHikeSize * 3 and
                 expectedCheckSumTotal == checkSum_total and
@@ -946,84 +943,89 @@ def start_transfer():
             currHike += 1
             globalCounter_h += currExpectedHikeSize
 
-    print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
     ### [Apr 1, 2022]
     #   This is the only case that indicates all hikes are checked.
     if (currHike > latest_remote_hikeID):
         TRANSFER_DONE = True
 
-    STOP = True
+    print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
 
 
 # ==================================================================
 
 def main():
-    global STOP, RETRY
     global RETRY, TRANSFER_DONE
 
-    # readHallEffectThread()
+    readHallEffectThread()
     createLogger()
+    TRANSFER_DONE = False
 
     while True:
-        # HALL_EFFECT_ON.wait()
         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
-        TRANSFER_DONE = False
+        HALL_EFFECT_ON.wait()
+
         start_time = time.time()
         try:
             if (isCameraUp()):
-                # # if camera DB is still fresh, do not run transfer script
-                # if (os.path.exists(CAMERA_DB) and
-                    # os.path.exists(CAMERA_BAK_DB) and
-                    # not updateDB()):
-                #     g.flag_start_transfer = False
-                #     HALL_EFFECT_ON.clear()
-                #     continue
 
                 # Start by copying the remote DB over to the projector
                 print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
                 copy_remote_db()
 
+                # if camera DB is still fresh, do not run transfer script
                 if (os.path.exists(CAMERA_DB) and
                     os.path.exists(CAMERA_BAK_DB) and
-                    not updateDB()):
+                    not isDBNotInSync()):
+
                     print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+                    print("[{}] ## Proceed with the existing reference to the remote DB.".format(timenow()))
+
+                    ### TODO: may need a better flow
+                    if (TRANSFER_DONE):
+                        print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+                        g.flag_start_transfer = False
+                        HALL_EFFECT_ON.clear()
+                        continue
+
                     ### [Apr 1, 2022]
                     ### TODO: At this point, we are in the stable status.
                     ###       Play 'done' screen and play the transfer animation recap
 
                 else:
                     print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
+                    TRANSFER_DONE = False
 
-                # copy the current snapshot of master DB for checking references
-                print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
-                copy_master_db()
+                ### Do we really need this? hmm..
+                # # copy the current snapshot of master DB for checking references
+                # print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
+                # copy_master_db()
 
                 print("[{}] \t Creating DB controllers..".format(timenow()))
                 getDBControllers()
 
                 print("[{}] Starting the transfer now..".format(timenow()))
                 start_transfer()
-                print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
-                logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
 
-                # if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
+                print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+                logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+
+                # In case if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
                 # sync the remote db by overwriting with the updated camera db on the projector
-                if (updateDB() and TRANSFER_DONE):
+                if (isDBNotInSync() and TRANSFER_DONE):
                     print("[{}] Changes have been made to the remote DB while transfer. Updating the changes to the remote..".format(timenow()))
                     copy_local_camera_db_to_remote()
 
                 # if transfer is successfully finished pause running until camera is dismounted and re-mounted
-                print("## Transfer finished. Pause the script")
-                # g.flag_start_transfer = False
-                # HALL_EFFECT_ON.clear()
+                print("[{}] Transfer finished. Pause the script".format(timenow()))
                 make_backup_remote_db()
+
+                g.flag_start_transfer = False
+                HALL_EFFECT_ON.clear()
 
             else:
                 print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                 logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
 
-            if (STOP):
-                break;
 
         # TODO: clean up hanging processes when restarting
         #           fuser capra_projector.db -k
