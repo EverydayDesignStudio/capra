@@ -37,6 +37,7 @@ import globals as g
 g.init()
 
 VERBOSE = False
+VERBOSE_HALL_EFFECT = False
 
 GPIO.setmode(GPIO.BCM)                              # Set's GPIO pins to BCM GPIO numbering
 GPIO.setup(g.HALL_EFFECT_PIN, GPIO.IN)              # Set our input pin to be an input
@@ -124,24 +125,29 @@ class readHallEffectThread(threading.Thread):
 
             if (g.HALL_EFFECT != g.PREV_HALL_VALUE):
                 if (g.HALL_BOUNCE_TIMER is None):
-                    print("signal change! setting the timer..")
+                    if (VERBOSE_HALL_EFFECT):
+                        print("[{}] Hall-effect seneor signal change! Setting the timer..".format(timenow()))
                     g.HALL_BOUNCE_TIMER = current_milli_time()
 
                 if (current_milli_time() - g.HALL_BOUNCE_TIMER > g.HALL_BOUNCE_LIMIT):
-                    print("the signal is valid!")
+                    if (VERBOSE_HALL_EFFECT):
+                        print("[{}] The signal is valid! Changing the state.".format(timenow()))
                     if (g.HALL_EFFECT):
-                        print("\tFalse -> True")
+                        if (VERBOSE_HALL_EFFECT):
+                            print("[{}] \tFalse -> True \\\\ Magnet Attached".format(timenow()))
                         g.PREV_HALL_VALUE = True
                         HALL_EFFECT_ON.set()
                         g.flag_start_transfer = True
                     else:
-                        print("\tTrue -> False")
+                        if (VERBOSE_HALL_EFFECT):
+                            print("[{}] \tTrue -> False \\\\ Magnet Detached".format(timenow()))
                         g.PREV_HALL_VALUE = False
                         HALL_EFFECT_ON.clear()
                         g.flag_start_transfer = False
 
             elif (g.HALL_BOUNCE_TIMER is not None):
-                print("signal change is lost. resetting the timer")
+                if (VERBOSE_HALL_EFFECT):
+                    print("[{}] Signal change is lost. Resetting the timer".format(timenow()))
                 g.HALL_BOUNCE_TIMER = None
 
 
@@ -953,6 +959,7 @@ def main():
 
     while True:
         # HALL_EFFECT_ON.wait()
+        print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
         createLogger()
         start_time = time.time()
         try:
@@ -969,19 +976,24 @@ def main():
                     os.path.exists(CAMERA_BAK_DB) and
                     not updateDB()):
                     print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
-                else:
-                    print("[{}] ## Updated DB detected. Start transferring new data..".format(timenow()))
+                    ### [Apr 1, 2022]
+                    ### TODO: At this point, we are in the stable status.
+                    ###       Play 'done' screen and play the transfer animation recap
 
-                print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
+                else:
+                    print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
+
+                print("[{}] \t Copying the camera DB over to the Projector..".format(timenow()))
                 copy_remote_db()
 
                 # copy the current snapshot of master DB for checking references
-                print("[{}] Making a copy of the master DB on the Projector..".format(timenow()))
+                print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
                 copy_master_db()
 
-                print("[{}] Creating DB controllers..".format(timenow()))
+                print("[{}] \t Creating DB controllers..".format(timenow()))
                 getDBControllers()
 
+                print("[{}] Starting the transfer now..".format(timenow()))
                 start_transfer()
                 print("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
                 logger.info("[{}] --- {} seconds ---".format(timenow(), str(time.time() - start_time)))
