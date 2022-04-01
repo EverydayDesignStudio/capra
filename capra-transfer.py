@@ -49,6 +49,7 @@ RETRY = 0
 RETRY_MAX = 5
 
 STOP = False
+TRANSFER_DONE = False
 
 TWO_CAM = False         # special variable to transfer hikes with only two cameras (for Jordan's 9 early hikes)
 
@@ -467,7 +468,7 @@ def buildHike(currHike):
     global rsync_status, hall_effect
     global logger
     global threads, threadPool, STOP
-    global COLOR_HSV_INDEX
+    global COLOR_HSV_INDEX, TRANSFER_DONE
 
     avgAlt = 0
     startTime = 9999999999
@@ -861,7 +862,7 @@ def buildHike(currHike):
 def start_transfer():
     global dbSRCController, dbDESTController, dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter, globalCounter_h
     global srcPath, destPath
-    global COLOR_HSV_INDEX
+    global COLOR_HSV_INDEX, TRANSFER_DONE
 
     global rsync_status, hall_effect
     global logger
@@ -946,6 +947,10 @@ def start_transfer():
             globalCounter_h += currExpectedHikeSize
 
     print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
+    ### [Apr 1, 2022]
+    #   This is the only case that indicates all hikes are checked.
+    if (currHike > latest_remote_hikeID):
+        TRANSFER_DONE = True
 
     STOP = True
 
@@ -954,6 +959,7 @@ def start_transfer():
 
 def main():
     global STOP, RETRY
+    global RETRY, TRANSFER_DONE
 
     # readHallEffectThread()
 
@@ -961,6 +967,7 @@ def main():
         # HALL_EFFECT_ON.wait()
         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
         createLogger()
+        TRANSFER_DONE = False
         start_time = time.time()
         try:
             if (isCameraUp()):
@@ -1000,7 +1007,8 @@ def main():
 
                 # if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
                 # sync the remote db by overwriting with the updated camera db on the projector
-                if (updateDB()):
+                if (updateDB() and TRANSFER_DONE):
+                    print("[{}] Changes have been made to the remote DB while transfer. Updating the changes to the remote..".format(timenow()))
                     copy_local_camera_db_to_remote()
 
                 # if transfer is successfully finished pause running until camera is dismounted and re-mounted
