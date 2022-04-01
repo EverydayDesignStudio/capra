@@ -496,11 +496,7 @@ def buildHike(currHike):
         if (not g.HALL_EFFECT):
             print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
             logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-            return
-        if (not isCameraUp()):
-            print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-            logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-            return
+            return 1
 
         row_src = dbSRCController.get_hikerow_by_index(currHike, index_in_hike)
 
@@ -539,7 +535,6 @@ def buildHike(currHike):
                 index_in_hike += 1
                 continue
 
-            isNew = False
             # transfer pictures only when the paths do not exist on the projector
             if (not os.path.exists(picPathCam1_dest)
                 or not os.path.exists(picPathCam2_dest)
@@ -554,7 +549,6 @@ def buildHike(currHike):
                     for tmpfile in glob.glob(tmpPath + '*'):
                         os.remove(tmpfile)
 
-                isNew = True
                 # grab a set of three pictures for each row using regEx
                 #     "/home/pi/capra-storage/hike1/1_cam2.jpg"
                 #      --> "/home/pi/capra-storage/hike1/1_cam*"
@@ -572,6 +566,14 @@ def buildHike(currHike):
                 if (rsync_status.returncode != 0):
                     print("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
                     logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
+
+                    # double-check if the failture is due to losing remote connection to the camera
+                    if (not isCameraUp()):
+                        print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+                        logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+
+                    # return an arbitrary error code
+                    return 1
 
             # rotate and resize, copy those to the dest folder
             img = None
@@ -856,6 +858,8 @@ def buildHike(currHike):
     print("[{}] --- Global ranking took {} seconds.".format(timenow(), str(time.time() - rankTimer)))
     print("[{}] --- Moving on to the next hike!".format(timenow()))
 
+    return 0
+
 
 def start_transfer():
     global dbSRCController, dbDESTController, dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter, globalCounter_h
@@ -878,20 +882,23 @@ def start_transfer():
     checkSum_rotated = 0
     checkSum_total = 0
 
+    resCode_buildHike = 0
+
     dummyGlobalCounter = 1
     masterTimer = time.time()
 
     while currHike <= latest_remote_hikeID:
 
-        # Check signals upon processing each hike
+        # Check signals before processing each hike
         if (not g.HALL_EFFECT):
             print("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
             logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
-            return
+            return 1
+
         if (not isCameraUp()):
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-            return
+            return 1
 
         srcPath = build_hike_path(CAMERAPATH_REMOTE, currHike)
         currExpectedHikeSize = dbSRCController.get_size_of_hike(currHike)
@@ -937,7 +944,12 @@ def start_transfer():
             else:
                 hikeTimer = time.time()
                 print("[{}] Processing Hike {}".format(timenow(), str(currHike)))
-                buildHike(currHike)
+                resCode_buildHike = buildHike(currHike)
+
+                if (resCode_buildHike):
+                    print("[{}] Could not finish hike {}.".format(timenow(), str(currHike)))
+                    return 1
+
                 print("[{}] --- Hike {} took {} seconds".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
 
             currHike += 1
@@ -950,6 +962,7 @@ def start_transfer():
 
     print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
 
+    return 0
 
 # ==================================================================
 
@@ -959,6 +972,8 @@ def main():
     readHallEffectThread()
     createLogger()
     TRANSFER_DONE = False
+
+    resCode_startTransfer = 0
 
     while True:
         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
@@ -1004,7 +1019,11 @@ def main():
                 getDBControllers()
 
                 print("[{}] Starting the transfer now..".format(timenow()))
-                start_transfer()
+                resCode_startTransfer = start_transfer()
+
+                if (resCode_startTransfer):
+                    print("[{}] Transfer could not finish. Putting transfer script to sleep..".format(timenow()))
+                    continue
 
                 print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
                 logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
