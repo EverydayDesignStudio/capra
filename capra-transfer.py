@@ -321,14 +321,14 @@ def check_hike_postprocessing(currHike):
     hikeColor = dbDESTController.get_hike_average_color(currHike)
     nonEmpty_color_with_proper_values = hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
 
-    if (nonEmpty_color_with_proper_values):
+    if (not nonEmpty_color_with_proper_values):
         print("[{}] !! Hike {}'s dominant color has not computed yet.".format(timenow(), currHike))
 
     pictures_negative_rank_count = dbDESTController.validate_hike_negative_rank_count_pictures(currHike)
     hikes_rank_values = dbDESTController.validate_hike_get_hike_ranks(currHike)
     no_negative_rank_values = hikes_rank_values is not None and pictures_negative_rank_count == 0 and hikes_rank_values[0] > 0 and hikes_rank_values[1] > 0
 
-    if (no_negative_rank_values):
+    if (not no_negative_rank_values):
         print("[{}] !! Some rank values are not fully computed for Hike {}.".format(timenow(), currHike))
 
     return nonEmpty_color_with_proper_values and no_negative_rank_values
