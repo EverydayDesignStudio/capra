@@ -162,6 +162,12 @@ class SQLController:
     def get_current_hike(self, current: Picture) -> Hike:
         return self.get_hike_with_id(current.hike_id)
 
+    # Select random picture
+    # --------------------------------------------------------------------------
+    def get_random_picture(self) -> Picture:
+        sql = self.statements.select_random_picture()
+        return self._execute_query(sql)
+
     # TODO - write tests for all of these functions
     # Initializing queries - used to get the initial row from the database
     # --------------------------------------------------------------------------

@@ -18,6 +18,12 @@ class SQLStatements:
         statement = 'SELECT * FROM hikes WHERE hike_id={id}'.format(id=hike_id)
         return statement
 
+    # Select random picture
+    # --------------------------------------------------------------------------
+    def select_random_picture(self) -> str:
+        statement = 'SELECT * FROM pictures ORDER BY RANDOM() LIMIT 1;'
+        return statement
+
     # Initialization Statements - initially written 2019
     # --------------------------------------------------------------------------
     # Time - first & last across hikes
