@@ -65,11 +65,11 @@ else:
     # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
     # dest_db_name = "capra_projector_apr2021_min_camera_full.db"
 
-    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-sam-camera/"
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-will-camera/"
     src_db_name = "capra_camera.db"
 
-    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-sam-projector/"
-    dest_db_name = "capra_projector_sam_sep2021.db"
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-will-projector/"
+    dest_db_name = "capra_projector_will_2022_0327.db"
 
 
 ####################################################
@@ -439,7 +439,7 @@ def filterZeroBytePicturesFromSrc():
                 # res = srcCursor.fetchall()
                 # print (res)
 
-                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(row['index_in_hike']))
+                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(timenow(), row['index_in_hike']))
 
                 dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
                 delCount += 1
@@ -447,8 +447,8 @@ def filterZeroBytePicturesFromSrc():
         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
 
         if (delCount > 0):
-            print("[{}] {} rows deleted".format(delCount))
-            print("[{}] Hike {} now has {} rows".format(currHike, totalCountHike))
+            print("[{}] {} rows deleted".format(timenow(), delCount))
+            print("[{}] Hike {} now has {} rows".format(timenow(), currHike, totalCountHike))
 
             dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
 
@@ -532,16 +532,16 @@ def buildHike(currHike):
         # rotate and resize, copy those to the dest folder
         img = None
         img_res = None
-        # resize and rotate for newly added pictures
-        #    1. make a copy of pic2 as pic2f
-        if (not os.path.exists(picPathCam2f_src)):
-            img = Image.open(picPathCam2_src)
-            img_res = img.copy()
-            img_res.save(picPathCam2f_dest)
+        try:
+            # resize and rotate for newly added pictures
+            #    1. make a copy of pic2 as pic2f
+            if (not os.path.exists(picPathCam2f_src)):
+                img = Image.open(picPathCam2_src)
+                img_res = img.copy()
+                img_res.save(picPathCam2f_dest)
 
         #    2. resize to 427x720 and rotate 90 deg
         ## TODO: refine color - saturation --> talk with Sam
-        try:
             if (not os.path.exists(picPathCam1_dest) or
                 not os.path.exists(picPathCam2_dest) or
                 not os.path.exists(picPathCam2f_dest) or
