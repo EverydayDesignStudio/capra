@@ -950,6 +950,10 @@ def start_transfer():
                     print("[{}] Could not finish hike {}.".format(timenow(), str(currHike)))
                     return 1
 
+
+                ### TODO: send a signal to remote to delete the hike pictures here
+
+
                 print("[{}] --- Hike {} took {} seconds".format(timenow(), str(currHike), str(time.time() - hikeTimer)))
 
             currHike += 1
