@@ -76,26 +76,26 @@ class WorkerSignals(QObject):
 
 
 # TODO: this class should be integrated into the transfer script
-class NewPictureThread(QRunnable):
-    '''Thread to continually get a new Picture from the database; simulates the transfer script'''
-    def __init__(self, sql_cntrl: SQLController, *args, **kwargs):
-        super(NewPictureThread, self).__init__()
-        self.signals = WorkerSignals()  # Holds a terminate status, used to kill thread
-
-        # Holds an instance of the SQLController
-        self.sql_controller = sql_cntrl
-
-        # TODO - could also use WorkerSignals as a way to tell MainWindow about new Picture
-        # self.signals = WorkerSignals()
-
-    def run(self):
-        while True:
-            if self.signals.terminate:  # Garbage collection
-                break
-
-            global globalPicture
-            globalPicture = self.sql_controller.get_random_picture()
-            time.sleep(3)  # TODO - test options; maybe 30s in real program
+# class NewPictureThread(QRunnable):
+#     '''Thread to continually get a new Picture from the database; simulates the transfer script'''
+#     def __init__(self, sql_cntrl: SQLController, *args, **kwargs):
+#         super(NewPictureThread, self).__init__()
+#         self.signals = WorkerSignals()  # Holds a terminate status, used to kill thread
+#
+#         # Holds an instance of the SQLController
+#         self.sql_controller = sql_cntrl
+#
+#         # TODO - could also use WorkerSignals as a way to tell MainWindow about new Picture
+#         # self.signals = WorkerSignals()
+#
+#     def run(self):
+#         while True:
+#             if self.signals.terminate:  # Garbage collection
+#                 break
+#
+#             global globalPicture
+#             globalPicture = self.sql_controller.get_random_picture()
+#             time.sleep(3)  # TODO - test options; maybe 30s in real program
 
 
 class TransferAnimationWindow(QMainWindow):
@@ -1111,11 +1111,22 @@ def buildHike(currHike):
     for thread in futures.as_completed(threads):
         commit, domCol_hsv = thread.result()
         domColorsHike_hsv.append(domCol_hsv)
-        fileName = "{}_camN".format(commit[7])
+        rowIdx = commit[7]
+        fileName = "{}_camN".format(rowIdx)
         commits[fileName] = commit
 
-        if (commit[7] % 200 == 0):
-            print("[{}]   Checkpoint for Futures at {}".format(timenow(), str(commit[7])))
+        # if (commit[7] % 200 == 0):
+        #     print("[{}]   Checkpoint for Futures at {}".format(timenow(), str(commit[7])))
+
+        if (rowIdx % 100 == 0):
+            # display an random picture in the current hike
+            # these pictures are already in the database, so no need to worry about building a picture object
+            print("[{}]   Checkpoint for Futures at {} - Transfer Amination Updated.".format(timenow(), str(rowIdx)))
+            if (rowIdx == 0):
+                globalPicture = dbDESTController.get_random_picture_of_given_hike(currHike)
+            else:
+                globalPicture = dbDESTController.get_random_picture_of_given_hike_within_range(currHike, rowIdx, rowIdx-100)
+
 
     threadPool.shutdown(wait=True)
 
@@ -1432,6 +1443,8 @@ def main():
     resCode_startTransfer = 0
 
     # launch transfer animation window
+
+    ### TODO: what is there is no existing picture in the database? >> base case
     app = QApplication(sys.argv)
     window = TransferAnimationWindow()
     window.show()

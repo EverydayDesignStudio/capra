@@ -24,6 +24,14 @@ class SQLStatements:
         statement = 'SELECT * FROM pictures ORDER BY RANDOM() LIMIT 1;'
         return statement
 
+    def select_random_picture_of_given_hike(self, hike_id: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} ORDER BY RANDOM() LIMIT 1;'.format(id=hike_id)
+        return statement
+
+    def select_random_picture_of_given_hike_within_range(self, hike_id: int, high: int, low: int) -> str:
+        statement = 'SELECT * FROM pictures WHERE hike={id} LIMIT 1 OFFSET ABS(RANDOM()) % ({high} - {low}) + {low};'.format(id=hike_id, high=high, low=low)
+        return statement
+
     # Initialization Statements - initially written 2019
     # --------------------------------------------------------------------------
     # Time - first & last across hikes
