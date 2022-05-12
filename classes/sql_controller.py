@@ -380,7 +380,7 @@ class SQLController:
 
         # Load all the Hike UI data
         # starting point in database
-        picture = self.get_picture_with_id(1)
+        picture = self.get_first_time_picture()
         starting_hike = picture.hike_id
 
         hike = 0
