@@ -46,448 +46,6 @@ from classes.ui_components import *
 
 global globalPicture
 
-
-
-#######################################################################
-#####                    TRANSFER ANIMATION                       #####
-#######################################################################
-
-class WorkerSignals(QObject):
-    '''
-    Defines the signals available from a running worker thread.
-    Supported signals are:
-
-    finished
-        No data passed, just a notifier of completion
-    error
-        `tuple` (exctype, value, traceback.format_exc() )
-    result
-        `object` data returned from processing, anything
-    '''
-    finished = pyqtSignal()
-    error = pyqtSignal(tuple)
-    result = pyqtSignal(object)
-    '''
-    Defines status which is checked for in infinite loop
-    By setting to True, the thread will quit,
-    and closing of the program won't hang
-    '''
-    terminate = False
-
-
-# TODO: this class should be integrated into the transfer script
-# class NewPictureThread(QRunnable):
-#     '''Thread to continually get a new Picture from the database; simulates the transfer script'''
-#     def __init__(self, sql_cntrl: SQLController, *args, **kwargs):
-#         super(NewPictureThread, self).__init__()
-#         self.signals = WorkerSignals()  # Holds a terminate status, used to kill thread
-#
-#         # Holds an instance of the SQLController
-#         self.sql_controller = sql_cntrl
-#
-#         # TODO - could also use WorkerSignals as a way to tell MainWindow about new Picture
-#         # self.signals = WorkerSignals()
-#
-#     def run(self):
-#         while True:
-#             if self.signals.terminate:  # Garbage collection
-#                 break
-#
-#             global globalPicture
-#             globalPicture = self.sql_controller.get_random_picture()
-#             time.sleep(3)  # TODO - test options; maybe 30s in real program
-
-
-class TransferAnimationWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("Capra Transfer Animation")
-        self.setGeometry(0, 0, 1280, 720)
-
-        # Setups up database connection depending on the system
-        self.setupSQLController()
-
-        # Setup Bg Thread for getting picture from Database
-        self.threadpool = QThreadPool()
-        self.threadpool.setMaxThreadCount(1)
-        self.newPictureThread = NewPictureThread(self.sql_controller)
-        self.threadpool.start(self.newPictureThread)
-
-        # Setup BG color
-        # c1 = QColor(9, 24, 94, 255)
-        self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, self.picture.color_rgb)
-
-        self.setupColorWidgets(self.picture)
-        self.setupAltitudeLabel(self.picture)
-        self.setupTimeLabelAndBar(self.picture)
-
-        self.superCenterImg = TransferCenterImage(self, self.picture)
-
-        self.setupAltitudeGraphAndLine(self.picture)
-        self.altitudegraph.hide()
-        self.centerLabel.opacityHide()
-        self.line.hide()
-
-        # Setup QTimer for checking for new Picture
-        self.handlerCounter = 1
-        self.timerAnimationHandler = QTimer()
-        self.timerAnimationHandler.timeout.connect(self.animationHandler)
-        self.timerAnimationHandler.start(7000)
-
-    def animationHandler(self):
-        self.fadeOutTimer = QTimer()
-        self.fadeOutTimer.setSingleShot(True)
-
-        if self.handlerCounter % 4 == 1:  # Color
-            self.fadeMoveInColorWidgets()
-            self.fadeOutTimer.timeout.connect(self.fadeMoveOutColorWidgets)
-        elif self.handlerCounter % 4 == 2:  # Altitude
-            self.fadeMoveInAltitudeEverything()
-            self.fadeOutTimer.timeout.connect(self.fadeMoveOutAltitudeEverything)
-        elif self.handlerCounter % 4 == 3:  # Time
-            self.fadeMoveInTime()
-            self.fadeOutTimer.timeout.connect(self.fadeMoveOutTime)
-        elif self.handlerCounter % 4 == 0:  # New Picture: image, bg color, ui elements
-            global globalPicture
-            self.picture = globalPicture
-
-            # Update UI Elements
-            self.updateColorWidgets(self.picture)
-            self.updateTimeLabelAndBar(self.picture)
-            self.updateAltitudeLabelAndGraph(self.picture)
-            # self.setupTimeLabelAndBar(self.picture)
-            # self.setupAltitudeLabel(self.picture)
-
-            # Change Image and Background
-            self.superCenterImg.fadeNewImage(self.picture)
-            self.bgcolor.changeColor(self.picture.color_rgb)
-
-        self.fadeOutTimer.start(3500)
-        self.handlerCounter += 1
-
-    # Database connection - previous db with UI data
-    def setupSQLController(self):
-        '''Initializes the database connection.\n
-        If on Mac/Windows give dialog box to select database,
-        otherwise it will use the global defined location for the database'''
-
-        # Mac/Windows: select the location
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            # filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
-            # self.database = filename[0]
-            # self.directory = os.path.dirname(self.database)
-
-            self.database = '/Users/myoo/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector/capra_projector_jun2021_min_test_0708.db'
-            self.directory = '/Users/myoo/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector'
-        else:  # Raspberry Pi: preset location
-            self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
-            self.directory = g.DATAPATH_PROJECTOR
-
-        print(self.database)
-        print(self.directory)
-        self.sql_controller = SQLController(database=self.database, directory=self.directory)
-
-        # self.picture = self.sql_controller.get_picture_with_id(20000) # 28300
-        self.picture = self.sql_controller.get_random_picture()
-
-        # self.picture2 = self.sql_controller.get_picture_with_id(27500)
-        # self.picture3 = self.sql_controller.get_picture_with_id(12000)
-        # self.picture4 = self.sql_controller.get_picture_with_id(10700)
-        # 10700, 11990, 12000, 15000, 20000, 27100, 27200, 27300, 27500, 28300
-
-        # TODO - should we preload all the UI Data?
-        # self.uiData = self.sql_controller.preload_ui_data()
-        # self.preload = True
-
-    # Time Mode
-    def setupTimeLabelAndBar(self, picture: Picture):
-        self.timeLabel = UILabelTopCenter(self, '', '')
-        self.timeLabel.setPrimaryText(picture.uitime_hrmm)
-        self.timeLabel.setSecondaryText(picture.uitime_ampm)
-
-        percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
-        self.timebar = TimeBarTransfer(self, percent_rank)
-
-        self.timeLabel.opacityHide()
-        self.timebar.hide()
-
-    def updateTimeLabelAndBar(self, picture: Picture):
-        self.timeLabel.setPrimaryText(picture.uitime_hrmm)
-        self.timeLabel.setSecondaryText(picture.uitime_ampm)
-
-        percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
-        self.timebar.trigger_refresh(percent_rank)
-
-    def fadeMoveInTime(self):
-        self.timeLabel.show()
-        self.timebar.show()
-
-        # Move in top label
-        self.animMoveInTimeLabel = QPropertyAnimation(self.timeLabel, b"geometry")
-        self.animMoveInTimeLabel.setDuration(2000)
-        self.animMoveInTimeLabel.setStartValue(QRect(0, 360, 1280, 110))
-        self.animMoveInTimeLabel.setEndValue(QRect(0, 15, 1280, 110))
-        self.animMoveInTimeLabel.start()
-
-        # Fade in the timebar
-        fadeTimebar = QGraphicsOpacityEffect()
-        self.timebar.setGraphicsEffect(fadeTimebar)
-        self.animFadeInAltitudeGraph = QPropertyAnimation(fadeTimebar, b"opacity")
-        self.animFadeInAltitudeGraph.setStartValue(0)
-        self.animFadeInAltitudeGraph.setEndValue(1)
-        self.animFadeInAltitudeGraph.setDuration(2000)
-        self.animFadeInAltitudeGraph.start()
-
-        self.update()
-
-    def fadeMoveOutTime(self):
-        # Move out time label
-        self.animMoveOutTimeLabel = QPropertyAnimation(self.timeLabel, b"geometry")
-        self.animMoveOutTimeLabel.setDuration(2000)
-        self.animMoveOutTimeLabel.setStartValue(QRect(0, 15, 1280, 110))
-        self.animMoveOutTimeLabel.setEndValue(QRect(0, 360, 1280, 110))
-        self.animMoveOutTimeLabel.start()
-
-        # Fade out time label - issue with interferring with other effects
-        # fadeOutTimeLabel = QGraphicsOpacityEffect()
-        # self.timeLabel.setGraphicsEffect(fadeOutTimeLabel)
-        # self.animFadeOutTimeLabel = QPropertyAnimation(fadeOutTimeLabel, b"opacity")
-        # self.animFadeOutTimeLabel.setStartValue(1)
-        # self.animFadeOutTimeLabel.setEndValue(0)
-        # self.animFadeOutTimeLabel.setDuration(2000)
-        # self.animFadeOutTimeLabel.start()
-
-        # Fade out the timebar
-        fadeTimebar = QGraphicsOpacityEffect()
-        self.timebar.setGraphicsEffect(fadeTimebar)
-        self.animFadeOutAltitudeGraph = QPropertyAnimation(fadeTimebar, b"opacity")
-        self.animFadeOutAltitudeGraph.setStartValue(1)
-        self.animFadeOutAltitudeGraph.setEndValue(0)
-        self.animFadeOutAltitudeGraph.setDuration(2000)
-        self.animFadeOutAltitudeGraph.start()
-
-        self.update()
-
-    # Altitude Mode
-    def setupAltitudeLabel(self, picture: Picture):
-        self.centerLabel = UILabelTopCenter(self, '', 'M')
-        self.centerLabel.setPrimaryText(picture.uialtitude)
-
-    def setupAltitudeGraphAndLine(self, picture: Picture):
-        archiveSize = self.sql_controller.get_archive_size()
-        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
-        altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
-
-        currentAlt = picture.altitude
-
-        altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
-        altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
-
-        self.altitudegraph = AltitudeGraphTransferQWidget(self, True, altitudelist, currentAlt)
-        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
-
-        MINV = min(altitudelist)
-        MAXV = max(altitudelist)
-        H = 500
-        self.linePosY = 108 + H - ( ((currentAlt - MINV)/(MAXV-MINV)) * (H-3) )
-        # print(self.linePosY)
-
-        self.line = QLabel("line", self)
-        bottomImg = QPixmap("assets/line.png")
-        self.line.setPixmap(bottomImg)
-        self.line.setAlignment(Qt.AlignCenter)
-
-        self.line.setGeometry(0, int(self.linePosY), 1280, 3)
-
-    def updateAltitudeLabelAndGraph(self, picture: Picture):
-        self.centerLabel.setPrimaryText(picture.uialtitude)
-        self.setupAltitudeGraphAndLine(picture)
-
-    def fadeMoveInAltitudeEverything(self):
-        self.altitudegraph.show()
-        self.centerLabel.show()
-        self.line.show()
-
-        # Alt Line
-        self.animMoveInLine = QPropertyAnimation(self.line, b"geometry")
-        self.animMoveInLine.setDuration(3000)
-        self.animMoveInLine.setStartValue(QRect(0, 360, 1280, 3))
-        self.animMoveInLine.setEndValue(QRect(0, self.linePosY, 1280, 3))
-        self.animMoveInLine.start()
-
-        fadeEffect = QGraphicsOpacityEffect()
-        self.line.setGraphicsEffect(fadeEffect)
-        self.animFadeInLine = QPropertyAnimation(fadeEffect, b"opacity")
-        # self.anim2 = QPropertyAnimation(self.label, b"windowOpacity")
-        self.animFadeInLine.setStartValue(0)
-        self.animFadeInLine.setEndValue(1)
-        self.animFadeInLine.setDuration(1500)
-        self.animFadeInLine.start()
-
-        # Move in top label
-        self.animMoveInAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
-        self.animMoveInAltitudeValue.setDuration(2000)
-        self.animMoveInAltitudeValue.setStartValue(QRect(0, 360, 1280, 110))
-        self.animMoveInAltitudeValue.setEndValue(QRect(0, 15, 1280, 110))
-        self.animMoveInAltitudeValue.start()
-
-        # Fade in AltitudeGraphTransferQWidget
-        fadeEffect2 = QGraphicsOpacityEffect()
-        self.altitudegraph.setGraphicsEffect(fadeEffect2)
-        self.animFadeInAltitudeGraph = QPropertyAnimation(fadeEffect2, b"opacity")
-        self.animFadeInAltitudeGraph.setStartValue(0)
-        self.animFadeInAltitudeGraph.setEndValue(1)
-        self.animFadeInAltitudeGraph.setDuration(2000)
-        self.animFadeInAltitudeGraph.start()
-
-        self.update()
-
-    def fadeMoveOutAltitudeEverything(self):
-        # Label
-        self.animMoveOutAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
-        self.animMoveOutAltitudeValue.setDuration(2000)
-        self.animMoveOutAltitudeValue.setStartValue(QRect(0, 30, 1280, 110))
-        self.animMoveOutAltitudeValue.setEndValue(QRect(0, 360, 1280, 110))
-        self.animMoveOutAltitudeValue.start()
-
-        # Fade Out - Line
-        fadeOutLine = QGraphicsOpacityEffect()
-        self.line.setGraphicsEffect(fadeOutLine)
-        self.animFadeOutLine = QPropertyAnimation(fadeOutLine, b"opacity")
-        self.animFadeOutLine.setStartValue(1)
-        self.animFadeOutLine.setEndValue(0)
-        self.animFadeOutLine.setDuration(2000)
-        self.animFadeOutLine.start()
-
-        # Fade Out - Graph
-        fadeOutGraph = QGraphicsOpacityEffect()
-        self.altitudegraph.setGraphicsEffect(fadeOutGraph)
-        self.animFadeOutGraph = QPropertyAnimation(fadeOutGraph, b"opacity")
-        self.animFadeOutGraph.setStartValue(1)
-        self.animFadeOutGraph.setEndValue(0)
-        self.animFadeOutGraph.setDuration(2000)
-        self.animFadeOutGraph.start()
-
-        self.update()
-
-    # Color Mode
-    def setupColorWidgets(self, picture: Picture):
-        self.colorpalette = ColorPaletteNew(self, True, picture.colors_rgb, picture.colors_conf)
-        self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
-
-        archiveSize = self.sql_controller.get_archive_size()
-        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
-
-        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
-        self.colorbar = ColorBarTransfer(self, True, colorlist)
-
-        self.hideColorWidgets()
-
-    def updateColorWidgets(self, picture: Picture):
-        self.colorpalette.trigger_refresh(True, picture.colors_rgb, picture.colors_conf)
-
-    def showColorWidgets(self):
-        self.colorpalette.show()
-        self.colorbar.show()
-
-    def hideColorWidgets(self):
-        self.colorpalette.hide()
-        self.colorbar.hide()
-
-    def fadeMoveInColorWidgets(self):
-        self.colorpalette.show()
-        self.colorbar.show()
-
-        # Move in ColorPalette
-        self.animMoveInColor = QPropertyAnimation(self.colorpalette, b"geometry")
-        self.animMoveInColor.setDuration(2000)
-        self.animMoveInColor.setStartValue(QRect(0, 360, 0, 0))
-        self.animMoveInColor.setEndValue(QRect(0, 15, 0, 0))
-        self.animMoveInColor.start()
-
-        # Fade in ColorBar
-        fadeEffect = QGraphicsOpacityEffect()
-        self.colorbar.setGraphicsEffect(fadeEffect)
-        self.animFadeInColor = QPropertyAnimation(fadeEffect, b"opacity")
-        self.animFadeInColor.setStartValue(0)
-        self.animFadeInColor.setEndValue(1)
-        self.animFadeInColor.setDuration(2000)
-        self.animFadeInColor.start()
-
-        # This will overwrite the dropshadow effect
-        # fadeEffect = QGraphicsOpacityEffect()
-        # self.colorpalette.setGraphicsEffect(fadeEffect)
-        # self.anim2 = QPropertyAnimation(fadeEffect, b"opacity")
-        # self.anim2.setStartValue(0)
-        # self.anim2.setEndValue(1)
-        # self.anim2.setDuration(2000)
-        # self.anim2.start()
-
-        self.update()
-
-    def fadeMoveOutColorWidgets(self):
-        # Move out ColorPalette
-        self.animMoveOutColor = QPropertyAnimation(self.colorpalette, b"geometry")
-        self.animMoveOutColor.setDuration(2000)
-        self.animMoveOutColor.setStartValue(QRect(0, 30, 0, 0))
-        self.animMoveOutColor.setEndValue(QRect(0, 360, 0, 0))
-        self.animMoveOutColor.start()
-
-        # Fade out ColorBar
-        fadeEffect = QGraphicsOpacityEffect()
-        self.colorbar.setGraphicsEffect(fadeEffect)
-        self.animFadeOutColor = QPropertyAnimation(fadeEffect, b"opacity")
-        self.animFadeOutColor.setStartValue(1)
-        self.animFadeOutColor.setEndValue(0)
-        self.animFadeOutColor.setDuration(2000)
-        self.animFadeOutColor.start()
-
-        self.update()
-
-    # Keyboard Input
-    def keyPressEvent(self, event):
-        # Closing App
-        if event.key() == Qt.Key_Escape:
-            self.close()
-        elif event.key() == Qt.Key_1:
-            print('1')
-            # self.bgcolor.changeColor(self.picture.color_rgb)
-        elif event.key() == Qt.Key_2:
-            print('2')
-            # self.fadeMoveInColorWidgets()
-        elif event.key() == Qt.Key_3:
-            print('3')
-            # self.fadeMoveOutColorWidgets()
-        elif event.key() == Qt.Key_4:
-            print('4')
-            # self.fadeMoveInAltitudeEverything()
-        elif event.key() == Qt.Key_5:
-            print('5')
-            # self.fadeMoveOutAltitudeEverything()
-        elif event.key() == Qt.Key_6:
-            print('6')
-            # self.fadeMoveInTime()
-        elif event.key() == Qt.Key_7:
-            print('7')
-            # self.fadeMoveOutTime()
-        elif event.key() == Qt.Key_8:
-            print('8')
-        elif event.key() == Qt.Key_9:
-            print('9')
-        elif event.key() == Qt.Key_0:
-            print('0')
-
-    def closeEvent(self, event):
-        print('User has clicked the red X')
-        self.garbageCollection()
-
-    def garbageCollection(self):
-        self.newPictureThread.signals.terminate = True
-
-
-
-
 VERBOSE = False
 VERBOSE_HALL_EFFECT = False
 
@@ -866,7 +424,7 @@ def sort_by_colors(data, color_index_hsv, index_in_hike):
 #######################################################################
 
 def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image3=None, image_processing_size=None):
-    global dummyGlobalCounter
+    global dummyGlobalCounter, globalPicture
 
     color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=image1, image2=image2, image3=image3, image_processing_size=(DIMX, DIMY))
     picDatetime = datetime.datetime.fromtimestamp(row_src['time'])
@@ -906,6 +464,14 @@ def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image
                 ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, -1, dummyGlobalCounter,
                 color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
                 camera1, camera2, camera3, camera2f, row_src['created_date_time']]
+
+    globalPicture = Picture(dummyGlobalCounter,
+                            round(row_src['time'], 0), picDatetime.year, picDatetime.month, picDatetime.day, picDatetime.hour * 60 + picDatetime.minute, picDatetime.weekday(),
+                            currHike, validRowCount, dummyGlobalCounter,
+                            round(row_src['altitude'], 2), -1, -1, dummyGlobalCounter,
+                            ",".join(map(str, colors_hsv[0])), ",".join(map(str, colors_rgb[0])), -1, -1, dummyGlobalCounter,
+                            color_size, formatColors(colors_rgb), ",".join(map(str, confidences)),
+                            DATAPATH + camera1, DATAPATH + camera2, DATAPATH + camera3, DATAPATH + camera2f, row_src['created_date_time'], row_src['updated_date_time'])
 
     return commit, colors_hsv[0]
 
@@ -1115,17 +681,17 @@ def buildHike(currHike):
         fileName = "{}_camN".format(rowIdx)
         commits[fileName] = commit
 
-        # if (commit[7] % 200 == 0):
-        #     print("[{}]   Checkpoint for Futures at {}".format(timenow(), str(commit[7])))
-
         if (rowIdx % 100 == 0):
-            # display an random picture in the current hike
-            # these pictures are already in the database, so no need to worry about building a picture object
-            print("[{}]   Checkpoint for Futures at {} - Transfer Amination Updated.".format(timenow(), str(rowIdx)))
-            if (rowIdx == 0):
-                globalPicture = dbDESTController.get_random_picture_of_given_hike(currHike)
-            else:
-                globalPicture = dbDESTController.get_random_picture_of_given_hike_within_range(currHike, rowIdx, rowIdx-100)
+            print("[{}]   Checkpoint for Futures at {}".format(timenow(), str(commit[7])))
+
+        # if (rowIdx % 100 == 0):
+        #     # display an random picture in the current hike
+        #     # these pictures are already in the database, so no need to worry about building a picture object
+        #     print("[{}]   Checkpoint for Futures at {} - Transfer Amination Updated.".format(timenow(), str(rowIdx)))
+        #     if (rowIdx == 0):
+        #         globalPicture = dbDESTController.get_random_picture_of_given_hike(currHike)
+        #     else:
+        #         globalPicture = dbDESTController.get_random_picture_of_given_hike_within_range(currHike, rowIdx, rowIdx-100)
 
 
     threadPool.shutdown(wait=True)
@@ -1231,6 +797,8 @@ def buildHike(currHike):
     # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
     COLOR_HSV_INDEX = 1
 
+    timer1 = time.time()
+
     ### global ranks for pictures
     rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
     for i in range(len(rows_dst)):
@@ -1257,12 +825,16 @@ def buildHike(currHike):
         rank = i + 1
         dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
 
+    print("[{}] --- Global rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer1)))
+
     # create color spectrum for globalColor and globalColor_h
     colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
     generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DATAPATH)
 
     colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
     generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DATAPATH)
+
+    timer2 = time.time()
 
     ## update alt and color global_h rankings for Pictures
     # altrank_global_h
@@ -1280,6 +852,9 @@ def buildHike(currHike):
             rankIndex += 1
             # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
 
+    print("[{}] --- Alt_h rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer2)))
+    timer3 = time.time()
+
     # color_rank_global_h
     colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
     rankIndex = 1
@@ -1295,6 +870,8 @@ def buildHike(currHike):
             rankIndex += 1
             # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
 
+    print("[{}] --- Col_h rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer3)))
+    timer4 = time.time()
 
     ### global ranks for hikes
     globalAltList.clear()
@@ -1317,6 +894,8 @@ def buildHike(currHike):
         row_dst = globalColorList[i]
         rank = i + 1
         dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
+
+    print("[{}] --- Global rankings for Hikes took {} seconds.".format(timenow(), str(time.time() - timer4)))
 
     print("[{}] --- Global ranking took {} seconds.".format(timenow(), str(time.time() - rankTimer)))
     print("[{}] --- Moving on to the next hike!".format(timenow()))
@@ -1433,7 +1012,7 @@ def start_transfer():
 
 # ==================================================================
 
-def main():
+def trasnferMain():
     global RETRY, TRANSFER_DONE
 
     readHallEffectThread()
@@ -1441,14 +1020,6 @@ def main():
     TRANSFER_DONE = False
 
     resCode_startTransfer = 0
-
-    # launch transfer animation window
-
-    ### TODO: what is there is no existing picture in the database? >> base case
-    app = QApplication(sys.argv)
-    window = TransferAnimationWindow()
-    window.show()
-    app.exec_()
 
     while True:
         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
@@ -1538,5 +1109,553 @@ def main():
             RETRY += 1
 
 
+
+#######################################################################
+#####                    TRANSFER ANIMATION                       #####
+#######################################################################
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+    Supported signals are:
+
+    finished
+        No data passed, just a notifier of completion
+    error
+        `tuple` (exctype, value, traceback.format_exc() )
+    result
+        `object` data returned from processing, anything
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    '''
+    Defines status which is checked for in infinite loop
+    By setting to True, the thread will quit,
+    and closing of the program won't hang
+    '''
+    terminate = False
+
+
+class TransferThread(QRunnable):
+    '''Thread for handling the main transfer task '''
+    def __init__(self):
+        super(TransferThread, self).__init__()
+
+    def run(self):
+        global RETRY, TRANSFER_DONE
+
+        readHallEffectThread()
+        createLogger()
+        TRANSFER_DONE = False
+
+        resCode_startTransfer = 0
+
+        while True:
+            print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
+            HALL_EFFECT_ON.wait()
+
+            start_time = time.time()
+            try:
+                if (isCameraUp()):
+
+                    # Start by copying the remote DB over to the projector
+                    print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
+                    copy_remote_db()
+
+                    # if camera DB is still fresh, do not run transfer script
+                    if (os.path.exists(CAMERA_DB) and
+                        os.path.exists(CAMERA_BAK_DB) and
+                        not isDBNotInSync()):
+
+                        print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+                        print("[{}] ## Proceed with the existing reference to the remote DB.".format(timenow()))
+
+                        ### TODO: may need a better flow
+                        if (TRANSFER_DONE):
+                            print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+                            g.flag_start_transfer = False
+                            HALL_EFFECT_ON.clear()
+                            continue
+
+                        ### [Apr 1, 2022]
+                        ### TODO: At this point, we are in the stable status.
+                        ###       Play 'done' screen and play the transfer animation recap
+
+                    else:
+                        print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
+                        TRANSFER_DONE = False
+
+                    ### Do we really need this? hmm..
+                    # # copy the current snapshot of master DB for checking references
+                    # print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
+                    # copy_master_db()
+
+                    print("[{}] \t Creating DB controllers..".format(timenow()))
+                    getDBControllers()
+
+                    print("[{}] Starting the transfer now..".format(timenow()))
+                    resCode_startTransfer = start_transfer()
+
+                    if (resCode_startTransfer):
+                        print("[{}] Transfer could not finish. Putting transfer script to sleep..".format(timenow()))
+                        continue
+
+                    print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+                    logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+
+                    # In case if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
+                    # sync the remote db by overwriting with the updated camera db on the projector
+                    if (isDBNotInSync() and TRANSFER_DONE):
+                        print("[{}] Changes have been made to the remote DB while transfer. Updating the changes to the remote..".format(timenow()))
+                        copy_local_camera_db_to_remote()
+
+                    # if transfer is successfully finished pause running until camera is dismounted and re-mounted
+                    print("[{}] Transfer finished. Pause the script".format(timenow()))
+                    make_backup_remote_db()
+
+                    g.flag_start_transfer = False
+                    HALL_EFFECT_ON.clear()
+
+                else:
+                    print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+                    logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+
+
+            # TODO: clean up hanging processes when restarting
+            #           fuser capra_projector.db -k
+            except Exception as e:
+                print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+                logger.info("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+                if hasattr(e, 'message'):
+                    print(e.message, '\n')
+                print(e)
+                print(traceback.format_exc())
+
+                if (RETRY < RETRY_MAX):
+                    python = sys.executable
+                    os.execl(python, python, * sys.argv)
+
+                RETRY += 1
+
+
+class TransferAnimationWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Capra Transfer Animation")
+        self.setGeometry(0, 0, 1280, 720)
+
+        # Setups up database connection depending on the system
+        self.setupSQLController()
+
+        # Setup Bg Thread for getting picture from Database
+        self.threadpool = QThreadPool()
+        self.threadpool.setMaxThreadCount(1)
+        # self.newPictureThread = NewPictureThread(self.sql_controller)
+        # self.threadpool.start(self.newPictureThread)
+        global globalPicture
+
+        ### TODO: when there is no existing picture in the DB, show the "start" screen
+        globalPicture = self.sql_controller.get_random_picture()
+
+        self.transferThread = TransferThread()
+        self.threadpool.start(self.transferThread)
+
+        # Setup BG color
+        # c1 = QColor(9, 24, 94, 255)
+        self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, self.picture.color_rgb)
+
+        self.setupColorWidgets(self.picture)
+        self.setupAltitudeLabel(self.picture)
+        self.setupTimeLabelAndBar(self.picture)
+
+        self.superCenterImg = TransferCenterImage(self, self.picture)
+
+        self.setupAltitudeGraphAndLine(self.picture)
+        self.altitudegraph.hide()
+        self.centerLabel.opacityHide()
+        self.line.hide()
+
+        # Setup QTimer for checking for new Picture
+        self.handlerCounter = 1
+        self.timerAnimationHandler = QTimer()
+        self.timerAnimationHandler.timeout.connect(self.animationHandler)
+        self.timerAnimationHandler.start(7000)
+
+    def animationHandler(self):
+        self.fadeOutTimer = QTimer()
+        self.fadeOutTimer.setSingleShot(True)
+
+        if self.handlerCounter % 4 == 1:  # Color
+            self.fadeMoveInColorWidgets()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutColorWidgets)
+        elif self.handlerCounter % 4 == 2:  # Altitude
+            self.fadeMoveInAltitudeEverything()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutAltitudeEverything)
+        elif self.handlerCounter % 4 == 3:  # Time
+            self.fadeMoveInTime()
+            self.fadeOutTimer.timeout.connect(self.fadeMoveOutTime)
+        elif self.handlerCounter % 4 == 0:  # New Picture: image, bg color, ui elements
+            global globalPicture
+            ### TODO: what if there is no existing picture in the database? >> base case
+            # self.picture = self.sql_controller.get_random_picture()
+            # self.picture = globalPicture
+
+            # remember previous picture and if identical, grab a random one
+            print("             @@ Self.picture: hike {} - index {} | GlobalPicture: hike {} - index {}".format(self.picture.hike_id, self.picture.index_in_hike, globalPicture.hike_id, globalPicture.index_in_hike))
+            if (self.picture.hike_id == globalPicture.hike_id and self.picture.index_in_hike == globalPicture.index_in_hike):
+                print("[{}]     Global picture has not changed. Grabbing a random photo".format(timenow()))
+
+                ### TODO: if there is no prior picture in the existing database, grab the start screen
+                globalPicture = self.sql_controller.get_random_picture()
+
+            self.picture = globalPicture
+
+            # Update UI Elements
+            self.updateColorWidgets(self.picture)
+            self.updateTimeLabelAndBar(self.picture)
+            self.updateAltitudeLabelAndGraph(self.picture)
+            # self.setupTimeLabelAndBar(self.picture)
+            # self.setupAltitudeLabel(self.picture)
+
+            # Change Image and Background
+            self.superCenterImg.fadeNewImage(self.picture)
+            print("            @@ Transfer Animation Picture: Row {rowIdx} at Hike {hike}".format(rowIdx=self.picture.index_in_hike, hike=self.picture.hike_id))
+            self.bgcolor.changeColor(self.picture.color_rgb)
+
+        self.fadeOutTimer.start(3500)
+        self.handlerCounter += 1
+
+    # Database connection - previous db with UI data
+    def setupSQLController(self):
+        '''Initializes the database connection.\n
+        If on Mac/Windows give dialog box to select database,
+        otherwise it will use the global defined location for the database'''
+
+        # Mac/Windows: select the location
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            # filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
+            # self.database = filename[0]
+            # self.directory = os.path.dirname(self.database)
+
+            self.database = '/Users/myoo/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector/capra_projector_jun2021_min_test_0708.db'
+            self.directory = '/Users/myoo/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector'
+        else:  # Raspberry Pi: preset location
+            self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
+            self.directory = g.DATAPATH_PROJECTOR
+
+        print(self.database)
+        print(self.directory)
+        self.sql_controller = SQLController(database=self.database, directory=self.directory)
+
+        # self.picture = self.sql_controller.get_picture_with_id(20000) # 28300
+        self.picture = self.sql_controller.get_random_picture()
+
+        # self.picture2 = self.sql_controller.get_picture_with_id(27500)
+        # self.picture3 = self.sql_controller.get_picture_with_id(12000)
+        # self.picture4 = self.sql_controller.get_picture_with_id(10700)
+        # 10700, 11990, 12000, 15000, 20000, 27100, 27200, 27300, 27500, 28300
+
+        # TODO - should we preload all the UI Data?
+        # self.uiData = self.sql_controller.preload_ui_data()
+        # self.preload = True
+
+    # Time Mode
+    def setupTimeLabelAndBar(self, picture: Picture):
+        self.timeLabel = UILabelTopCenter(self, '', '')
+        self.timeLabel.setPrimaryText(picture.uitime_hrmm)
+        self.timeLabel.setSecondaryText(picture.uitime_ampm)
+
+        try:
+            percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+        except:
+            percent_rank = 100
+        self.timebar = TimeBarTransfer(self, percent_rank)
+
+        self.timeLabel.opacityHide()
+        self.timebar.hide()
+
+    def updateTimeLabelAndBar(self, picture: Picture):
+        self.timeLabel.setPrimaryText(picture.uitime_hrmm)
+        self.timeLabel.setSecondaryText(picture.uitime_ampm)
+
+        try:
+            percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
+        except:
+            percent_rank = 100
+        self.timebar.trigger_refresh(percent_rank)
+
+    def fadeMoveInTime(self):
+        self.timeLabel.show()
+        self.timebar.show()
+
+        # Move in top label
+        self.animMoveInTimeLabel = QPropertyAnimation(self.timeLabel, b"geometry")
+        self.animMoveInTimeLabel.setDuration(2000)
+        self.animMoveInTimeLabel.setStartValue(QRect(0, 360, 1280, 110))
+        self.animMoveInTimeLabel.setEndValue(QRect(0, 15, 1280, 110))
+        self.animMoveInTimeLabel.start()
+
+        # Fade in the timebar
+        fadeTimebar = QGraphicsOpacityEffect()
+        self.timebar.setGraphicsEffect(fadeTimebar)
+        self.animFadeInAltitudeGraph = QPropertyAnimation(fadeTimebar, b"opacity")
+        self.animFadeInAltitudeGraph.setStartValue(0)
+        self.animFadeInAltitudeGraph.setEndValue(1)
+        self.animFadeInAltitudeGraph.setDuration(2000)
+        self.animFadeInAltitudeGraph.start()
+
+        self.update()
+
+    def fadeMoveOutTime(self):
+        # Move out time label
+        self.animMoveOutTimeLabel = QPropertyAnimation(self.timeLabel, b"geometry")
+        self.animMoveOutTimeLabel.setDuration(2000)
+        self.animMoveOutTimeLabel.setStartValue(QRect(0, 15, 1280, 110))
+        self.animMoveOutTimeLabel.setEndValue(QRect(0, 360, 1280, 110))
+        self.animMoveOutTimeLabel.start()
+
+        # Fade out time label - issue with interferring with other effects
+        # fadeOutTimeLabel = QGraphicsOpacityEffect()
+        # self.timeLabel.setGraphicsEffect(fadeOutTimeLabel)
+        # self.animFadeOutTimeLabel = QPropertyAnimation(fadeOutTimeLabel, b"opacity")
+        # self.animFadeOutTimeLabel.setStartValue(1)
+        # self.animFadeOutTimeLabel.setEndValue(0)
+        # self.animFadeOutTimeLabel.setDuration(2000)
+        # self.animFadeOutTimeLabel.start()
+
+        # Fade out the timebar
+        fadeTimebar = QGraphicsOpacityEffect()
+        self.timebar.setGraphicsEffect(fadeTimebar)
+        self.animFadeOutAltitudeGraph = QPropertyAnimation(fadeTimebar, b"opacity")
+        self.animFadeOutAltitudeGraph.setStartValue(1)
+        self.animFadeOutAltitudeGraph.setEndValue(0)
+        self.animFadeOutAltitudeGraph.setDuration(2000)
+        self.animFadeOutAltitudeGraph.start()
+
+        self.update()
+
+    # Altitude Mode
+    def setupAltitudeLabel(self, picture: Picture):
+        self.centerLabel = UILabelTopCenter(self, '', 'M')
+        self.centerLabel.setPrimaryText(picture.uialtitude)
+
+    def setupAltitudeGraphAndLine(self, picture: Picture):
+        archiveSize = self.sql_controller.get_archive_size()
+        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+        altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
+
+        currentAlt = picture.altitude
+
+        altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
+        altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
+
+        self.altitudegraph = AltitudeGraphTransferQWidget(self, True, altitudelist, currentAlt)
+        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
+
+        MINV = min(altitudelist)
+        MAXV = max(altitudelist)
+        H = 500
+        self.linePosY = 108 + H - ( ((currentAlt - MINV)/(MAXV-MINV)) * (H-3) )
+        # print(self.linePosY)
+
+        self.line = QLabel("line", self)
+        bottomImg = QPixmap("assets/line.png")
+        self.line.setPixmap(bottomImg)
+        self.line.setAlignment(Qt.AlignCenter)
+
+        self.line.setGeometry(0, int(self.linePosY), 1280, 3)
+
+    def updateAltitudeLabelAndGraph(self, picture: Picture):
+        self.centerLabel.setPrimaryText(picture.uialtitude)
+        self.setupAltitudeGraphAndLine(picture)
+
+    def fadeMoveInAltitudeEverything(self):
+        self.altitudegraph.show()
+        self.centerLabel.show()
+        self.line.show()
+
+        # Alt Line
+        self.animMoveInLine = QPropertyAnimation(self.line, b"geometry")
+        self.animMoveInLine.setDuration(3000)
+        self.animMoveInLine.setStartValue(QRect(0, 360, 1280, 3))
+        self.animMoveInLine.setEndValue(QRect(0, self.linePosY, 1280, 3))
+        self.animMoveInLine.start()
+
+        fadeEffect = QGraphicsOpacityEffect()
+        self.line.setGraphicsEffect(fadeEffect)
+        self.animFadeInLine = QPropertyAnimation(fadeEffect, b"opacity")
+        # self.anim2 = QPropertyAnimation(self.label, b"windowOpacity")
+        self.animFadeInLine.setStartValue(0)
+        self.animFadeInLine.setEndValue(1)
+        self.animFadeInLine.setDuration(1500)
+        self.animFadeInLine.start()
+
+        # Move in top label
+        self.animMoveInAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
+        self.animMoveInAltitudeValue.setDuration(2000)
+        self.animMoveInAltitudeValue.setStartValue(QRect(0, 360, 1280, 110))
+        self.animMoveInAltitudeValue.setEndValue(QRect(0, 15, 1280, 110))
+        self.animMoveInAltitudeValue.start()
+
+        # Fade in AltitudeGraphTransferQWidget
+        fadeEffect2 = QGraphicsOpacityEffect()
+        self.altitudegraph.setGraphicsEffect(fadeEffect2)
+        self.animFadeInAltitudeGraph = QPropertyAnimation(fadeEffect2, b"opacity")
+        self.animFadeInAltitudeGraph.setStartValue(0)
+        self.animFadeInAltitudeGraph.setEndValue(1)
+        self.animFadeInAltitudeGraph.setDuration(2000)
+        self.animFadeInAltitudeGraph.start()
+
+        self.update()
+
+    def fadeMoveOutAltitudeEverything(self):
+        # Label
+        self.animMoveOutAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
+        self.animMoveOutAltitudeValue.setDuration(2000)
+        self.animMoveOutAltitudeValue.setStartValue(QRect(0, 30, 1280, 110))
+        self.animMoveOutAltitudeValue.setEndValue(QRect(0, 360, 1280, 110))
+        self.animMoveOutAltitudeValue.start()
+
+        # Fade Out - Line
+        fadeOutLine = QGraphicsOpacityEffect()
+        self.line.setGraphicsEffect(fadeOutLine)
+        self.animFadeOutLine = QPropertyAnimation(fadeOutLine, b"opacity")
+        self.animFadeOutLine.setStartValue(1)
+        self.animFadeOutLine.setEndValue(0)
+        self.animFadeOutLine.setDuration(2000)
+        self.animFadeOutLine.start()
+
+        # Fade Out - Graph
+        fadeOutGraph = QGraphicsOpacityEffect()
+        self.altitudegraph.setGraphicsEffect(fadeOutGraph)
+        self.animFadeOutGraph = QPropertyAnimation(fadeOutGraph, b"opacity")
+        self.animFadeOutGraph.setStartValue(1)
+        self.animFadeOutGraph.setEndValue(0)
+        self.animFadeOutGraph.setDuration(2000)
+        self.animFadeOutGraph.start()
+
+        self.update()
+
+    # Color Mode
+    def setupColorWidgets(self, picture: Picture):
+        self.colorpalette = ColorPaletteNew(self, True, picture.colors_rgb, picture.colors_conf)
+        self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
+
+        archiveSize = self.sql_controller.get_archive_size()
+        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+
+        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
+        self.colorbar = ColorBarTransfer(self, True, colorlist)
+
+        self.hideColorWidgets()
+
+    def updateColorWidgets(self, picture: Picture):
+        self.colorpalette.trigger_refresh(True, picture.colors_rgb, picture.colors_conf)
+
+    def showColorWidgets(self):
+        self.colorpalette.show()
+        self.colorbar.show()
+
+    def hideColorWidgets(self):
+        self.colorpalette.hide()
+        self.colorbar.hide()
+
+    def fadeMoveInColorWidgets(self):
+        self.colorpalette.show()
+        self.colorbar.show()
+
+        # Move in ColorPalette
+        self.animMoveInColor = QPropertyAnimation(self.colorpalette, b"geometry")
+        self.animMoveInColor.setDuration(2000)
+        self.animMoveInColor.setStartValue(QRect(0, 360, 0, 0))
+        self.animMoveInColor.setEndValue(QRect(0, 15, 0, 0))
+        self.animMoveInColor.start()
+
+        # Fade in ColorBar
+        fadeEffect = QGraphicsOpacityEffect()
+        self.colorbar.setGraphicsEffect(fadeEffect)
+        self.animFadeInColor = QPropertyAnimation(fadeEffect, b"opacity")
+        self.animFadeInColor.setStartValue(0)
+        self.animFadeInColor.setEndValue(1)
+        self.animFadeInColor.setDuration(2000)
+        self.animFadeInColor.start()
+
+        # This will overwrite the dropshadow effect
+        # fadeEffect = QGraphicsOpacityEffect()
+        # self.colorpalette.setGraphicsEffect(fadeEffect)
+        # self.anim2 = QPropertyAnimation(fadeEffect, b"opacity")
+        # self.anim2.setStartValue(0)
+        # self.anim2.setEndValue(1)
+        # self.anim2.setDuration(2000)
+        # self.anim2.start()
+
+        self.update()
+
+    def fadeMoveOutColorWidgets(self):
+        # Move out ColorPalette
+        self.animMoveOutColor = QPropertyAnimation(self.colorpalette, b"geometry")
+        self.animMoveOutColor.setDuration(2000)
+        self.animMoveOutColor.setStartValue(QRect(0, 30, 0, 0))
+        self.animMoveOutColor.setEndValue(QRect(0, 360, 0, 0))
+        self.animMoveOutColor.start()
+
+        # Fade out ColorBar
+        fadeEffect = QGraphicsOpacityEffect()
+        self.colorbar.setGraphicsEffect(fadeEffect)
+        self.animFadeOutColor = QPropertyAnimation(fadeEffect, b"opacity")
+        self.animFadeOutColor.setStartValue(1)
+        self.animFadeOutColor.setEndValue(0)
+        self.animFadeOutColor.setDuration(2000)
+        self.animFadeOutColor.start()
+
+        self.update()
+
+    # Keyboard Input
+    def keyPressEvent(self, event):
+        # Closing App
+        if event.key() == Qt.Key_Escape:
+            self.close()
+        elif event.key() == Qt.Key_1:
+            print('1')
+            # self.bgcolor.changeColor(self.picture.color_rgb)
+        elif event.key() == Qt.Key_2:
+            print('2')
+            # self.fadeMoveInColorWidgets()
+        elif event.key() == Qt.Key_3:
+            print('3')
+            # self.fadeMoveOutColorWidgets()
+        elif event.key() == Qt.Key_4:
+            print('4')
+            # self.fadeMoveInAltitudeEverything()
+        elif event.key() == Qt.Key_5:
+            print('5')
+            # self.fadeMoveOutAltitudeEverything()
+        elif event.key() == Qt.Key_6:
+            print('6')
+            # self.fadeMoveInTime()
+        elif event.key() == Qt.Key_7:
+            print('7')
+            # self.fadeMoveOutTime()
+        elif event.key() == Qt.Key_8:
+            print('8')
+        elif event.key() == Qt.Key_9:
+            print('9')
+        elif event.key() == Qt.Key_0:
+            print('0')
+
+    def closeEvent(self, event):
+        print('User has clicked the red X')
+        self.garbageCollection()
+
+    def garbageCollection(self):
+        self.newPictureThread.signals.terminate = True
+
+
 if __name__ == "__main__":
-    main()
+    # launch transfer animation window
+    app = QApplication(sys.argv)
+    window = TransferAnimationWindow()
+    window.show()
+    app.exec_()

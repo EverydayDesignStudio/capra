@@ -172,7 +172,7 @@ class SQLController:
         sql = self.statements.select_random_picture_of_given_hike(hike_id)
         return self._execute_query(sql)
 
-    def get_random_picture_of_given_hike(self, hike_id: int, high: int, low: int) -> Picture:
+    def get_random_picture_of_given_hike_within_range(self, hike_id: int, high: int, low: int) -> Picture:
         sql = self.statements.select_random_picture_of_given_hike_within_range(hike_id, high, low)
         return self._execute_query(sql)
 
@@ -648,7 +648,7 @@ class SQLController:
         cursor.execute(self.statements.find_size_by_altitude_greater_time(altitude=alt, time=t))
         all_rows = cursor.fetchall()
         count = all_rows[0][0]
-        print(count)
+        # print(count)
 
         if count == 0:
             cursor.execute(self.statements.select_by_greater_altitude_next_picture(altitude=alt))

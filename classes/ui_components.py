@@ -1076,10 +1076,10 @@ class AltitudeGraphTransferQWidget(QWidget):
         # H-percent*H : figures out the position
         # - 2 : adjusts for the weight of the line
         y = H - ( ((self.currentAlt - MINV)/(MAXV-MINV)) * (H-4) )
-        print(H)
+        # print(H)
         self.linePosY = y
-        print("Line PosY:")
-        print(self.linePosY)
+        # print("Line PosY:")
+        # print(self.linePosY)
 
     def trigger_refresh(self, isAltMode: bool, altitudeList: list):
         self.altitudeList = altitudeList

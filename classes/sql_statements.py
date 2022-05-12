@@ -743,7 +743,7 @@ class SQLStatements:
     def update_picture_altitude(self, altitude: float, hike_id: int, photo_index: int) -> str:
         statement = 'UPDATE pictures SET altitude={a}, updated_date_time=datetime() \
             WHERE hike={h} AND index_in_hike={p}'.format(a=altitude, h=hike_id, p=photo_index)
-        print(statement)
+        # print(statement)
         return statement
 
     def update_picture_altitude_for_id(self, altitude: float, rowid: int) -> str:
