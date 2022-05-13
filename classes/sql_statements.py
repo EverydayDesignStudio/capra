@@ -84,6 +84,10 @@ class SQLStatements:
         statement = 'SELECT count(*) FROM pictures'
         return statement
 
+    def select_picture_id_count(self, picture_id: int) -> str:
+        statement = 'SELECT count(*) FROM pictures WHERE picture_id={id}'.format(id=picture_id)
+        return statement
+
     # --------------------------------------------------------------------------
     # Projector -- New Functions 2020 / 2021
     # --------------------------------------------------------------------------

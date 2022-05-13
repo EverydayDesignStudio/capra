@@ -225,6 +225,10 @@ class SQLController:
         sql = self.statements.select_archive_size()
         return self._execute_query_for_int(sql)
 
+    def get_picture_id_count(self, picture_id: int) -> int:
+        sql = self.statements.select_picture_id_count(picture_id)
+        return self._execute_query_for_int(sql)
+
     # Time
     # --------------------------------------------------------------------------
 

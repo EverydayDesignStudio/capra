@@ -743,7 +743,11 @@ class MainWindow(QMainWindow):
         print(self.database)
         print(self.directory)
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
-        self.picture = self.sql_controller.get_picture_with_id(self._saved_picture_id)
+
+        if (self.sql_controller.get_picture_id_count(self._saved_picture_id)):
+            self.picture = self.sql_controller.get_picture_with_id(self._saved_picture_id)
+        else:
+            self.picture = self.sql_controller.get_first_time_picture()
 
         # TESTING - comment out to speed up program load time
         self.uiData = self.sql_controller.preload_ui_data()
