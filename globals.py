@@ -73,6 +73,10 @@ def init():
     HALL_BOUNCE_LIMIT = 3000    # in milliseconds
     HALL_BOUNCE_TIMER = None
 
+    # Is camera connected to WiFi? 
+    global CAMERA_UP
+    CAMERA_UP = None
+
     # Flags
     global flag_start_transfer
     flag_start_transfer = False

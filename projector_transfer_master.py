@@ -122,15 +122,17 @@ CURRENT_WINDOW = None
 #####                   BACKGROUND PROCESSES                      #####
 #######################################################################
 
-class readHallEffectThread(threading.Thread):
+class ReadHallEffectThread(QRunnable):
     def __init__(self):
-        threading.Thread.__init__(self)
-        # deploy this as a background process
-        self.daemon = True
-        self.start()
+        super(ReadHallEffectThread, self).__init__()
+        # self.start()
+        self.signals = WorkerSignals()
 
     def run(self):
         while True:
+            if self.signals.terminate:  # Garbage collection
+                break
+
             if (GPIO.input(g.HALL_EFFECT_PIN)):
                 g.HALL_EFFECT = False
             else:
@@ -164,20 +166,30 @@ class readHallEffectThread(threading.Thread):
                 g.HALL_BOUNCE_TIMER = None
 
 
-# https://stackoverflow.com/questions/28769023/get-output-of-system-ping-without-printing-to-the-console
-def isCameraUp():
-    is_up = False
-    with open(os.devnull, 'w') as DEVNULL:
-        try:
-            subprocess.check_call(
-                ['ping', '-c', '3', g.IP_ADDR_CAMERA],
-                stdout=DEVNULL,  # suppress output
-                stderr=DEVNULL
-            )
-            is_up = True
-        except subprocess.CalledProcessError:
-            is_up = False
-    return is_up
+class PingCameraThread(QRunnable):
+    def __init__(self):
+        super(PingCameraThread, self).__init__()
+        self.signals = WorkerSignals()
+
+    # https://stackoverflow.com/questions/35750041/check-if-ping-was-successful-using-subprocess-in-python
+    # https://stackoverflow.com/questions/28769023/get-output-of-system-ping-without-printing-to-the-console
+    def run(self):
+        while True:
+            if self.signals.terminate:  # Garbage collection
+                break
+
+            proc = subprocess.Popen(
+                ['ping', '-q', '-c', '1', g.IP_ADDR_CAMERA],
+                stdout=subprocess.DEVNULL)
+            proc.wait()
+
+            if proc.poll():
+                g.CAMERA_UP = False
+            else:
+                g.CAMERA_UP = True
+
+            # print("Is Camera Up? - {}".format(g.CAMERA_UP))
+            time.sleep(1)
 
 
 #######################################################################
@@ -589,7 +601,7 @@ def buildHike(currHike):
                     logger.info("[{}] ### Rsync failed at row {}".format(timenow(), str(index_in_hike - 1)))
 
                     # double-check if the failture is due to losing remote connection to the camera
-                    if (not isCameraUp()):
+                    if (not g.CAMERA_UP):
                         print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                         logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
 
@@ -940,7 +952,7 @@ def start_transfer():
             logger.info("[{}]     HALL-EFFECT SIGNAL LOST !! Terminating transfer process..".format(timenow()))
             return 1
 
-        if (not isCameraUp()):
+        if (not g.CAMERA_UP):
             print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
             return 1
@@ -1162,7 +1174,7 @@ class TransferThread(QRunnable):
 
             start_time = time.time()
             try:
-                if (isCameraUp()):
+                if (g.CAMERA_UP):
 
                     # Start by copying the remote DB over to the projector
                     print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
@@ -1668,12 +1680,24 @@ class CapraWindow(QMainWindow):
         global CURRENT_WINDOW
 
         print(" // CapraWindow *** Capra Window initiated!!")
-        readHallEffectThread()
+        self.threadpoolBackground = QThreadPool()
+        self.threadpoolBackground.setMaxThreadCount(2)
+
+        self.hallEffectThread = ReadHallEffectThread()
+        self.threadpoolBackground.start(self.hallEffectThread)
+
+        self.pingCameraThread = PingCameraThread()
+        self.threadpoolBackground.start(self.pingCameraThread)
+
+        # readHallEffectThread()
         createLogger()
 
-        print(g.HALL_EFFECT)
+        print("Hall-effect: {}".format(g.HALL_EFFECT))
+        print("Camera: {}".format(g.CAMERA_UP))
 
-        if (g.HALL_EFFECT and isCameraUp()):
+        time.sleep(2)
+
+        if (g.HALL_EFFECT and g.CAMERA_UP):
             print(" // CapraWindow (init) *** Camera is UP! Starting TransferWindow")
             self.window = TransferAnimationWindow()
             CURRENT_WINDOW = "Transfer"
@@ -1694,7 +1718,7 @@ class CapraWindow(QMainWindow):
         global CURRENT_WINDOW
 
         # hall-effect is ON and the camera is UP - we are ready to transfer!
-        if (g.HALL_EFFECT and isCameraUp()):
+        if (g.HALL_EFFECT and g.CAMERA_UP):
             if (CURRENT_WINDOW == "Slideshow"):
                 print(" // CapraWindow (checker) *** Camera is now UP! Switching to TransferWindow")
                 self.window.close()
