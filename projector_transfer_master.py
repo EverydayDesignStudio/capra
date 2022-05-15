@@ -43,6 +43,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from classes.ui_components import *
+from projector_slideshow import *
 
 global globalPicture
 
@@ -114,6 +115,8 @@ DIMX = 100
 DIMY = 60
 TOTAL = DIMX * DIMY
 
+
+CURRENT_WINDOW = None
 
 #######################################################################
 #####                   BACKGROUND PROCESSES                      #####
@@ -1012,101 +1015,101 @@ def start_transfer():
 
 # ==================================================================
 
-def trasnferMain():
-    global RETRY, TRANSFER_DONE
-
-    readHallEffectThread()
-    createLogger()
-    TRANSFER_DONE = False
-
-    resCode_startTransfer = 0
-
-    while True:
-        print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
-        HALL_EFFECT_ON.wait()
-
-        start_time = time.time()
-        try:
-            if (isCameraUp()):
-
-                # Start by copying the remote DB over to the projector
-                print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
-                copy_remote_db()
-
-                # if camera DB is still fresh, do not run transfer script
-                if (os.path.exists(CAMERA_DB) and
-                    os.path.exists(CAMERA_BAK_DB) and
-                    not isDBNotInSync()):
-
-                    print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
-                    print("[{}] ## Proceed with the existing reference to the remote DB.".format(timenow()))
-
-                    ### TODO: may need a better flow
-                    if (TRANSFER_DONE):
-                        print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
-                        g.flag_start_transfer = False
-                        HALL_EFFECT_ON.clear()
-                        continue
-
-                    ### [Apr 1, 2022]
-                    ### TODO: At this point, we are in the stable status.
-                    ###       Play 'done' screen and play the transfer animation recap
-
-                else:
-                    print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
-                    TRANSFER_DONE = False
-
-                ### Do we really need this? hmm..
-                # # copy the current snapshot of master DB for checking references
-                # print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
-                # copy_master_db()
-
-                print("[{}] \t Creating DB controllers..".format(timenow()))
-                getDBControllers()
-
-                print("[{}] Starting the transfer now..".format(timenow()))
-                resCode_startTransfer = start_transfer()
-
-                if (resCode_startTransfer):
-                    print("[{}] Transfer could not finish. Putting transfer script to sleep..".format(timenow()))
-                    continue
-
-                print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
-                logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
-
-                # In case if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
-                # sync the remote db by overwriting with the updated camera db on the projector
-                if (isDBNotInSync() and TRANSFER_DONE):
-                    print("[{}] Changes have been made to the remote DB while transfer. Updating the changes to the remote..".format(timenow()))
-                    copy_local_camera_db_to_remote()
-
-                # if transfer is successfully finished pause running until camera is dismounted and re-mounted
-                print("[{}] Transfer finished. Pause the script".format(timenow()))
-                make_backup_remote_db()
-
-                g.flag_start_transfer = False
-                HALL_EFFECT_ON.clear()
-
-            else:
-                print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-                logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
-
-
-        # TODO: clean up hanging processes when restarting
-        #           fuser capra_projector.db -k
-        except Exception as e:
-            print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
-            logger.info("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
-            if hasattr(e, 'message'):
-                print(e.message, '\n')
-            print(e)
-            print(traceback.format_exc())
-
-            if (RETRY < RETRY_MAX):
-                python = sys.executable
-                os.execl(python, python, * sys.argv)
-
-            RETRY += 1
+# def trasnferMain():
+#     global RETRY, TRANSFER_DONE
+#
+#     readHallEffectThread()
+#     createLogger()
+#     TRANSFER_DONE = False
+#
+#     resCode_startTransfer = 0
+#
+#     while True:
+#         print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
+#         HALL_EFFECT_ON.wait()
+#
+#         start_time = time.time()
+#         try:
+#             if (isCameraUp()):
+#
+#                 # Start by copying the remote DB over to the projector
+#                 print("[{}] Copying the camera DB over to the Projector..".format(timenow()))
+#                 copy_remote_db()
+#
+#                 # if camera DB is still fresh, do not run transfer script
+#                 if (os.path.exists(CAMERA_DB) and
+#                     os.path.exists(CAMERA_BAK_DB) and
+#                     not isDBNotInSync()):
+#
+#                     print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+#                     print("[{}] ## Proceed with the existing reference to the remote DB.".format(timenow()))
+#
+#                     ### TODO: may need a better flow
+#                     if (TRANSFER_DONE):
+#                         print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
+#                         g.flag_start_transfer = False
+#                         HALL_EFFECT_ON.clear()
+#                         continue
+#
+#                     ### [Apr 1, 2022]
+#                     ### TODO: At this point, we are in the stable status.
+#                     ###       Play 'done' screen and play the transfer animation recap
+#
+#                 else:
+#                     print("[{}] ## Change detected in the Remote DB. Start syncing..".format(timenow()))
+#                     TRANSFER_DONE = False
+#
+#                 ### Do we really need this? hmm..
+#                 # # copy the current snapshot of master DB for checking references
+#                 # print("[{}] \t Making a copy of the master DB on the Projector..".format(timenow()))
+#                 # copy_master_db()
+#
+#                 print("[{}] \t Creating DB controllers..".format(timenow()))
+#                 getDBControllers()
+#
+#                 print("[{}] Starting the transfer now..".format(timenow()))
+#                 resCode_startTransfer = start_transfer()
+#
+#                 if (resCode_startTransfer):
+#                     print("[{}] Transfer could not finish. Putting transfer script to sleep..".format(timenow()))
+#                     continue
+#
+#                 print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+#                 logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
+#
+#                 # In case if the referenced camera db (local copy) is changed due to 0 byte or incomputable pictures,
+#                 # sync the remote db by overwriting with the updated camera db on the projector
+#                 if (isDBNotInSync() and TRANSFER_DONE):
+#                     print("[{}] Changes have been made to the remote DB while transfer. Updating the changes to the remote..".format(timenow()))
+#                     copy_local_camera_db_to_remote()
+#
+#                 # if transfer is successfully finished pause running until camera is dismounted and re-mounted
+#                 print("[{}] Transfer finished. Pause the script".format(timenow()))
+#                 make_backup_remote_db()
+#
+#                 g.flag_start_transfer = False
+#                 HALL_EFFECT_ON.clear()
+#
+#             else:
+#                 print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+#                 logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+#
+#
+#         # TODO: clean up hanging processes when restarting
+#         #           fuser capra_projector.db -k
+#         except Exception as e:
+#             print("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+#             logger.info("[{}]: !!   Encounter an exception while transferring restarting the script..".format(timenow()))
+#             if hasattr(e, 'message'):
+#                 print(e.message, '\n')
+#             print(e)
+#             print(traceback.format_exc())
+#
+#             if (RETRY < RETRY_MAX):
+#                 python = sys.executable
+#                 os.execl(python, python, * sys.argv)
+#
+#             RETRY += 1
 
 
 
@@ -1142,18 +1145,20 @@ class TransferThread(QRunnable):
     def __init__(self):
         super(TransferThread, self).__init__()
 
+        # Needed setup
+        self.signals = WorkerSignals()  # Setups signals that will be used to send data back to SlideshowWindow
+                                        # Holds a terminate status, used to garbage collect threads
+
     def run(self):
         global RETRY, TRANSFER_DONE
 
-        readHallEffectThread()
-        createLogger()
         TRANSFER_DONE = False
 
         resCode_startTransfer = 0
 
         while True:
-            print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
-            HALL_EFFECT_ON.wait()
+            # print("[{}] Waiting on the hall-effect sensor.".format(timenow()))
+            # HALL_EFFECT_ON.wait()
 
             start_time = time.time()
             try:
@@ -1175,7 +1180,7 @@ class TransferThread(QRunnable):
                         if (TRANSFER_DONE):
                             print("[{}] ## DB is still fresh. No incoming data.".format(timenow()))
                             g.flag_start_transfer = False
-                            HALL_EFFECT_ON.clear()
+                            # HALL_EFFECT_ON.clear()
                             continue
 
                         ### [Apr 1, 2022]
@@ -1199,7 +1204,7 @@ class TransferThread(QRunnable):
 
                     if (resCode_startTransfer):
                         print("[{}] Transfer could not finish. Putting transfer script to sleep..".format(timenow()))
-                        continue
+                        break
 
                     print("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
                     logger.info("[{}] --- Transfer is finished in {} seconds ---".format(timenow(), str(time.time() - start_time)))
@@ -1220,6 +1225,9 @@ class TransferThread(QRunnable):
                 else:
                     print("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
                     logger.info("[{}]     CAMERA SIGNAL LOST !! Please check the connection and retry. Terminating transfer process..".format(timenow()))
+
+                    ### TODO: if retry is exceeded
+                    break
 
 
             # TODO: clean up hanging processes when restarting
@@ -1650,12 +1658,63 @@ class TransferAnimationWindow(QMainWindow):
         self.garbageCollection()
 
     def garbageCollection(self):
-        self.newPictureThread.signals.terminate = True
+        self.transferThread.signals.terminate = True
+
+
+
+class CapraWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        global CURRENT_WINDOW
+
+        print(" // CapraWindow *** Capra Window initiated!!")
+        readHallEffectThread()
+        createLogger()
+
+        print(g.HALL_EFFECT)
+
+        if (g.HALL_EFFECT and isCameraUp()):
+            print(" // CapraWindow (init) *** Camera is UP! Starting TransferWindow")
+            self.window = TransferAnimationWindow()
+            CURRENT_WINDOW = "Transfer"
+        else:
+            print(" // CapraWindow (init) *** Camera is NOT up! Starting SlideshowWindow")
+            self.window = SlideshowWindow()
+            CURRENT_WINDOW = "Slideshow"
+
+        self.window.show()
+
+        # Setup QTimer for checking the hall-effect sensor signal
+        self.checkerCounter = 1
+        self.timerSensorChecker = QTimer()
+        self.timerSensorChecker.timeout.connect(self.hallEffectChecker)
+        self.timerSensorChecker.start(1000)
+
+    def hallEffectChecker(self):
+        global CURRENT_WINDOW
+
+        # hall-effect is ON and the camera is UP - we are ready to transfer!
+        if (g.HALL_EFFECT and isCameraUp()):
+            if (CURRENT_WINDOW == "Slideshow"):
+                print(" // CapraWindow (checker) *** Camera is now UP! Switching to TransferWindow")
+                self.window.close()
+                self.window = TransferAnimationWindow()
+                CURRENT_WINDOW = "Transfer"
+                self.window.show()
+        # hall-effect is OFF - play the slideshow!
+        else:
+            if (CURRENT_WINDOW == "Transfer"):
+                print(" // CapraWindow (checker) *** Camera is NOT up! Switching to SlideshowWindow")
+                self.window.close()
+                self.window = SlideshowWindow()
+                CURRENT_WINDOW = "Slideshow"
+                self.window.show()
+
 
 
 if __name__ == "__main__":
     # launch transfer animation window
     app = QApplication(sys.argv)
-    window = TransferAnimationWindow()
-    window.show()
+    window = CapraWindow()
+    # window.show()
     app.exec_()

@@ -25,7 +25,7 @@ if platform.system() == 'Linux':
     from RPi import GPIO
     from lsm303d import LSM303D
     from classes.led_player import RGB_LED, WHITE_LEDS
-from datetime import datetime
+import datetime
 from enum import IntEnum, unique, auto
 
 from classes.capra_data_types import Picture, Hike
@@ -48,7 +48,7 @@ print('projector_slideshow.py running...')
 
 # Filewide Statuses
 # ----- Hardware -----
-rotaryCounter = 0  # Global value for rotary encoder, so ImageBlender thread doesn't need to ask MainWindow
+rotaryCounter = 0  # Global value for rotary encoder, so ImageBlender thread doesn't need to ask SlideshowWindow
 rotaryCounterLast = 0  # Needed to measure the change of the encoder that happens during the Encoder loop
 
 isReadyForNewPicture = True  # REVIEW - not sure if nedded, could be a solution
@@ -235,14 +235,14 @@ class RotaryEncoder(QRunnable):
 
         self.MAXQUEUE = 7
         self.lst = list()
-        self.last_time = datetime.now().timestamp()
+        self.last_time = datetime.datetime.now().timestamp()
         self.speedText = ""
         self.average = 0
         self.dt = 0
         self.multFactor = 1
 
     def calculate_speed(self):
-        self.dt = round(datetime.now().timestamp() - self.last_time, 5)
+        self.dt = round(datetime.datetime.now().timestamp() - self.last_time, 5)
         # data sanitation: clean up random stray values that are extremely low
         if self.dt < .005:
             self.dt = .1
@@ -252,7 +252,7 @@ class RotaryEncoder(QRunnable):
         self.lst.insert(0, self.dt)
         self.average = sum(self.lst) / len(self.lst)
 
-        self.last_time = datetime.now().timestamp()
+        self.last_time = datetime.datetime.now().timestamp()
 
         #   .3      .07     .02
         #   .1      .05     .02
@@ -428,7 +428,7 @@ class ImageBlender(QRunnable):
         self.picture = picture  # TODO - should I pass in the picture or just access it
 
         # Needed setup
-        self.signals = WorkerSignals()  # Setups signals that will be used to send data back to MainWindow
+        self.signals = WorkerSignals()  # Setups signals that will be used to send data back to SlideshowWindow
                                         # Holds a terminate status, used to garbage collect threads
         self._skipNextStatus = False  # setter via setSkipNext(), decides if _control_rotary_next() is called
         self._skipPrevStatus = False  # setter via setSkipPrev(), decides if _control_rotary_prev() is called
@@ -601,8 +601,8 @@ class ImageBlender(QRunnable):
                 self.picture = self.sql_controller.get_previous_color_in_global(self.picture, change)
 
     def _emit_result_update_image_and_alpha(self):
-        '''Emits signal to MainWindow which calls `_new_picture_loaded()`'''
-        self.signals.result.emit(self.picture)  # Emits back to MainWindow
+        '''Emits signal to SlideshowWindow which calls `_new_picture_loaded()`'''
+        self.signals.result.emit(self.picture)  # Emits back to SlideshowWindow
         self.alpha = self.ALPHA_RESET  # Reset the alpha
 
         # Locally change the next raw image
@@ -622,7 +622,7 @@ class ImageBlender(QRunnable):
                 print(error)
 
     def run(self):
-        '''Continually runs blending images together, emiting images back to MainWindow
+        '''Continually runs blending images together, emiting images back to SlideshowWindow
         signals end up calling: `_new_picture_loaded()`, `_load_new_images()`, `_finished_image_blend()`'''
         while True:
             if self.signals.terminate:  # Garbage collection
@@ -687,20 +687,20 @@ class ImageBlender(QRunnable):
                         print(error)
                         continue
 
-                # Emits signal to MainWindow which calls _load_new_images()
+                # Emits signal to SlideshowWindow which calls _load_new_images()
                 self.signals.results.emit(self.current1_raw, self.current2_raw, self.current3_raw, self.currentf_raw)
 
                 if self.alpha >= self.ALPHA_UPPERBOUND:
-                    # Emits signal to MainWindow which calls _finished_image_blend()
+                    # Emits signal to SlideshowWindow which calls _finished_image_blend()
                     print(f'Alpha > {self.ALPHA_UPPERBOUND}')
                     self.signals.finished.emit()
             # TODO - still figure out this amount
             time.sleep(self.ALPHA_WAIT)
 
 
-class MainWindow(QMainWindow):
+class SlideshowWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+        super(SlideshowWindow, self).__init__(*args, **kwargs)
 
         # Test counter variable to see the frame rate
         self.blendCount = 0
@@ -1010,7 +1010,7 @@ class MainWindow(QMainWindow):
     # -------------------------------------------------------------------------
 
     def _load_new_images(self, image1, image2, image3, imagef):
-        '''Loads the newly blended image from the background thread into the UIImages on the MainWindow \n
+        '''Loads the newly blended image from the background thread into the UIImages on the SlideshowWindow \n
         image 1, 2, 3 are strings to the path location
         imagef is an raw Image.open()'''
         # TODO - update this class description
@@ -1037,7 +1037,7 @@ class MainWindow(QMainWindow):
                 print(error)
 
     def _new_picture_loaded(self, picture: Picture):
-        '''ImageBlender passes a Picture (row) back to MainWindow and updates the UI'''
+        '''ImageBlender passes a Picture (row) back to SlideshowWindow and updates the UI'''
         self.picture = picture
         self.uiUpdateScreen()
 
@@ -1489,11 +1489,13 @@ class MainWindow(QMainWindow):
         print(process.memory_info().rss / 1024 ** 2)  # in bytes
 
 
-app = QApplication(sys.argv)
-window = MainWindow()
-if platform.system() == 'Darwin' or platform.system() == 'Windows':
-    window.show()
-elif platform.system() == 'Linux':
-    # window.showFullScreen()
-    window.show()
-app.exec_()
+
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+#     window = SlideshowWindow()
+#     if platform.system() == 'Darwin' or platform.system() == 'Windows':
+#         window.show()
+#     elif platform.system() == 'Linux':
+#         # window.showFullScreen()
+#         window.show()
+#     app.exec_()
