@@ -54,6 +54,8 @@ rotaryCounterLast = 0  # Needed to measure the change of the encoder that happen
 isReadyForNewPicture = True  # REVIEW - not sure if nedded, could be a solution
 picture = None  # REMOVE - not needed anymore. we use ImageBlender
 
+slideshowSoftwareThreadpool = QThreadPool()
+slideshowHardwareThreadpool = QThreadPool()
 
 # Statuses
 # -----------------------------------------------------------------------------
@@ -893,8 +895,9 @@ class SlideshowWindow(QMainWindow):
     # Setup all software threads
     # ImageFader - handles the fading between old and new pictures
     def setupSoftwareThreads(self):
-        self.threadpoolSoftware = QThreadPool()
-        self.threadpoolSoftware.setMaxThreadCount(2)  # TODO - change if more threads are needed
+        global slideshowSoftwareThreadpool
+        # self.threadpoolSoftware = QThreadPool()
+        slideshowSoftwareThreadpool.setMaxThreadCount(2)  # TODO - change if more threads are needed
 
         # ImageFader, sends 3 callbacks
         # result()      : Picture (row)
@@ -911,11 +914,11 @@ class SlideshowWindow(QMainWindow):
 
         # Receives finished signal, used to fade out UI and print test values
         self.imageBlender.signals.finished.connect(self._finished_image_blend)
-        self.threadpoolSoftware.start(self.imageBlender)
+        slideshowSoftwareThreadpool.start(self.imageBlender)
 
         # Play Pause, sends 0 callbacks
         self.playPauseThread = PlayPause()
-        self.threadpoolSoftware.start(self.playPauseThread)
+        slideshowSoftwareThreadpool.start(self.playPauseThread)
 
     # Setup hardware pins
     def setupGPIO(self):
@@ -966,45 +969,46 @@ class SlideshowWindow(QMainWindow):
 
     # Setup threads to check for hardware changes
     def setupHardwareThreads(self):
-        self.threadpool = QThreadPool()
-        self.threadpool.setMaxThreadCount(8)  # TODO - change if more threads are needed
+        global slideshowHardwareThreadpool
+        # self.threadpool = QThreadPool()
+        slideshowHardwareThreadpool.setMaxThreadCount(8)  # TODO - change if more threads are needed
 
         # Rotary Encoder
         self.rotaryEncoder = RotaryEncoder(self.PIN_ROTARY_A, self.PIN_ROTARY_B)
-        self.threadpool.start(self.rotaryEncoder)
+        slideshowHardwareThreadpool.start(self.rotaryEncoder)
 
         buttonEncoder = HardwareButton(self.PIN_ROTARY_BUTT)
         buttonEncoder.signals.result.connect(self.pressed_encoder)
-        self.threadpool.start(buttonEncoder)
+        slideshowHardwareThreadpool.start(buttonEncoder)
 
         # Buttons
         buttonMode = HardwareButton(self.PIN_MODE)
         buttonMode.signals.result.connect(self.pressed_mode)
-        self.threadpool.start(buttonMode)
+        slideshowHardwareThreadpool.start(buttonMode)
 
         buttonPrev = HardwareButton(self.PIN_PREV)
         buttonPrev.signals.result.connect(self.pressed_prev)
-        self.threadpool.start(buttonPrev)
+        slideshowHardwareThreadpool.start(buttonPrev)
 
         buttonPlayPause = HardwareButton(self.PIN_PLAY_PAUSE)
         buttonPlayPause.signals.result.connect(self.pressed_play_pause)
-        self.threadpool.start(buttonPlayPause)
+        slideshowHardwareThreadpool.start(buttonPlayPause)
 
         buttonNext = HardwareButton(self.PIN_NEXT)
         buttonNext.signals.result.connect(self.pressed_next)
-        self.threadpool.start(buttonNext)
+        slideshowHardwareThreadpool.start(buttonNext)
 
         # Accelerometer
         accelerometer = Accelerometer(self.PIN_ACCEL)
         accelerometer.signals.result.connect(self.changed_accelerometer)
-        self.threadpool.start(accelerometer)
+        slideshowHardwareThreadpool.start(accelerometer)
 
         # Detects when the a magnet is near the hall effect
         # This may need a custom thread that continually checks for a change in status
         # i.e. there was a magnet near, but now there isn't
         buttonHallEffect = HardwareButton(self.PIN_HALL_EFFECT)
         buttonHallEffect.signals.result.connect(self.pressed_hall_effect)
-        self.threadpool.start(buttonHallEffect)
+        slideshowHardwareThreadpool.start(buttonHallEffect)
 
     # UI callbacks from Threads
     # -------------------------------------------------------------------------

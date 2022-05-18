@@ -115,6 +115,9 @@ DIMX = 100
 DIMY = 60
 TOTAL = DIMX * DIMY
 
+# https://stackoverflow.com/questions/60977224/pyqt-multithreaded-program-based-on-qrunnable-is-not-working-properly
+capraThreadpool = QThreadPool()
+transferThreadpool = QThreadPool()
 
 CURRENT_WINDOW = None
 
@@ -1269,9 +1272,11 @@ class TransferAnimationWindow(QMainWindow):
         # Setups up database connection depending on the system
         self.setupSQLController()
 
+        global transferThreadpool
+
         # Setup Bg Thread for getting picture from Database
-        self.threadpool = QThreadPool()
-        self.threadpool.setMaxThreadCount(1)
+        # self.threadpool = QThreadPool()
+        transferThreadpool.setMaxThreadCount(1)
         # self.newPictureThread = NewPictureThread(self.sql_controller)
         # self.threadpool.start(self.newPictureThread)
         global globalPicture
@@ -1280,7 +1285,7 @@ class TransferAnimationWindow(QMainWindow):
         globalPicture = self.sql_controller.get_random_picture()
 
         self.transferThread = TransferThread()
-        self.threadpool.start(self.transferThread)
+        transferThreadpool.start(self.transferThread)
 
         # Setup BG color
         # c1 = QColor(9, 24, 94, 255)
@@ -1677,19 +1682,18 @@ class TransferAnimationWindow(QMainWindow):
 class CapraWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        global CURRENT_WINDOW
+        global CURRENT_WINDOW, capraThreadpool
 
         print(" // CapraWindow *** Capra Window initiated!!")
-        self.threadpoolBackground = QThreadPool()
-        self.threadpoolBackground.setMaxThreadCount(2)
+        # self.threadpoolBackground = QThreadPool()
+        capraThreadpool.setMaxThreadCount(2)
 
         self.hallEffectThread = ReadHallEffectThread()
-        self.threadpoolBackground.start(self.hallEffectThread)
+        capraThreadpool.start(self.hallEffectThread)
 
         self.pingCameraThread = PingCameraThread()
-        self.threadpoolBackground.start(self.pingCameraThread)
+        capraThreadpool.start(self.pingCameraThread)
 
-        # readHallEffectThread()
         createLogger()
 
         print("Hall-effect: {}".format(g.HALL_EFFECT))
