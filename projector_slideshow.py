@@ -806,7 +806,7 @@ class MainWindow(QMainWindow):
         # Top UI elements
         # ---------------------------------------------------------------------
         self.topUnderlay = UIUnderlay(self)
-        # self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)
+        # self.leftLabel = UILabelTop(self, '', Qt.AlignLeft)  # Replaced by scopeWidget
         self.centerLabel = UILabelTopCenter(self, '', '')
         self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
 

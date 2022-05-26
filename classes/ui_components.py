@@ -143,12 +143,13 @@ class UILabelTop(UILabel):
         self.setText(self._text)
 
         self.resize(1280, 200)
+        self.move(0, -8)  # Used to adjust label position
         # self.setAlignment(Qt.AlignLeft)
         self.setAlignment(alignment)
         self.setMargin(35)
         # self.setIndent(100)
 
-        self.setFont(QFont('Atlas Grotesk', 24, 400))
+        self.setFont(QFont('Atlas Grotesk', 22, 400))
         self.setStyleSheet("color: rgba(255,255,255,255)")
         self.setGraphicsEffect(UIEffectTextDropShadow())
 
@@ -156,14 +157,14 @@ class UILabelTop(UILabel):
         self.setText(str(text))
 
 
-# Compound QWidget that holds two QLabels for the middle UI
 class UILabelTopCenter(QWidget):
+    '''Compound QWidget that holds two QLabels for the middle UI'''
     def __init__(self, window, primaryText: str, secondaryText: str, *args, **kwargs):
         # super(QWidget, self).__init__(window, *args, **kwargs)
         super().__init__(window, *args, **kwargs)
 
         self.resize(1280, 110)
-        self.move(0, 15)
+        # self.move(0, 50)  # Used to adjust label position
         layout = QHBoxLayout()
         layout.setAlignment(Qt.AlignHCenter)
         # layout.setAlignment(Qt.AlignTop)
