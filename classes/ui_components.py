@@ -1007,8 +1007,8 @@ class TimeBarTransfer(QWidget):
         self.update()
 
 
-class AltitudeGraphTransferQWidget(QWidget):
-    def __init__(self, window: QMainWindow, isAltMode: bool, altitudeList: list, currentAlt: float) -> None:
+class AltitudeGraphTransferWidget(QWidget):
+    def __init__(self, window: QMainWindow, altitudeList: list, currentAlt: float) -> None:
         super().__init__(window)
 
         self.resize(window.width(), window.height())
@@ -1018,12 +1018,9 @@ class AltitudeGraphTransferQWidget(QWidget):
         self.move(0, 110)
 
         self.altitudeList = altitudeList
-        self.isAltMode = isAltMode
         self.currentAlt = currentAlt
 
         self.H_PAD = 50
-
-        self.indicatorSelected = QImage('assets/indicator-selected.png')
 
     def paintEvent(self, e):
         # print('painting Altitude Graph')
@@ -1076,14 +1073,14 @@ class AltitudeGraphTransferQWidget(QWidget):
         # H-percent*H : figures out the position
         # - 2 : adjusts for the weight of the line
         y = H - ( ((self.currentAlt - MINV)/(MAXV-MINV)) * (H-4) )
-        print(H)
+        # print(H)
         self.linePosY = y
-        print("Line PosY:")
-        print(self.linePosY)
+        # print("Line PosY:")
+        # print(self.linePosY)
 
-    def trigger_refresh(self, isAltMode: bool, altitudeList: list):
+    def trigger_refresh(self, altitudeList: list, currentAlt: float):
         self.altitudeList = altitudeList
-        self.isAltMode = isAltMode
+        self.currentAlt = currentAlt
         self.update()
 
 
@@ -1139,6 +1136,37 @@ class ColorBarTransfer(QWidget):
         self.colorList = colorList
         self.isColorMode = isColorMode
         self.update()
+
+
+class TransferLabel(QWidget):
+    def __init__(self, window, primaryText: str, secondaryText: str, *args, **kwargs):
+        super().__init__(window, *args, **kwargs)
+
+        layout = QHBoxLayout()
+        layout.setAlignment(Qt.AlignHCenter)
+        # layout.setAlignment(Qt.AlignTop)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
+        self.label1 = QLabel(primaryText)
+        self.label1.setFont(QFont('Atlas Grotesk', 48, 500))
+        self.label1.setStyleSheet("color: rgba(255,255,255,255)")
+        self.label1.setGraphicsEffect(UIEffectTextDropShadow())
+
+        self.label2 = QLabel(secondaryText)
+        self.label2.setFont(QFont('Atlas Grotesk', 30, 400))
+        self.label2.setStyleSheet("color: rgba(255,255,255,225)")
+        self.label2.setGraphicsEffect(UIEffectTextDropShadow())
+
+        layout.addWidget(self.label1)
+        layout.addWidget(self.label2)
+        self.setLayout(layout)
+
+    def setPrimaryText(self, text):
+        self.label1.setText(str(text))
+
+    def setSecondaryText(self, text):
+        self.label2.setText(text)
 
 
 class BackgroundColor(QWidget):

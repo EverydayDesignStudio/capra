@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import platform, sys, math, time
+import platform, sys, math, time, os
 from sqlite3.dbapi2 import connect
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -10,10 +10,10 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.ui_components import *
 
-import globals as g
-g.init()
+# import globals as g
+# g.init()
 
-global globalPicture
+# global globalPicture
 
 
 class WorkerSignals(QObject):
@@ -48,17 +48,17 @@ class NewPictureThread(QRunnable):
         # Holds an instance of the SQLController
         self.sql_controller = sql_cntrl
 
-        # TODO - could also use WorkerSignals as a way to tell MainWindow about new Picture
-        # self.signals = WorkerSignals()
-
     def run(self):
         while True:
-            if self.signals.terminate:  # Garbage collection
-                break
+            if self.signals.terminate:
+                break  # Garbage collection
 
-            global globalPicture
-            globalPicture = self.sql_controller.get_random_picture()
-            time.sleep(3)  # TODO - test options; maybe 30s in real program
+            # global globalPicture
+            # globalPicture = self.sql_controller.get_random_picture()
+
+            newPicture = self.sql_controller.get_random_picture()
+            self.signals.result.emit(newPicture)
+            time.sleep(7)  # TODO - test options; maybe 30s in real program
 
 
 class MainWindow(QMainWindow):
@@ -70,11 +70,15 @@ class MainWindow(QMainWindow):
 
         # Setups up database connection depending on the system
         self.setupSQLController()
+        self.picture = self.sql_controller.get_random_picture()
+        # self.picture = self.sql_controller.get_picture_with_id(19003)
+        print(self.picture.picture_id)
 
         # Setup Bg Thread for getting picture from Database
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
         self.newPictureThread = NewPictureThread(self.sql_controller)
+        self.newPictureThread.signals.result.connect(self.updateNewPicture)
         self.threadpool.start(self.newPictureThread)
 
         # Setup BG color
@@ -88,15 +92,17 @@ class MainWindow(QMainWindow):
         self.superCenterImg = TransferCenterImage(self, self.picture)
 
         self.setupAltitudeGraphAndLine(self.picture)
-        self.altitudegraph.hide()
-        self.centerLabel.opacityHide()
-        self.line.hide()
 
         # Setup QTimer for checking for new Picture
         self.handlerCounter = 1
         self.timerAnimationHandler = QTimer()
         self.timerAnimationHandler.timeout.connect(self.animationHandler)
         self.timerAnimationHandler.start(7000)
+
+    def updateNewPicture(self, picture: Picture):
+        '''Updates the newPicture from the Database / Transfer Script
+        newPicture is a temporary holder for keeping the latest Picture until UI is ready'''
+        self.newPicture = picture
 
     def animationHandler(self):
         self.fadeOutTimer = QTimer()
@@ -112,22 +118,23 @@ class MainWindow(QMainWindow):
             self.fadeMoveInTime()
             self.fadeOutTimer.timeout.connect(self.fadeMoveOutTime)
         elif self.handlerCounter % 4 == 0:  # New Picture: image, bg color, ui elements
-            global globalPicture
-            self.picture = globalPicture
+            # global globalPicture
+            # self.picture = globalPicture
+            self.picture = self.newPicture
+            print(f'Picture ID: {self.picture.picture_id}')
 
             # Update UI Elements
             self.updateColorWidgets(self.picture)
             self.updateTimeLabelAndBar(self.picture)
             self.updateAltitudeLabelAndGraph(self.picture)
-            # self.setupTimeLabelAndBar(self.picture)
-            # self.setupAltitudeLabel(self.picture)
 
             # Change Image and Background
             self.superCenterImg.fadeNewImage(self.picture)
             self.bgcolor.changeColor(self.picture.color_rgb)
 
+        # self.fadeOutTimer.start(3500)
         self.fadeOutTimer.start(3500)
-        self.handlerCounter += 1
+        self.handlerCounter = (self.handlerCounter + 1) % 4
 
     # Database connection - previous db with UI data
     def setupSQLController(self):
@@ -137,12 +144,9 @@ class MainWindow(QMainWindow):
 
         # Mac/Windows: select the location
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
-            # filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
-            # self.database = filename[0]
-            # self.directory = os.path.dirname(self.database)
-
-            self.database = '/Users/Jordan/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector/capra_projector_jun2021_min_test_0708.db'
-            self.directory = '/Users/Jordan/Dropbox/Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-jordan-projector'
+            filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
+            self.database = filename[0]
+            self.directory = os.path.dirname(self.database)
         else:  # Raspberry Pi: preset location
             self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
             self.directory = g.DATAPATH_PROJECTOR
@@ -152,27 +156,29 @@ class MainWindow(QMainWindow):
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
 
         # self.picture = self.sql_controller.get_picture_with_id(20000) # 28300
-        self.picture = self.sql_controller.get_random_picture()
-
         # self.picture2 = self.sql_controller.get_picture_with_id(27500)
         # self.picture3 = self.sql_controller.get_picture_with_id(12000)
         # self.picture4 = self.sql_controller.get_picture_with_id(10700)
         # 10700, 11990, 12000, 15000, 20000, 27100, 27200, 27300, 27500, 28300
 
-        # TODO - should we preload all the UI Data?
-        # self.uiData = self.sql_controller.preload_ui_data()
-        # self.preload = True
+        # Preload the UI Data. There's still the commented out version of not preloading UI Data
+        self.uiData = self.sql_controller.preload_ui_data()
 
     # Time Mode
     def setupTimeLabelAndBar(self, picture: Picture):
-        self.timeLabel = UILabelTopCenter(self, '', '')
+        self.timeLabel = TransferLabel(self, '', '')
         self.timeLabel.setPrimaryText(picture.uitime_hrmm)
         self.timeLabel.setSecondaryText(picture.uitime_ampm)
 
+        # Hacky way to keep this hidden behind the center image
+        self.animMoveInAltitudeValue = QPropertyAnimation(self.timeLabel, b"geometry")
+        self.animMoveInAltitudeValue.setDuration(2000)
+        self.animMoveInAltitudeValue.setStartValue(QRect(0, 360, 1280, 110))
+        self.animMoveInAltitudeValue.setEndValue(QRect(0, 350, 1280, 110))
+        self.animMoveInAltitudeValue.start()
+
         percent_rank = self.sql_controller.ui_get_percentage_in_archive_with_mode('time', self.picture)
         self.timebar = TimeBarTransfer(self, percent_rank)
-
-        self.timeLabel.opacityHide()
         self.timebar.hide()
 
     def updateTimeLabelAndBar(self, picture: Picture):
@@ -234,49 +240,64 @@ class MainWindow(QMainWindow):
 
     # Altitude Mode
     def setupAltitudeLabel(self, picture: Picture):
-        self.centerLabel = UILabelTopCenter(self, '', 'M')
-        self.centerLabel.setPrimaryText(picture.uialtitude)
+        self.altitudeLabel = TransferLabel(self, '', 'M')
+        self.altitudeLabel.setPrimaryText(picture.uialtitude)
+
+        # Hacky way to keep this hidden behind the center image
+        self.animMoveInAltitudeValue = QPropertyAnimation(self.altitudeLabel, b"geometry")
+        self.animMoveInAltitudeValue.setDuration(2000)
+        self.animMoveInAltitudeValue.setStartValue(QRect(0, 360, 1280, 110))
+        self.animMoveInAltitudeValue.setEndValue(QRect(0, 350, 1280, 110))
+        self.animMoveInAltitudeValue.start()
+
+        # self.altitudeLabel.setGraphicsEffect(UIEffectDropShadow())
 
     def setupAltitudeGraphAndLine(self, picture: Picture):
-        archiveSize = self.sql_controller.get_archive_size()
-        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
-        altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
+        # archiveSize = self.sql_controller.get_archive_size()
+        # idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+        # altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
 
+        altitudelist = self.uiData.altitudesSortByAltitudeForArchive
         currentAlt = picture.altitude
-
         altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
         altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
 
-        self.altitudegraph = AltitudeGraphTransferQWidget(self, True, altitudelist, currentAlt)
+        self.altitudegraph = AltitudeGraphTransferWidget(self, altitudelist, currentAlt)
         self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
 
         MINV = min(altitudelist)
         MAXV = max(altitudelist)
         H = 500
         self.linePosY = 108 + H - ( ((currentAlt - MINV)/(MAXV-MINV)) * (H-3) )
-        # print(self.linePosY)
 
         self.line = QLabel("line", self)
         bottomImg = QPixmap("assets/line.png")
         self.line.setPixmap(bottomImg)
         self.line.setAlignment(Qt.AlignCenter)
-
         self.line.setGeometry(0, int(self.linePosY), 1280, 3)
 
+        self.altitudegraph.hide()
+        self.line.hide()
+
     def updateAltitudeLabelAndGraph(self, picture: Picture):
-        self.centerLabel.setPrimaryText(picture.uialtitude)
-        self.setupAltitudeGraphAndLine(picture)
+        self.altitudeLabel.setPrimaryText(picture.uialtitude)
+
+        altitudelist = self.uiData.altitudesSortByAltitudeForArchive
+        currentAlt = picture.altitude
+        altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
+        altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
+        self.altitudegraph.trigger_refresh(altitudelist, currentAlt)  # Trigger refresh
 
     def fadeMoveInAltitudeEverything(self):
         self.altitudegraph.show()
-        self.centerLabel.show()
+        self.altitudeLabel.show()
         self.line.show()
 
         # Alt Line
         self.animMoveInLine = QPropertyAnimation(self.line, b"geometry")
         self.animMoveInLine.setDuration(3000)
         self.animMoveInLine.setStartValue(QRect(0, 360, 1280, 3))
-        self.animMoveInLine.setEndValue(QRect(0, self.linePosY, 1280, 3))
+        self.animMoveInLine.setEndValue(QRect(0, int(self.linePosY), 1280, 3))
         self.animMoveInLine.start()
 
         fadeEffect = QGraphicsOpacityEffect()
@@ -289,13 +310,13 @@ class MainWindow(QMainWindow):
         self.animFadeInLine.start()
 
         # Move in top label
-        self.animMoveInAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
+        self.animMoveInAltitudeValue = QPropertyAnimation(self.altitudeLabel, b"geometry")
         self.animMoveInAltitudeValue.setDuration(2000)
         self.animMoveInAltitudeValue.setStartValue(QRect(0, 360, 1280, 110))
         self.animMoveInAltitudeValue.setEndValue(QRect(0, 15, 1280, 110))
         self.animMoveInAltitudeValue.start()
 
-        # Fade in AltitudeGraphTransferQWidget
+        # Fade in AltitudeGraphTransferWidget
         fadeEffect2 = QGraphicsOpacityEffect()
         self.altitudegraph.setGraphicsEffect(fadeEffect2)
         self.animFadeInAltitudeGraph = QPropertyAnimation(fadeEffect2, b"opacity")
@@ -308,7 +329,7 @@ class MainWindow(QMainWindow):
 
     def fadeMoveOutAltitudeEverything(self):
         # Label
-        self.animMoveOutAltitudeValue = QPropertyAnimation(self.centerLabel, b"geometry")
+        self.animMoveOutAltitudeValue = QPropertyAnimation(self.altitudeLabel, b"geometry")
         self.animMoveOutAltitudeValue.setDuration(2000)
         self.animMoveOutAltitudeValue.setStartValue(QRect(0, 30, 1280, 110))
         self.animMoveOutAltitudeValue.setEndValue(QRect(0, 360, 1280, 110))
@@ -339,10 +360,12 @@ class MainWindow(QMainWindow):
         self.colorpalette = ColorPaletteNew(self, True, picture.colors_rgb, picture.colors_conf)
         self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
 
-        archiveSize = self.sql_controller.get_archive_size()
-        idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+        # archiveSize = self.sql_controller.get_archive_size()
+        # idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
+        # colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
 
-        colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
+        colorlist = self.uiData.colorSortByColorForArchive
+
         self.colorbar = ColorBarTransfer(self, True, colorlist)
 
         self.hideColorWidgets()
