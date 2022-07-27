@@ -15,6 +15,11 @@ from classes.ui_components import *
 
 # global globalPicture
 
+TIME_FOR_UI_MODE = 8000  # Miliseconds before next UI element moves onto screen
+# Seconds before next picture is loaded;
+# current picture will finish going through the 3 UI modes before changing
+SECONDS_UNTIL_NEXT_PICTURE = 10
+
 
 class WorkerSignals(QObject):
     '''
@@ -58,7 +63,12 @@ class NewPictureThread(QRunnable):
 
             newPicture = self.sql_controller.get_random_picture()
             self.signals.result.emit(newPicture)
-            time.sleep(7)  # TODO - test options; maybe 30s in real program
+
+            # Minimum time the Picture will be shown.
+            # However it will always go through the 3 UI modes (color, altitude, time) before showing the next image
+            # So, this is only for the selection of the picture from the database
+            # All the presentation timing is controlled in animationHandler() and other animation methods further down
+            time.sleep(SECONDS_UNTIL_NEXT_PICTURE)
 
 
 class MainWindow(QMainWindow):
@@ -97,7 +107,7 @@ class MainWindow(QMainWindow):
         self.handlerCounter = 1
         self.timerAnimationHandler = QTimer()
         self.timerAnimationHandler.timeout.connect(self.animationHandler)
-        self.timerAnimationHandler.start(7000)
+        self.timerAnimationHandler.start(TIME_FOR_UI_MODE)  # Miliseconds before next UI element moves onto screen
 
     def updateNewPicture(self, picture: Picture):
         '''Updates the newPicture from the Database / Transfer Script
@@ -132,8 +142,7 @@ class MainWindow(QMainWindow):
             self.superCenterImg.fadeNewImage(self.picture)
             self.bgcolor.changeColor(self.picture.color_rgb)
 
-        # self.fadeOutTimer.start(3500)
-        self.fadeOutTimer.start(3500)
+        self.fadeOutTimer.start(int(TIME_FOR_UI_MODE / 2))  # Miliseconds til UI elements fade out; 1/2 animation time
         self.handlerCounter = (self.handlerCounter + 1) % 4
 
     # Database connection - previous db with UI data
@@ -265,19 +274,22 @@ class MainWindow(QMainWindow):
         self.altitudegraph = AltitudeGraphTransferWidget(self, altitudelist, currentAlt)
         self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
 
-        MINV = min(altitudelist)
-        MAXV = max(altitudelist)
-        H = 500
-        self.linePosY = 108 + H - ( ((currentAlt - MINV)/(MAXV-MINV)) * (H-3) )
+        minv = min(altitudelist)
+        maxv = max(altitudelist)
+        self.linePosY = self._calculateLinePosY(minv, maxv, currentAlt)
 
         self.line = QLabel("line", self)
         bottomImg = QPixmap("assets/line.png")
         self.line.setPixmap(bottomImg)
         self.line.setAlignment(Qt.AlignCenter)
-        self.line.setGeometry(0, int(self.linePosY), 1280, 3)
+        self.line.setGeometry(0, int(self.linePosY), 1280, 3)  # self.linePosY just calculated above
 
         self.altitudegraph.hide()
         self.line.hide()
+
+    def _calculateLinePosY(self, minv: float, maxv: float, currentAlt: float):
+        H = 500
+        return 108 + H - ( ((currentAlt - minv)/(maxv-minv)) * (H-3) )
 
     def updateAltitudeLabelAndGraph(self, picture: Picture):
         self.altitudeLabel.setPrimaryText(picture.uialtitude)
@@ -286,7 +298,11 @@ class MainWindow(QMainWindow):
         currentAlt = picture.altitude
         altitudelist.insert(0, currentAlt)  # Append the new altitude at the start of the list
         altitudelist = sorted(altitudelist)  # Sorts so the altitude will fit within the correct spot on the graph
-        self.altitudegraph.trigger_refresh(altitudelist, currentAlt)  # Trigger refresh
+
+        self.altitudegraph.trigger_refresh(altitudelist, currentAlt)  # Trigger refresh of the widget
+        minv = min(altitudelist)
+        maxv = max(altitudelist)
+        self.linePosY = self._calculateLinePosY(minv, maxv, currentAlt)  # Trigger refresh of the Y line position
 
     def fadeMoveInAltitudeEverything(self):
         self.altitudegraph.show()
@@ -297,6 +313,7 @@ class MainWindow(QMainWindow):
         self.animMoveInLine = QPropertyAnimation(self.line, b"geometry")
         self.animMoveInLine.setDuration(3000)
         self.animMoveInLine.setStartValue(QRect(0, 360, 1280, 3))
+        # self.linePosY is calulated in updateAltitudeLabelAndGraph()
         self.animMoveInLine.setEndValue(QRect(0, int(self.linePosY), 1280, 3))
         self.animMoveInLine.start()
 
@@ -465,7 +482,7 @@ class MainWindow(QMainWindow):
             print('0')
 
     def closeEvent(self, event):
-        print('User has clicked the red X')
+        print('User has clicked the Red X or pressed Escape')
         self.garbageCollection()
 
     def garbageCollection(self):
