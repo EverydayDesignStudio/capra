@@ -89,7 +89,8 @@ class UIWindowWidget(QWidget):
         self.anim.start()
         self.update()
 
-    def myShow(self):
+    # VUpdate - verify
+    def opacityShow(self):
         self.show()
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
@@ -120,7 +121,9 @@ class UILabel(QLabel):
         self.anim.start()
         self.update()
 
-    def show(self):
+    # TODO VUpdate -- this will mess up a lot of things because I named this show and there is a QLabel method named show
+    # So, I need to change this method name, I think
+    def opacityShow(self):
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
 
@@ -208,7 +211,8 @@ class UILabelTopCenter(QWidget):
     def setSecondaryText(self, text):
         self.label2.setText(text)
 
-    def show(self):
+    # VUpdate TODO -- make sure this is a necessary change
+    def opacityShow(self):
         self.animGroupFadeOut.stop()
         self._label1_opacity.setOpacity(1.0)
         self._label2_opacity.setOpacity(1.0)
@@ -282,6 +286,39 @@ class UIImage(QLabel):
         # print(im.format())
         # data = im.tobytes("raw", "CMYK")
         # qim = QImage(data, im.size[0], im.size[1], QImage.Format_RGBX8888)
+
+
+class UIImageNoLayout(UILabel):
+    '''Wrapper of UILabel, does not need to be added to a page layout'''
+    def __init__(self, window, path: str, x: int, y: int, w: int, h: int):
+        super().__init__(window)
+        pixmap = QPixmap(path)
+        self.setPixmap(pixmap)
+
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+
+        self.setGeometry(self.x, self.y, self.w, self.h)
+
+    def update_image(self, path: str):
+        """Loads new image from local storage path"""
+        self.pixmap = QPixmap(path)
+        self.setPixmap(self.pixmap)
+
+    # TODO - see how processing consumption for this, compares to saving locally
+    def update_pixmap(self, im):
+        """Accepts a raw image and utilizes image conversion to load it"""
+        im2 = im.convert("RGBA")
+        data = im2.tobytes("raw", "RGBA")
+        qim = QImage(data, im2.size[0], im2.size[1], QImage.Format_RGBA8888)
+
+        self.setAlignment(Qt.AlignCenter)
+        self.setGeometry(self.x, self.y, self.w, self.h)
+
+        self.pixmap = QPixmap.fromImage(qim)
+        self.setPixmap(self.pixmap)
 
 
 # Semi-transparent underlay that inherits from UILabel
