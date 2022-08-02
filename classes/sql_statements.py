@@ -24,6 +24,14 @@ class SQLStatements:
         statement = 'SELECT * FROM pictures ORDER BY RANDOM() LIMIT 1;'
         return statement
 
+    def select_random_picture_from_previous_hikes(self, num_prev_hikes: int) -> str:
+        offset = num_prev_hikes - 1  # offset needs to be 1 less than desired number of previous hikes
+        statement = 'SELECT * FROM pictures WHERE hike BETWEEN \
+            (SELECT hike_id FROM hikes ORDER BY hike_id DESC LIMIT 1 OFFSET {off}) \
+            and (SELECT hike_id FROM hikes ORDER BY hike_id DESC LIMIT 1) \
+            ORDER BY RANDOM() LIMIT 1;'.format(off=offset)
+        return statement
+
     # Initialization Statements - initially written 2019
     # --------------------------------------------------------------------------
     # Time - first & last across hikes

@@ -168,6 +168,11 @@ class SQLController:
         sql = self.statements.select_random_picture()
         return self._execute_query(sql)
 
+    def get_random_picture_from_previous_hikes(self, num_prev_hikes: int) -> Picture:
+        '''Returns random pictures from the last X number of hikes'''
+        sql = self.statements.select_random_picture_from_previous_hikes(num_prev_hikes)
+        return self._execute_query(sql)
+
     # TODO - write tests for all of these functions
     # Initializing queries - used to get the initial row from the database
     # --------------------------------------------------------------------------

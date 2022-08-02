@@ -10,15 +10,15 @@ from classes.capra_data_types import Picture, Hike
 from classes.sql_controller import SQLController
 from classes.ui_components import *
 
-# import globals as g
-# g.init()
-
-# global globalPicture
 
 TIME_FOR_UI_MODE = 8000  # Miliseconds before next UI element moves onto screen
-# Seconds before next picture is loaded;
-# current picture will finish going through the 3 UI modes before changing
-SECONDS_UNTIL_NEXT_PICTURE = 10
+SECONDS_UNTIL_NEXT_PICTURE = 30  # Seconds before next picture is queried from database
+                                 # current Picture will finish going through the 3 UI modes before changing
+                                 # 8s is the time between each UI mode (new photo, color, altitude, time)
+                                 # 8s x 4 = 32s
+                                 # 30s is 2s before that
+
+numPreviousHikes = 0
 
 
 class WorkerSignals(QObject):
@@ -58,15 +58,22 @@ class NewPictureThread(QRunnable):
             if self.signals.terminate:
                 break  # Garbage collection
 
+            # Old way -- holding a global Picture
             # global globalPicture
             # globalPicture = self.sql_controller.get_random_picture()
 
-            newPicture = self.sql_controller.get_random_picture()
+            # New way -- using a signal to pass back the Picture
+            # newPicture = self.sql_controller.get_random_picture()
+            global numPreviousHikes
+            print(f'In the thread numPreviousHikes = {numPreviousHikes}')
+            newPicture = self.sql_controller.get_random_picture_from_previous_hikes(numPreviousHikes)
+            print(f'Thread Picture Hike ID is: {newPicture.hike_id}')
+            print(f'Thread Picture Picture ID is: {newPicture.picture_id}')
             self.signals.result.emit(newPicture)
 
-            # Minimum time the Picture will be shown.
-            # However it will always go through the 3 UI modes (color, altitude, time) before showing the next image
-            # So, this is only for the selection of the picture from the database
+            # Frequency that a new Picture will be selected from database
+            # However, this Picture will be held by MainWindow in self.newPicture until the UI is ready for it
+            # MainWindow will always go through the 3 UI modes (color, altitude, time) before showing the next Picture
             # All the presentation timing is controlled in animationHandler() and other animation methods further down
             time.sleep(SECONDS_UNTIL_NEXT_PICTURE)
 
@@ -80,20 +87,23 @@ class MainWindow(QMainWindow):
 
         # Setups up database connection depending on the system
         self.setupSQLController()
-        self.picture = self.sql_controller.get_random_picture()
-        # self.picture = self.sql_controller.get_picture_with_id(19003)
-        print(self.picture.picture_id)
 
-        # Setup Bg Thread for getting picture from Database
+        # Selects intial Picture from the database
+        global numPreviousHikes
+        self.picture = self.sql_controller.get_random_picture_from_previous_hikes(numPreviousHikes)
+        print(f'Picture Hike: {self.picture.hike_id}')
+        print(f'Picture ID: {self.picture.picture_id}\n')
+
+        # Setup Bg Thread for continually getting new Pictures from database
         self.threadpool = QThreadPool()
         self.threadpool.setMaxThreadCount(1)
         self.newPictureThread = NewPictureThread(self.sql_controller)
         self.newPictureThread.signals.result.connect(self.updateNewPicture)
         self.threadpool.start(self.newPictureThread)
 
-        # Setup BG color
-        # c1 = QColor(9, 24, 94, 255)
+        # Setup UI
         self.bgcolor = BackgroundColor(self, QVBoxLayout(), Qt.AlignBottom, self.picture.color_rgb)
+        # c1 = QColor(9, 24, 94, 255)
 
         self.setupColorWidgets(self.picture)
         self.setupAltitudeLabel(self.picture)
@@ -128,10 +138,14 @@ class MainWindow(QMainWindow):
             self.fadeMoveInTime()
             self.fadeOutTimer.timeout.connect(self.fadeMoveOutTime)
         elif self.handlerCounter % 4 == 0:  # New Picture: image, bg color, ui elements
+            # Old
             # global globalPicture
             # self.picture = globalPicture
+
+            # New
             self.picture = self.newPicture
-            print(f'Picture ID: {self.picture.picture_id}')
+            print(f'Picture Hike: {self.picture.hike_id}')
+            print(f'Picture ID: {self.picture.picture_id}\n')
 
             # Update UI Elements
             self.updateColorWidgets(self.picture)
@@ -164,13 +178,28 @@ class MainWindow(QMainWindow):
         print(self.directory)
         self.sql_controller = SQLController(database=self.database, directory=self.directory)
 
-        # self.picture = self.sql_controller.get_picture_with_id(20000) # 28300
-        # self.picture2 = self.sql_controller.get_picture_with_id(27500)
-        # self.picture3 = self.sql_controller.get_picture_with_id(12000)
-        # self.picture4 = self.sql_controller.get_picture_with_id(10700)
-        # 10700, 11990, 12000, 15000, 20000, 27100, 27200, 27300, 27500, 28300
+        # How many previous hikes to select from
+        totalHikes = self.sql_controller.get_hike_count()
+        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            # Dialog receiving input for how many previous hikes to select from
+            i, okay = QInputDialog.getInt(self, "Select Previous Hikes",
+            f"Total Hikes: {totalHikes}\n\nEnter how many previous hikes you want\nto use for the Transfer Animation",
+            1, 0, totalHikes, 1)
 
-        # Preload the UI Data. There's still the commented out version of not preloading UI Data
+            # Okay or Cancel
+            global numPreviousHikes
+            if okay:
+                numPreviousHikes = i
+                print(f"Inputted Previous Hikes: {numPreviousHikes}\n")
+            else:  # Cancel was pressed
+                self.close()
+
+        else:  # Raspberry Pi:
+            # TODO - this could change based in input from the transfer script
+            numPreviousHikes = totalHikes
+
+        # Preload the UI Data
+        # (In corresponding methods, there's a commented out way of not preloading UI data)
         self.uiData = self.sql_controller.preload_ui_data()
 
     # Time Mode
@@ -262,6 +291,7 @@ class MainWindow(QMainWindow):
         # self.altitudeLabel.setGraphicsEffect(UIEffectDropShadow())
 
     def setupAltitudeGraphAndLine(self, picture: Picture):
+        # Method for getting UI data without preloading
         # archiveSize = self.sql_controller.get_archive_size()
         # idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
         # altitudelist = self.sql_controller.ui_get_altitudes_for_archive_sortby('alt', idxList)
@@ -377,12 +407,12 @@ class MainWindow(QMainWindow):
         self.colorpalette = ColorPaletteNew(self, True, picture.colors_rgb, picture.colors_conf)
         self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
 
+        # Method for getting UI data without preloading
         # archiveSize = self.sql_controller.get_archive_size()
         # idxList = self.sql_controller.chooseIndexes(int(archiveSize), 1280.0)
         # colorlist = self.sql_controller.ui_get_colors_for_archive_sortby('color', idxList)
 
         colorlist = self.uiData.colorSortByColorForArchive
-
         self.colorbar = ColorBarTransfer(self, True, colorlist)
 
         self.hideColorWidgets()
