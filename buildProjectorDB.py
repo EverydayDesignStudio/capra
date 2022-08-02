@@ -1,10 +1,7 @@
 ## python version 3.9.7
-import colorsys
 from sklearn.cluster import KMeans  # pip install -U scikit-learn
 from collections import Counter
 import cv2  # pip install opencv-python : for resizing image
-import math
-import numpy as np
 import random
 import time
 import os
@@ -13,15 +10,38 @@ import sys
 import sqlite3
 import datetime
 from operator import itemgetter
-from PIL import ImageTk, Image                      # Pillow image functions
-from classes.sql_controller import SQLController
-from classes.sql_statements import SQLStatements
-from classes.kmeans import get_dominant_color_1D
 from colormath.color_objects import HSVColor, LabColor
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000
 
+# image & color processing
+from PIL import ImageTk, Image      # Pillow image functions
+import math
+import colorsys
+import numpy as np
+
+# custom modules
+from classes.capra_data_types import Picture, Hike
+from classes.sql_controller import SQLController
+from classes.sql_statements import SQLStatements
+from classes.kmeans import get_dominant_color_1D
+
+# transfer animation
+import platform
+from sqlite3.dbapi2 import connect
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+# from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtCore import *
+from classes.ui_components import *
+from projector_slideshow import *
+
+global globalPicture
+
 ####################################################
+
+TRANSFER_DONE = False
+TWO_CAM = False         # special variable to transfer hikes with only two cameras (for Jordan's 9 early hikes)
 
 currHike = -1
 globalCounter_h = 0
@@ -30,11 +50,6 @@ dummyGlobalAltRank = -1
 dummyGlobalCounter = 0
 
 DROPBOX = "/Users/myoo/Dropbox/"
-BASEPATH_SRC = None
-BASEPATH_DEST = None
-src_db_name = None
-dest_db_name = None
-
 DBTYPE = 'camera'   # 'camera' or 'projector'
 
 # need this indexes hardcoded for the python helper function
@@ -43,8 +58,40 @@ ALTITUDE_INDEX = 10
 COLOR_INDEX_HSV = 14
 INDEX_IN_HIKE_INDEX = 8
 
+BASEPATH_SRC = None
+BASEPATH_DEST = None
+src_db_name = None
+dest_db_name = None
 
-# TODO: set DB and PATH accordingly
+# ### TODO: Add this later
+# def setupDB():
+#     '''Initializes the database connection.\n
+#     If on Mac/Windows give dialog box to select database,
+#     otherwise it will use the global defined location for the database'''
+#
+#     # Mac/Windows: select the location
+#     if platform.system() == 'Darwin' or platform.system() == 'Windows':
+#         filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
+#         self.database = filename[0]
+#         self.directory = os.path.dirname(self.database)
+#     else:  # Raspberry Pi: preset location
+#         self.database = g.DATAPATH_PROJECTOR + g.DBNAME_MASTER
+#         self.directory = g.DATAPATH_PROJECTOR
+#
+#     print(self.database)
+#     print(self.directory)
+#     self.sql_controller = SQLController(database=self.database, directory=self.directory)
+#
+#     if (self.sql_controller.get_picture_id_count(self._saved_picture_id)):
+#         self.picture = self.sql_controller.get_picture_with_id(self._saved_picture_id)
+#     else:
+#         self.picture = self.sql_controller.get_first_time_picture()
+#
+#     ### TODO: TESTING - comment out to speed up program load time
+#     self.uiData = self.sql_controller.preload_ui_data()
+#     self.preload = True
+
+
 if (DBTYPE == 'projector'):
     # BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-july/"
     # src_db_name = "capra_projector_jan2021_min_AllHikes.db"
@@ -65,11 +112,11 @@ else:
     # BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-transfer-2/"
     # dest_db_name = "capra_projector_apr2021_min_camera_full.db"
 
-    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-will-camera/"
+    BASEPATH_SRC = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-min-pi-test-1/"
     src_db_name = "capra_camera.db"
 
-    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-will-projector/"
-    dest_db_name = "capra_projector_will_2022_0327.db"
+    BASEPATH_DEST = "Everyday Design Studio/A Projects/100 Ongoing/Capra/capra-storage/capra-storage-test/"
+    dest_db_name = "capra_projector_test.db"
 
 
 ####################################################
@@ -85,8 +132,6 @@ dbSRCController = None
 dbDESTController = None
 
 COLOR_HSV_INDEX = -1    # used in the sortColor helper function
-
-NEW_DATA = False
 
 CLUSTERS = 5        # assumes X number of dominant colors in a pictures
 REPETITION = 8
@@ -214,6 +259,17 @@ def sort_by_colors(data, color_index_hsv, index_in_hike):
         rankList[itemgetter(index_in_hike)(data[i])] = i+1   # 8 - index_in_hike
 
     return rankList
+
+
+def compute_checksum(path, currHike):
+    checkSum_transferred = count_files_in_directory(path, FILENAME)
+    checkSum_rotated = count_files_in_directory(path, FILENAME_FULLSIZE)
+    return checkSum_transferred, checkSum_rotated, checkSum_transferred + checkSum_rotated
+
+
+def check_hike_postprocessing(currHike):
+    hikeColor = dbDESTController.get_hike_average_color(currHike)
+    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
 
 
 def dominantColorWrapper(currHike, validRowCount, row_src, image1, image2, image3=None, image_processing_size=None):
@@ -396,65 +452,66 @@ def get_multiple_dominant_colors(image1, image2, image3=None, image_processing_s
     return len(confidences), dominant_colors_hsv, dominant_colors_rgb, confidences
 
 
-def filterZeroBytePicturesFromSrc():
-    global dbSRCController
-
-    print("[{}] Checking 0 byte pictures in the source directory before start transferring..".format(timenow()))
-
-    latest_src_hikeID = dbSRCController.get_last_hike_id()
-    latest_dest_hikeID = dbDESTController.get_last_hike_id()
-    print("[{}] ## hikes from Source: {}".format(timenow(), str(latest_src_hikeID)))
-    print("[{}] ## hikes at Dest: {}".format(timenow(), str(latest_dest_hikeID)))
-
-    currHike = 1
-    delCount = 0
-
-    while currHike <= latest_src_hikeID:
-        print("[{}] ### Checking hike {}".format(timenow(), currHike))
-        srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
-
-        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-        print("[{}] ### Hike {} originally has {} rows".format(timenow(), currHike, totalCountHike))
-
-        if (not os.path.isdir(srcPath)):
-            currHike += 1
-            continue
-
-        allRows = dbSRCController.get_pictures_of_selected_hike(currHike)
-
-        for row in allRows:
-            picPathCam1_src = srcPath + "{}_cam1.jpg".format(row['index_in_hike'])
-            picPathCam2_src = srcPath + "{}_cam2.jpg".format(row['index_in_hike'])
-            picPathCam3_src = srcPath + "{}_cam3.jpg".format(row['index_in_hike'])
-
-            if (os.path.exists(picPathCam1_src) and os.stat(picPathCam1_src).st_size == 0 or
-                os.path.exists(picPathCam2_src) and os.stat(picPathCam2_src).st_size == 0 or
-                os.path.exists(picPathCam3_src) and os.stat(picPathCam3_src).st_size == 0):
-
-                # ### (For testing) select the row but don't delete it yet
-                # srcConnection = dbSRCController.connection
-                # srcCursor = srcConnection.cursor()
-                # statement = 'select * from pictures where time = {}'.format(row['time'])
-                # srcCursor.execute(statement)
-                # res = srcCursor.fetchall()
-                # print (res)
-
-                print("[{}] \t Row {} has an empty picture. Deleting a row..".format(timenow(), row['index_in_hike']))
-
-                dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
-                delCount += 1
-
-        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
-
-        if (delCount > 0):
-            print("[{}] {} rows deleted".format(timenow(), delCount))
-            print("[{}] Hike {} now has {} rows".format(timenow(), currHike, totalCountHike))
-
-            dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
-
-        # commit changes only when a given hike is fully scanned
-        dbSRCController.connection.commit()
-        currHike += 1
+# ### This function is removed and added as a condition within buildHike()
+# def filterZeroBytePicturesFromSrc():
+#     global dbSRCController
+#
+#     print("[{}] Checking 0 byte pictures in the source directory before start transferring..".format(timenow()))
+#
+#     latest_src_hikeID = dbSRCController.get_last_hike_id()
+#     latest_dest_hikeID = dbDESTController.get_last_hike_id()
+#     print("[{}] ## hikes from Source: {}".format(timenow(), str(latest_src_hikeID)))
+#     print("[{}] ## hikes at Dest: {}".format(timenow(), str(latest_dest_hikeID)))
+#
+#     currHike = 1
+#     delCount = 0
+#
+#     while currHike <= latest_src_hikeID:
+#         print("[{}] ### Checking hike {}".format(timenow(), currHike))
+#         srcPath = build_hike_path(DROPBOX + BASEPATH_SRC, currHike)
+#
+#         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+#         print("[{}] ### Hike {} originally has {} rows".format(timenow(), currHike, totalCountHike))
+#
+#         if (not os.path.isdir(srcPath)):
+#             currHike += 1
+#             continue
+#
+#         allRows = dbSRCController.get_pictures_of_selected_hike(currHike)
+#
+#         for row in allRows:
+#             picPathCam1_src = srcPath + "{}_cam1.jpg".format(row['index_in_hike'])
+#             picPathCam2_src = srcPath + "{}_cam2.jpg".format(row['index_in_hike'])
+#             picPathCam3_src = srcPath + "{}_cam3.jpg".format(row['index_in_hike'])
+#
+#             if (os.path.exists(picPathCam1_src) and os.stat(picPathCam1_src).st_size == 0 or
+#                 os.path.exists(picPathCam2_src) and os.stat(picPathCam2_src).st_size == 0 or
+#                 os.path.exists(picPathCam3_src) and os.stat(picPathCam3_src).st_size == 0):
+#
+#                 # ### (For testing) select the row but don't delete it yet
+#                 # srcConnection = dbSRCController.connection
+#                 # srcCursor = srcConnection.cursor()
+#                 # statement = 'select * from pictures where time = {}'.format(row['time'])
+#                 # srcCursor.execute(statement)
+#                 # res = srcCursor.fetchall()
+#                 # print (res)
+#
+#                 print("[{}] \t Row {} has an empty picture. Deleting a row..".format(timenow(), row['index_in_hike']))
+#
+#                 dbSRCController.delete_picture_of_given_timestamp(row['time'], True) # delay commit to prevent concurrency issues
+#                 delCount += 1
+#
+#         totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+#
+#         if (delCount > 0):
+#             print("[{}] {} rows deleted".format(timenow(), delCount))
+#             print("[{}] Hike {} now has {} rows".format(timenow(), currHike, totalCountHike))
+#
+#             dbSRCController.update_hikes_total_picture_count_of_given_hike(totalCountHike, currHike, True)
+#
+#         # commit changes only when a given hike is fully scanned
+#         dbSRCController.connection.commit()
+#         currHike += 1
 
 
 def buildHike(currHike):
@@ -462,6 +519,7 @@ def buildHike(currHike):
     global srcPath, destPath
     global res_red, res_green, res_blue
     global dummyGlobalColorRank, dummyGlobalAltRank, dummyGlobalCounter, globalCounter_h
+    global COLOR_HSV_INDEX
 
     # Write to file
     # orig_stdout = sys.stdout
@@ -480,6 +538,9 @@ def buildHike(currHike):
     validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
     numValidRows = len(validRows)
     maxRows = dbSRCController.get_last_photo_index_of_hike(currHike)
+
+    deleteCount = 0             ### to track rows that contain 0 byte pictures in the remote database
+    deleteTimestamps = []       ### timestamps of rows to delete
 
     print("[{}] Last index in Hike {}: {}".format(timenow(), str(currHike), str(maxRows)))
     print("[{}] Expected valid row count: {}".format(timenow(), str(numValidRows)))
@@ -501,25 +562,81 @@ def buildHike(currHike):
             index_in_hike += 1
             continue
 
-        # TODO: if pictures exist on the Projector AND the row exists in the destDB, extract the data only
-        # if (os.path.exists(picPathCam1_dest) and
-        #     os.path.exists(picPathCam2_dest) and
-        #     os.path.exists(picPathCam2f_dest) and
-        #     os.path.exists(picPathCam3_dest)):
-        #     extract_data_and_continue()
-        #     continue
-
-
-        # TODO: if pictures exist on the Projector but no row data in the destDB, skip transfer but extract the data from the srcDB
-
-
-        # if (not os.path.exists(picPathCam1) or not os.path.exists(picPathCam2) or not os.path.exists(picPathCam3)):
-        if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
-            index_in_hike += 1
-            continue
-
         if (index_in_hike <= maxRows and index_in_hike % 200 == 0):
             print("[{}] ### Checkpoint at {}".format(timenow(), str(index_in_hike)))
+
+
+        # Transfer, resize and rotate pictures from remote only if there is no local copy.
+        # To ensure having a local copy can be done by checking if cam2f exists.
+        if (not os.path.exists(picPathCam2f_dest)):
+
+            if (not os.path.exists(picPathCam1_src) or not os.path.exists(picPathCam2_src)):
+                index_in_hike += 1
+                continue
+
+            # check for 0 byte pictures
+            #   if spotted, increase deleteCounter and delete those rows
+            #   from the remote camera db and the local camera db before proceeding to the next hike
+            if (os.path.exists(picPathCam1_src) and os.stat(picPathCam1_src).st_size == 0 or
+                os.path.exists(picPathCam2_src) and os.stat(picPathCam2_src).st_size == 0 or
+                (not TWO_CAM and os.path.exists(picPathCam3_src) and os.stat(picPathCam3_src).st_size == 0)):
+                print("[{}] \t Row {} has a missing picture. Deleting a row..".format(timenow(), index_in_hike))
+                deleteCount += 1
+                deleteTimestamps.append(row_src['time'])
+                index_in_hike += 1
+                continue
+
+            # rotate and resize, copy those to the dest folder
+            img = None
+            img_res = None
+            # resize and rotate for newly added pictures
+            try:
+                #    1. make a copy of pic2 as pic2'f'
+                if (not os.path.exists(picPathCam2f_dest)):
+                    img = Image.open(picPathCam2_src)
+                    img_res = img.copy()
+                    img_res.save(picPathCam2f_dest)
+
+                #    2. resize to 427x720 and rotate 90 deg
+                if (not os.path.exists(picPathCam1_dest)):
+                    img = Image.open(picPathCam1_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam1_dest)
+
+                if (not os.path.exists(picPathCam2_dest)):
+                    img = Image.open(picPathCam2_src)
+                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                    img_res.save(picPathCam2_dest)
+
+                if (not os.path.exists(picPathCam3_dest)):
+                    if (not TWO_CAM):
+                        img = Image.open(picPathCam3_src)
+                        img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
+                        img_res.save(picPathCam3_dest)
+                    else:
+                        img = Image.open(WHITE_IMAGE)
+                        img_res = img.copy().rotate(90, expand=True)
+                        img_res.save(picPathCam3_dest)
+            except:
+                print("!! Hike {} @ row {} has truncated pictures, could not rotate. Skipping a row..".format(currHike, index_in_hike))
+                deleteCount += 1
+                deleteTimestamps.append(row_src['time'])
+
+                # remove corrupted pictures
+                if os.path.isfile(picPathCam1_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam2_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam2f_dest):
+                    os.remove(picPathCam1_dest)
+                if os.path.isfile(picPathCam3_dest):
+                    os.remove(picPathCam1_dest)
+
+                index_in_hike += 1
+                continue
+
+        # increment the validRowCounter since we have successfully trasferred the pictures for this row
+        validRowCount += 1
 
         # update timestamps
         if (row_src['time'] < startTime):
@@ -529,54 +646,20 @@ def buildHike(currHike):
 
         avgAlt += int(row_src['altitude'])
 
-        # rotate and resize, copy those to the dest folder
-        img = None
-        img_res = None
-        try:
-            # resize and rotate for newly added pictures
-            #    1. make a copy of pic2 as pic2f
-            if (not os.path.exists(picPathCam2f_src)):
-                img = Image.open(picPathCam2_src)
-                img_res = img.copy()
-                img_res.save(picPathCam2f_dest)
-
-        #    2. resize to 427x720 and rotate 90 deg
-        ## TODO: refine color - saturation --> talk with Sam
-            if (not os.path.exists(picPathCam1_dest) or
-                not os.path.exists(picPathCam2_dest) or
-                not os.path.exists(picPathCam2f_dest) or
-                not os.path.exists(picPathCam3_dest)):
-
-                img = Image.open(picPathCam1_src)
-                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                img_res.save(picPathCam1_dest)
-
-                img = Image.open(picPathCam2_src)
-                img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                img_res.save(picPathCam2_dest)
-
-                if (os.path.exists(picPathCam3_src)):
-                    img = Image.open(picPathCam3_src)
-                    img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
-                    img_res.save(picPathCam3_dest)
-                else:
-                    img = Image.open(WHITE_IMAGE)
-                    img_res = img.copy().rotate(90, expand=True)
-                    img_res.save(picPathCam3_dest)
-        except:
-            print("!! Hike {} @ row {} has truncated pictures. Skipping a row..".format(currHike, index_in_hike))
-            index_in_hike += 1
-            continue
-
-        # increment the validRowCounter since we have successfully trasferred the pictures for this row
-        validRowCount += 1
-
-        fileName = "{}_camN".format(validRowCount)
-
-        if (not os.path.exists(picPathCam3_src)):
+        if (TWO_CAM):
             picPathCam3_dest = None
-        # color_size, colors_hsv, colors_rgb, confidences = get_multiple_dominant_colors(image1=picPathCam1_dest, image2=picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
-        commit, domCol_hsv = dominantColorWrapper(currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+
+        # If a row is found in DB, load it, rather than running the color algorithm again
+        if (dbDESTController.get_picture_count_at_timestamp(row_src['time']) > 0):
+            commit = dbDESTController.get_picture_at_timestamp(row_src['time'])
+            fileName = "{}_camN".format(commit[7])  # index_in_hike
+            commits[fileName] = commit
+
+            domCol_hsv = [int(i) for i in commit[13].split(',')]  # color_hsv
+
+        else:
+            commit, domCol_hsv = dominantColorWrapper(currHike, validRowCount, row_src, picPathCam1_dest, picPathCam2_dest, image3=picPathCam3_dest, image_processing_size=(DIMX, DIMY))
+            fileName = "{}_camN".format(validRowCount)
 
         commits[fileName] = commit
         domColorsHike_hsv.append(domCol_hsv)
@@ -616,6 +699,7 @@ def buildHike(currHike):
         commit = tuple(commits[fileName])
         dbDESTController.upsert_picture(*commit)
 
+    print("[{}] ### Generating metadata for Hike {}...".format(timenow(), currHike))
     # make a row for the hike table with postprocessed values
     avgAlt /= validRowCount
     domColorHike_hsv = []
@@ -643,21 +727,148 @@ def buildHike(currHike):
                                     ",".join(map(str, domColorHike_hsv)), ",".join(map(str, domColorHike_rgb)), -1, -currHike,
                                     validRowCount, defaultHikePath, created_timestamp)
 
+    # delete rows with 0 byte pictures from the referenced camera DB in local
+    # (remote db will be synced by copying the local copy of the camera db when the transfer is done)
+    if (deleteCount > 0):
+        print("[{}] ## Deleting {} rows from hike {} ...".format(timenow(), deleteCount, currHike))
+
+        totalCountHike = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+        totalCountHike_remote = dbSRCController.get_pictures_count_of_selected_hike(currHike)
+
+        # extra guard to double check the total number of pictures
+        if (totalCountHike - deleteCount == validRowCount and
+            totalCountHike_remote - deleteCount == validRowCount):
+            for timestamp in deleteTimestamps:
+                # local copy of camera db
+                # ** making a sequence of commits may lock the database,
+                #    so let it commit when hike will be updated outside the loop in the next line
+                dbSRCController.delete_picture_of_given_timestamp(timestamp, delayedCommit=True)
+            dbSRCController.update_hikes_total_picture_count_of_given_hike(validRowCount, currHike)
+
+
     # create a color spectrum for this hike
     colorSpectrumRGB_hike = dbDESTController.get_pictures_rgb_hike(currHike)
     generatePics(colorSpectrumRGB_hike, "hike{}".format(currHike) + "-colorSpectrum", destPath)
 
     print("[{}] ## Hike {} done. {} rows processed".format(timenow(), currHike, validRowCount))
+    print("[{}] ### Now processing global ranks across all hikes and pictures before moving on to the next hike..".format(timenow()))
 
+    ### [Mar 31, 2022]
+    # Calculate global ranks when each hike is fully transferred
+    # This may be computationally inefficient but to make sure there is not to have partially-computed ranks at any point of time during the transfer
+    # Because the slideshow will break if any of the rankings is missing.
+    rankTimer = time.time()
 
-def compute_checksum(path, currHike):
-    checkSum_transferred = count_files_in_directory(path, FILENAME)
-    checkSum_rotated = count_files_in_directory(path, FILENAME_FULLSIZE)
-    return checkSum_transferred, checkSum_rotated, checkSum_transferred + checkSum_rotated
+    globalTimeList = []
+    globalAltList = []
+    globalColorList = []
+    # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
+    COLOR_HSV_INDEX = 1
 
-def check_hike_postprocessing(currHike):
-    hikeColor = dbDESTController.get_hike_average_color(currHike)
-    return hikeColor is not None and hikeColor and not (hikeColor[0] < 0.001 and hikeColor[1] < 0.001 and hikeColor[2] < 0.001)
+    timer1 = time.time()
+
+    ### global ranks for pictures
+    rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
+    for i in range(len(rows_dst)):
+        row_dst = rows_dst[i]
+        globalTimeList.append((row_dst[0], row_dst[4]))
+        globalAltList.append((row_dst[0], row_dst[1]))
+        globalColorList.append((row_dst[0], row_dst[2]))
+
+    globalTimeList.sort(key= itemgetter(1, 0))
+    for i in range(len(globalTimeList)):
+        row_dst = globalTimeList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_TimeRank(row_dst[0], rank)
+
+    globalAltList.sort(key=lambda data: data[1])
+    for i in range(len(globalAltList)):
+        row_dst = globalAltList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_AltRank(row_dst[0], rank)
+
+    globalColorList.sort(key=splitColor)
+    for i in range(len(globalColorList)):
+        row_dst = globalColorList[i]
+        rank = i + 1
+        dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
+
+    print("[{}] --- Global rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer1)))
+
+    # create color spectrum for globalColor and globalColor_h
+    colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
+    generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DROPBOX + BASEPATH_DEST)
+
+    colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
+    generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DROPBOX + BASEPATH_DEST)
+
+    timer2 = time.time()
+
+    ## update alt and color global_h rankings for Pictures
+    # altrank_global_h
+    altSortedHikes = dbDESTController.get_hikes_by_avg_altrank()
+    rankIndex = 1
+
+    for res in altSortedHikes:
+        hike = res[0]
+        # picsInHike = res[1]       # for debugging
+        rows = dbDESTController.get_pictures_of_specific_hike_by_altrank(hike)
+
+        for row in rows:
+            pID = row[0]
+            dbDESTController.update_pictures_altrank_global_h(rankIndex, pID)
+            rankIndex += 1
+            # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
+
+    print("[{}] --- Alt_h rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer2)))
+    timer3 = time.time()
+
+    # color_rank_global_h
+    colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
+    rankIndex = 1
+
+    for res in colorSortedHikes:
+        hike = res[0]
+        # picsInHike = res[1]       # for debugging
+        rows = dbDESTController.get_pictures_of_specific_hike_by_color_rank(hike)
+
+        for row in rows:
+            pID = row[0]
+            dbDESTController.update_pictures_color_rank_global_h(rankIndex, pID)
+            rankIndex += 1
+            # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
+
+    print("[{}] --- Col_h rankings for Pictures took {} seconds.".format(timenow(), str(time.time() - timer3)))
+    timer4 = time.time()
+
+    ### global ranks for hikes
+    globalAltList.clear()
+    globalColorList.clear()
+
+    rows_dst = dbDESTController.get_hikes_global_ranking_raw_data()
+    for i in range(len(rows_dst)):
+        row_dst = rows_dst[i]
+        globalAltList.append((row_dst[0], row_dst[1]))
+        globalColorList.append((row_dst[0], row_dst[2]))
+
+    globalAltList.sort(key=lambda data: data[1])
+    for i in range(len(globalAltList)):
+        row_dst = globalAltList[i]
+        rank = i + 1
+        dbDESTController.update_hikes_global_AltRank(row_dst[0], rank)
+
+    globalColorList.sort(key=splitColor)
+    for i in range(len(globalColorList)):
+        row_dst = globalColorList[i]
+        rank = i + 1
+        dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
+
+    print("[{}] --- Global ranking took {} seconds".format(timenow(), str(time.time() - rankTimer)))
+
+    print("[{}] --- Global ranking took {} seconds.".format(timenow(), str(time.time() - rankTimer)))
+    print("[{}] --- Moving on to the next hike!".format(timenow()))
+
+    return 0
 
 
 def main():
@@ -797,7 +1008,7 @@ def main():
     # exit()
 
     # filter out zero byte pictures in the source DB upon starting
-    filterZeroBytePicturesFromSrc()
+    # filterZeroBytePicturesFromSrc()
 
     latest_src_hikeID = dbSRCController.get_last_hike_id()
     latest_dest_hikeID = dbDESTController.get_last_hike_id()
@@ -813,8 +1024,8 @@ def main():
     masterTimer = time.time()
 
     while currHike <= latest_src_hikeID:
-        #
-        # if (currHike > 2):
+
+        # if (currHike > 1):
         #     break
         #
         # validRows = dbSRCController.get_valid_photos_in_given_hike(currHike)
@@ -843,14 +1054,10 @@ def main():
             currHike += 1
             continue
 
-        ### TODO: drop short hikes < 100 pictures
-
         else:
-            NEW_DATA = True
             hikeTimer = time.time()
 
             destPath = build_hike_path(DROPBOX + BASEPATH_DEST, currHike, True)
-
             expectedCheckSumTotal = currExpectedHikeSize * 4
             checkSum_transferred, checkSum_rotated, checkSum_total = compute_checksum(destPath, currHike)
 
@@ -877,109 +1084,6 @@ def main():
             globalCounter_h += currExpectedHikeSize
 
     ### At this point, all hikes are processed.
-
-    ### TODO: remove TRUE for the final code
-    # calculate global ranks for pictures, only when there is new data
-    if (True or NEW_DATA):
-        rankTimer = time.time()
-
-        globalTimeList = []
-        globalAltList = []
-        globalColorList = []
-        # key function for sort() only accepts 1 argument, so need to explicitly set additional variable as global
-        COLOR_HSV_INDEX = 1
-
-        ### global ranks for pictures
-        rows_dst = dbDESTController.get_pictures_global_ranking_raw_data()
-        for i in range(len(rows_dst)):
-            row_dst = rows_dst[i]
-            globalTimeList.append((row_dst[0], row_dst[4]))
-            globalAltList.append((row_dst[0], row_dst[1]))
-            globalColorList.append((row_dst[0], row_dst[2]))
-
-        globalTimeList.sort(key= itemgetter(1, 0))
-        for i in range(len(globalTimeList)):
-            row_dst = globalTimeList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_TimeRank(row_dst[0], rank)
-
-        globalAltList.sort(key=lambda data: data[1])
-        for i in range(len(globalAltList)):
-            row_dst = globalAltList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_AltRank(row_dst[0], rank)
-
-        globalColorList.sort(key=splitColor)
-        for i in range(len(globalColorList)):
-            row_dst = globalColorList[i]
-            rank = i + 1
-            dbDESTController.update_pictures_global_ColRank(row_dst[0], rank)
-
-        # create color spectrum for globalColor and globalColor_h
-        colorSpectrumRGB_Global = dbDESTController.get_pictures_rgb_global()
-        generatePics(colorSpectrumRGB_Global, "hike-global-colorSpectrum", DROPBOX + BASEPATH_DEST)
-
-        colorSpectrumRGB_Global_h = dbDESTController.get_pictures_rgb_global_h()
-        generatePics(colorSpectrumRGB_Global_h, "hike-global-h-colorSpectrum", DROPBOX + BASEPATH_DEST)
-
-        ## update alt and color global_h rankings for Pictures
-        # altrank_global_h
-        altSortedHikes = dbDESTController.get_hikes_by_avg_altrank()
-        rankIndex = 1
-
-        for res in altSortedHikes:
-            hike = res[0]
-            # picsInHike = res[1]       # for debugging
-            rows = dbDESTController.get_pictures_of_specific_hike_by_altrank(hike)
-
-            for row in rows:
-                pID = row[0]
-                dbDESTController.update_pictures_altrank_global_h(rankIndex, pID)
-                rankIndex += 1
-                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
-
-        # color_rank_global_h
-        colorSortedHikes = dbDESTController.get_hikes_by_color_rank()
-        rankIndex = 1
-
-        for res in colorSortedHikes:
-            hike = res[0]
-            # picsInHike = res[1]       # for debugging
-            rows = dbDESTController.get_pictures_of_specific_hike_by_color_rank(hike)
-
-            for row in rows:
-                pID = row[0]
-                dbDESTController.update_pictures_color_rank_global_h(rankIndex, pID)
-                rankIndex += 1
-                # print("## Hike {} ({} pictures) is done, rankIndex is now at {}".format(hike, picsInHike, rankIndex))
-
-
-        ### global ranks for hikes
-        globalAltList.clear()
-        globalColorList.clear()
-
-        rows_dst = dbDESTController.get_hikes_global_ranking_raw_data()
-        for i in range(len(rows_dst)):
-            row_dst = rows_dst[i]
-            globalAltList.append((row_dst[0], row_dst[1]))
-            globalColorList.append((row_dst[0], row_dst[2]))
-
-        globalAltList.sort(key=lambda data: data[1])
-        for i in range(len(globalAltList)):
-            row_dst = globalAltList[i]
-            rank = i + 1
-            dbDESTController.update_hikes_global_AltRank(row_dst[0], rank)
-
-        globalColorList.sort(key=splitColor)
-        for i in range(len(globalColorList)):
-            row_dst = globalColorList[i]
-            rank = i + 1
-            dbDESTController.update_hikes_global_ColRank(row_dst[0], rank)
-
-        NEW_DATA = False
-
-
-    print("[{}] --- Global ranking took {} seconds".format(timenow(), str(time.time() - rankTimer)))
 
     print("[{}] --- Building the projector DB took {} seconds ---".format(timenow(), str(time.time() - masterTimer)))
 
