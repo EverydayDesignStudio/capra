@@ -618,7 +618,7 @@ def buildHike(currHike):
             try:
                 #    1. make a copy of pic2 as pic2'f'
                 if (not os.path.exists(picPathCam2f_dest)):
-                    img = Image.open(picPathCam2_dest)
+                    img = Image.open(picPathCam2_src)
                     img_res = img.copy()
                     img_res.save(picPathCam2f_dest)
 
