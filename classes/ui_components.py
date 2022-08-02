@@ -17,20 +17,18 @@ from classes.capra_data_types import Picture
 # -----------------------------------------------------------------------------
 
 
-# TODO - figure out how to merge these two widget types together
 class UIWidget(QWidget):
     """Super class for QWidgets that will be placed inside other widgets, not directly on MainWindow"""
     def __init__(self) -> None:
         super().__init__()
-    # def __init__(self, window):
-    #     super().__init__(window)
 
         self.anim = QPropertyAnimation()
         self.fadeEffect = QGraphicsOpacityEffect()
-        # self.canRepaint = True
+        # self.fadeEffect.setOpacity(0.0)
+        # self.setGraphicsEffect(self.fadeEffect)
 
     def fadeOut(self, duration: int):
-        """Fades out the label over passed in duration (milliseconds)"""
+        """Fades out the widget over passed in duration (milliseconds)"""
         self.setGraphicsEffect(self.fadeEffect)
         self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
         self.anim.setStartValue(1)
@@ -39,14 +37,25 @@ class UIWidget(QWidget):
         self.anim.start()
         self.update()
 
-    def show(self):
-        '''UIWdiget superclass method'''
+    def fadeIn(self, duration: int):
+        """Fades in the widget over passed in duration (milliseconds)"""
+        self.setGraphicsEffect(self.fadeEffect)
+        self.anim = QPropertyAnimation(self.fadeEffect, b"opacity")
+        self.anim.setStartValue(0)
+        self.anim.setEndValue(1)
+        self.anim.setDuration(duration)
+        self.anim.start()
+        self.update()
+
+    def opacityShow(self):
+        self.show()
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
 
-    def myHide(self):
-        '''UIWdiget superclass method'''
+    def opacityHide(self):
         self.fadeEffect.setOpacity(0.0)
+        self.setGraphicsEffect(self.fadeEffect)
+        self.hide()
 
     # def setCanRepaint(self):
     #     self.canRepaint = True
@@ -89,7 +98,6 @@ class UIWindowWidget(QWidget):
         self.anim.start()
         self.update()
 
-    # VUpdate - verify
     def opacityShow(self):
         self.show()
         self.anim.stop()
@@ -121,8 +129,6 @@ class UILabel(QLabel):
         self.anim.start()
         self.update()
 
-    # TODO VUpdate -- this will mess up a lot of things because I named this show and there is a QLabel method named show
-    # So, I need to change this method name, I think
     def opacityShow(self):
         self.anim.stop()
         self.fadeEffect.setOpacity(1.0)
@@ -211,7 +217,6 @@ class UILabelTopCenter(QWidget):
     def setSecondaryText(self, text):
         self.label2.setText(text)
 
-    # VUpdate TODO -- make sure this is a necessary change
     def opacityShow(self):
         self.animGroupFadeOut.stop()
         self._label1_opacity.setOpacity(1.0)
@@ -332,7 +337,17 @@ class UIUnderlay(UILabel):
         # self.move(0, 0)
         self.setAlignment(Qt.AlignCenter)
         self.setGeometry(0, 0, 1280, 187)
-        pixmap = QPixmap('assets/Underlay@1x.png')
+        pixmap = QPixmap('assets/underlay@1x.png')
+        self.setPixmap(pixmap)
+
+
+class UIUnderlayBottom(UILabel):
+    def __init__(self, window):
+        super().__init__(window)
+
+        self.setAlignment(Qt.AlignCenter)
+        self.setGeometry(0, 370, 1280, 350)
+        pixmap = QPixmap('assets/underlay-bottom@2x.png')
         self.setPixmap(pixmap)
 
 
@@ -605,7 +620,7 @@ class PortraitTopLabel(UIWidget):
         painter.end()
 
 
-class ColorPaletteNew(QWidget):
+class ColorPaletteNew(UIWindowWidget):
     def __init__(self, window: QMainWindow, visible: bool, colorList: list, confidentList: list) -> None:
         super().__init__(window)
 
@@ -662,57 +677,6 @@ class ColorPaletteNew(QWidget):
         self.colorList = colorList
         self.confidentList = confidentList
         self.isVisible = visible
-        self.update()
-
-
-class ColorPalette(UIWidget):
-    def __init__(self, colorList: list, confidentList: list, visible: bool) -> None:
-        super().__init__()
-
-        self.setFixedHeight(40)
-        self.setFixedWidth(160)
-
-        self.colorList = colorList
-        self.confidentList = confidentList
-        self.visible = visible
-
-    def paintEvent(self, e):
-        # if self.canRepaint == False:
-        #     return
-
-        # print('painting Color Palette')
-        # print(self.previousInFocusChain())
-        if self.visible:
-            painter = QPainter(self)
-            brush = QBrush()
-            brush.setStyle(Qt.SolidPattern)
-            painter.setRenderHint(QPainter.HighQualityAntialiasing)
-
-            # grab width & height of the whole painter
-            widgetw = painter.device().width()
-            widgeth = painter.device().height()
-
-            brush.setColor(QColor(0, 0, 0, 150))
-            rect = QRect(0, 0, widgetw, widgeth)
-            painter.fillRect(rect, brush)
-
-            total = sum(self.confidentList)
-            x = 0
-            for i, color in enumerate(self.colorList):
-                brush.setColor(color)
-                perc = self.confidentList[i]
-                w = round((perc / total) * widgetw, 0)
-                rect = QRect(x, 0, w, widgeth)
-                x += w
-                painter.fillRect(rect, brush)
-
-        # self.canRepaint = False
-
-    def trigger_refresh(self, colorList: list, confidentList: list, visible: bool):
-        # self.canRepaint = True
-        self.colorList = colorList
-        self.confidentList = confidentList
-        self.visible = visible
         self.update()
 
 
@@ -882,7 +846,7 @@ class ColorBar(UIWidget):
         self.isColorMode = isColorMode
         self.percent = percent
         self.indicatorColor = indicatorColor
-        # self.update()
+        self.update()
 
 
 class TimeBar(UIWidget):

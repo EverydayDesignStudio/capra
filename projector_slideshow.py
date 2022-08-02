@@ -3,11 +3,6 @@
 # Slideshow application for the Capra Explorer
 # Allows passing through photos with a smooth fading animation
 
-# TODO
-# TESTING
-# REVIEW
-# REMOVE
-
 # Imports
 import math
 import os
@@ -51,8 +46,7 @@ print('projector_slideshow.py running...')
 rotaryCounter = 0  # Global value for rotary encoder, so ImageBlender thread doesn't need to ask MainWindow
 rotaryCounterLast = 0  # Needed to measure the change of the encoder that happens during the Encoder loop
 
-isReadyForNewPicture = True  # REVIEW - not sure if nedded, could be a solution
-picture = None  # REMOVE - not needed anymore. we use ImageBlender
+SECONDS_BETWEEN_PICTURES = 1
 
 
 # Statuses
@@ -441,8 +435,8 @@ class PlayPause(QRunnable):
                     rotaryCounter += 1 * Status().get_speed()
                 elif Status().get_direction() == StatusDirection.PREV:
                     rotaryCounter -= 1 * Status().get_speed()
-            # TODO - What should this be?
-            time.sleep(1.0)
+            # This value can be tweaked to adjust time between pictures
+            time.sleep(SECONDS_BETWEEN_PICTURES)
 
 
 class ImageBlender(QRunnable):
@@ -453,7 +447,7 @@ class ImageBlender(QRunnable):
         # This thread holds an instance of the SQLController
         self.sql_controller = sql_cntrl
         # Thread maintains and updates the Picture instance
-        self.picture = picture  # TODO - should I pass in the picture or just access it
+        self.picture = picture
 
         # Needed setup
         self.signals = WorkerSignals()  # Setups signals that will be used to send data back to MainWindow
@@ -689,13 +683,8 @@ class ImageBlender(QRunnable):
 
             # Blending happens here
             if self.alpha < self.ALPHA_UPPERBOUND:
-                # print('blend')
+                # print('blending...')
                 # Increments the alpha, so the image will slowly blend
-                # REVIEW - okay it seems like this isn't doing anyting at all
-                # Wow. this is after the blend function. wow lol, this was unreachable.
-                # But wait, how is it still blending. OH i guess it is just using
-                # self.alpha += 0.0001
-                # self.alpha += 0.04
                 self.alpha += self.ALPHA_INCREMENT
 
                 # Only blends the landscape photo or portrait photos depending on the mode
@@ -723,7 +712,7 @@ class ImageBlender(QRunnable):
                     # Emits signal to MainWindow which calls _finished_image_blend()
                     print(f'Alpha > {self.ALPHA_UPPERBOUND}')
                     self.signals.finished.emit()
-            # TODO - still figure out this amount
+            # NOTE Explanation of why values for waits and blends were chosen is in the constructor of this class
             time.sleep(self.ALPHA_WAIT)
 
 
@@ -734,7 +723,7 @@ class MainWindow(QMainWindow):
         # Test counter variable to see the frame rate
         self.blendCount = 0
 
-        # self.checkForCamera()  # TODO - implement Camera detection via Hall Effect sensor
+        # self.checkForCamera()  # TODO Projector - implement Camera detection via Hall Effect sensor
         self.determineDeviceType()  # Determines if the device is a Raspberry Pi or a Mac/Windows
         self.loadSavedState()  # Loads the state of last picture, mode, and scope
         self.setupDB()  # Mac/Windows shows the database dialog
@@ -742,13 +731,13 @@ class MainWindow(QMainWindow):
         self.setupUI()
         self.setupSoftwareThreads()
 
-        # TESTING REMOVE Switch - old way is left in for current testing on a Mac
-        # if Status().is_device_mac_windows():
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        # NOTE used for TESTING to simulate Raspberry Pi during development
+        # if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        if Status().is_device_mac_windows():
             self.setupMenuBar()
 
-        # if Status().is_device_rpi():
-        if platform.system() == 'Linux':
+        # if platform.system() == 'Linux':
+        if Status().is_device_rpi():
             self.setupGPIO()
             self.setupHardwareThreads()
 
@@ -757,15 +746,15 @@ class MainWindow(QMainWindow):
     def determineDeviceType(self):
         '''Determines if we are running on a Raspberry Pi or Mac/Windows'''
         if platform.system() == 'Darwin' or platform.system() == 'Windows':
+            # Status().set_device_rpi()  # NOTE used for TESTING to simulate Raspberry Pi during development
             # Sets the status for Mac/Windows; used for setting vertical images
             Status().set_device_mac_windows()
-            # Status().set_device_rpi()  # TESTING -- during development
         elif platform.system() == 'Linux':
             # Sets the status for Raspberry Pi; used for setting vertical images & other things
             Status().set_device_rpi()
 
     def loadSavedState(self):
-        # TODO - Pull from the status text file and update the Status() object
+        # TODO Projector - Pull from the status text file and update the Status() object
         self._saved_picture_id = 1
         Status().set_mode_time()
 
@@ -775,7 +764,8 @@ class MainWindow(QMainWindow):
         otherwise it will use the global defined location for the database'''
 
         # Mac/Windows: select the location
-        if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        # if platform.system() == 'Darwin' or platform.system() == 'Windows':   # NOTE used for TESTING to simulate Raspberry Pi during development
+        if Status().is_device_mac_windows():
             filename = QFileDialog.getOpenFileName(self, 'Open file', '', 'Database (*.db)')
             self.database = filename[0]
             self.directory = os.path.dirname(self.database)
@@ -797,7 +787,7 @@ class MainWindow(QMainWindow):
         # filemenu = menubar.addMenu('File')
         helpmenu = menubar.addMenu('Help')
 
-        # TODO Maybe - add ability to change database without restarting program
+        # TODO Mac App - add ability to change database without restarting program
         # File
         # exitaction = filemenu.addAction("Change Database")
         # exitaction.triggered.connect(self.print_change)
@@ -808,10 +798,9 @@ class MainWindow(QMainWindow):
 
     def setupWindowLayout(self, picture: Picture):
         '''Setup the window size, title, and container layout'''
-
         self.setWindowTitle("Capra Explorer Slideshow")
         self.setGeometry(0, 0, 1280, 720)  # x, y, w, h
-        
+
         self.pictureLandscape = UIImageNoLayout(self, picture.cameraf, 0, 0, 1280, 720)
 
         # Due to the vertical modes working differently on a Raspberry Pi vs Mac/Windows,
@@ -829,85 +818,58 @@ class MainWindow(QMainWindow):
         # Top UI elements
         # ---------------------------------------------------------------------
         self.topUnderlay = UIUnderlay(self)
-        self.centerLabel = UILabelTopCenter(self, '', '')
-        self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
-
-        # Mode UI element
-        # self.modeOverlay = UIModeOverlay(self, 'assets/Time@1x.png')
-
-        # New Top UI
-        # ---------------------------------------------------------------------
+        self.bottomUnderlay = UIUnderlayBottom(self)
         self.scopeWidget = UIScope(self)
-        # self.scopeWidget.opacityHide()
-
-        self.topMiddleContainer = UIContainer(self, QHBoxLayout(), Qt.AlignHCenter)
-        hspacer = QSpacerItem(100, 0)
-        self.topMiddleContainer.layout.addItem(hspacer)
-
-        # Color Palette
-        # self.palette = ColorPalette(self.picture.colors_rgb, self.picture.colors_conf, True)
-        # self.palette.setGraphicsEffect(UIEffectDropShadow())
-        # self.topMiddleContainer.layout.addWidget(self.palette)
-
-        # New Color Palette
+        self.centerLabel = UILabelTopCenter(self, '', '')
         self.colorpalette = ColorPaletteNew(self, False, self.picture.colors_rgb, self.picture.colors_conf)
-        self.colorpalette.setGraphicsEffect(UIEffectDropShadow())
+        # self.colorpalette.setGraphicsEffect(UIEffectDropShadow())  # Removes the fade effect used for fading in/out
+        self.rightLabel = UILabelTop(self, '', Qt.AlignRight)
 
         # Time, Color, Altitude Graphs
         # ---------------------------------------------------------------------
-        spacer = QSpacerItem(0, 25)
         self.bottomUIContainer = UIContainer(self, QVBoxLayout(), Qt.AlignBottom)
+        # spacer = QSpacerItem(0, 25)
+        # self.bottomUIContainer.layout.addItem(spacer)
 
+        # TODO Projector - would receive 'time' value from a saved state variable
         percent_rank = self.sql_controller.ui_get_percentage_in_hike_with_mode('time', self.picture)
         print(f'Rank New: {percent_rank}')
 
-        # Speed Indicator
-        # if Status().is_device_mac_windows():  # Maybe REMOVE the conditional creation of this UI element
-        self.scrollSpeedLabel = UILabelTop(self, f'{Status().get_speed()}x', Qt.AlignLeft)
-        self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
-        self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
+        # Speed Indicator - only shows up on Mac/Windows app
+        if Status().is_device_mac_windows():
+            self.scrollSpeedLabel = UILabelTop(self, f'{Status().get_speed()}x', Qt.AlignLeft)
+            self.scrollSpeedLabel.setGraphicsEffect(UIEffectDropShadow())
+            self.bottomUIContainer.layout.addWidget(self.scrollSpeedLabel)
 
         # Altitude Graph
         altitudelist = self.sql_controller.ui_get_altitudes_for_hike_sortby('time', self.picture, self.uiData.indexListForHike[self.picture.hike_id])
         print(altitudelist)
         self.altitudegraph = AltitudeGraph(False, altitudelist, percent_rank, self.picture.altitude)
-        self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())
+        # self.altitudegraph.setGraphicsEffect(UIEffectDropShadow())  # Removes the fade effect used for fading in/out
         self.bottomUIContainer.layout.addWidget(self.altitudegraph)
-        # self.bottomUIContainer.layout.addItem(spacer)
 
         # Color Bar
         colorlist = self.sql_controller.ui_get_colors_for_hike_sortby('time', self.picture, self.uiData.indexListForHike[self.picture.hike_id])
         self.colorbar = ColorBar(False, colorlist, percent_rank, self.picture.color_rgb)
-        self.colorbar.setGraphicsEffect(UIEffectDropShadow())
+        # self.colorbar.setGraphicsEffect(UIEffectDropShadow())  # Removes the fade effect used for fading in/out
         self.bottomUIContainer.layout.addWidget(self.colorbar)
 
         # Time Bar
         self.timebar = TimeBar(True, QColor(62, 71, 47), len(colorlist), percent_rank)
-        self.timebar.myHide()
-        self.timebar.setGraphicsEffect(UIEffectDropShadow())
+        # self.timebar.setGraphicsEffect(UIEffectDropShadow())  # Removes the fade effect used for fading in/out
         self.bottomUIContainer.layout.addWidget(self.timebar)
-
-        # Spacer at bottom
-        # self.bottomUIContainer.layout.addItem(spacer)
 
         # Fullscreen Components
         # ---------------------------------------------------------------------
         self.helpMenu = UIHelpMenu(self)
-
-        # Portrait UI
-        # ---------------------------------------------------------------------
-        # VUpdate -- commenting this stuff out for now
-        # self.portraitUIContainerTop = UIContainer(self, QHBoxLayout(), Qt.AlignRight)
-        # self.vlabelCenter = PortraitTopLabel("Altitude")
-        # self.vlabelCenter.setGraphicsEffect(UIEffectDropShadow())
-        # self.portraitUIContainerTop.layout.addWidget(self.vlabelCenter)
-        # self.portraitUIContainerTop.hide()
 
         # Setups up a UI timer for controlling the fade out of UI elements
         # ---------------------------------------------------------------------
         self.timerFadeOutUI = QTimer()
         self.timerFadeOutUI.setSingleShot(True)
         self.timerFadeOutUI.timeout.connect(self._fadeOutUI)
+
+        self.uiUpdateScreen()  # Updates the screen and shows all the UI right after slideshow starts
 
     # Setup all software threads
     # ImageFader - handles the fading between old and new pictures
@@ -1070,7 +1032,7 @@ class MainWindow(QMainWindow):
         '''New image finished blending, now fade out the UI components.
         Currently only used for printing the blend count'''
 
-        print('FINISHED Blending')
+        print('Finished blending:')
         print('Blended {b}xs\n'.format(b=self.blendCount))
         self.blendCount = 0
         # self.uiUpdateScreen()  # Called from _new_picture_loaded() instead
@@ -1080,14 +1042,18 @@ class MainWindow(QMainWindow):
     def _fadeOutUI(self):
         time_ms = 1000
         self.topUnderlay.fadeOut(time_ms)
-        self.rightLabel.fadeOut(time_ms)
+        self.bottomUnderlay.fadeOut(time_ms)
+
         self.scopeWidget.fadeOut(time_ms)
         self.centerLabel.fadeOut()
-        self.scrollSpeedLabel.fadeOut(time_ms)
+        self.colorpalette.fadeOut(time_ms)
+        self.rightLabel.fadeOut(time_ms)
+        if Status().is_device_mac_windows():
+            self.scrollSpeedLabel.fadeOut(time_ms)
 
-        # self.timebar.fadeOut(time_ms)
-        # self.colorbar.fadeOut(time_ms)
-        # self.palette.fadeOut(time_ms)
+        self.timebar.fadeOut(time_ms)
+        self.colorbar.fadeOut(time_ms)
+        self.altitudegraph.fadeOut(time_ms)
 
     # UI Updates
     # -------------------------------------------------------------------------
@@ -1117,7 +1083,6 @@ class MainWindow(QMainWindow):
                 self.ledWhite.set_altitude_mode()
 
     def uiSetLandscape(self):
-        print('uiSetLandscape()')
         Status().set_orientation_landscape()
 
         # Switch Images
@@ -1131,24 +1096,25 @@ class MainWindow(QMainWindow):
         self.pictureVertical2RPi.hide()
         self.pictureVertical3RPi.hide()
 
-        # Hide Portrait
-        # VUpdate -- commented out
-        # self.portraitUIContainerTop.hide()
+        # Hide Portrait -- TODO Mac App - for having vertical UI
 
-        # Adjust top UI elements
-        self.scopeWidget.setSizeLarge()
-
-        # Show UI again
-        self.bottomUIContainer.show()
+        # Show top UI
+        self.topUnderlay.opacityShow()
+        self.scopeWidget.opacityShow()
         self.centerLabel.opacityShow()
+        self.colorpalette.opacityShow()
         self.rightLabel.opacityShow()
-        self.scrollSpeedLabel.opacityShow()
+        if Status().is_device_mac_windows():
+            self.scrollSpeedLabel.opacityShow()
 
-        self.uiUpdateScreen()  # TODO - is this needed?
+        # Show bottom UI
+        self.bottomUIContainer.show()
+        self.bottomUnderlay.opacityShow()
 
-    def uiSetVertical(self):
+        self.uiUpdateScreen()  # Makes sure the Landscape View has all the correct UI data
+
+    def uiSetVerticalMacApp(self):
         '''Sets the Vertical UI for a Mac App'''
-        print('uiSetVertical()')
         Status().set_orientation_vertical()
         self.imageBlender.loadPortraitImages()
         self.pictureVertical1MacApp.show()
@@ -1160,27 +1126,27 @@ class MainWindow(QMainWindow):
         self.pictureVertical2RPi.hide()
         self.pictureVertical3RPi.hide()
 
-        # VUpdate -- commented out
-        # self.portraitUIContainerTop.show()
-        self.bottomUIContainer.hide()
-
-        # Adjust top UI elements - vertical Mac
-        # TODO - needs to be finished implemented
-        self.scopeWidget.setSizeSmall()
-
-        # Hide the top UI elements
         self.timerFadeOutUI.stop()
-        self.topUnderlay.opacityHide()
-        self.centerLabel.opacityHide()
-        self.rightLabel.opacityHide()
-        self.scrollSpeedLabel.opacityHide()
 
-        self.uiUpdateScreen()  # TODO - is this needed?
+        # Hide top UI
+        self.topUnderlay.opacityHide()
+        self.scopeWidget.opacityHide()
+        self.centerLabel.opacityHide()
+        self.colorpalette.opacityHide()
+        self.rightLabel.opacityHide()
+        if Status().is_device_mac_windows():
+            self.scrollSpeedLabel.opacityHide()
+
+        # Hide bottom UI
+        self.bottomUIContainer.hide()
+        self.bottomUnderlay.opacityHide()
+
+        # Show Vertical -- TODO Mac App - for having vertical UI
+
+        self.uiUpdateScreen()
 
     def uiSetVerticalAccelerometer(self):
         '''Sets the Vertical UI for the Raspberry Pi projector app'''
-        print('TODO: Needs to be finished implemented')
-
         Status().set_orientation_vertical()
         self.imageBlender.loadPortraitImages()
         self.pictureVertical1RPi.show()
@@ -1192,48 +1158,50 @@ class MainWindow(QMainWindow):
         self.pictureVertical2MacApp.hide()
         self.pictureVertical3MacApp.hide()
 
-        # TODO - addjust the UI elements at top and bottom
+        self.timerFadeOutUI.stop()
 
-        self.uiUpdateScreen()  # TODO - is this needed?
+        # Hide top UI
+        self.topUnderlay.opacityHide()
+        self.scopeWidget.opacityHide()
+        self.centerLabel.opacityHide()
+        self.colorpalette.opacityHide()
+        self.rightLabel.opacityHide()
+        if Status().is_device_mac_windows():
+            self.scrollSpeedLabel.opacityHide()
 
-    # TODO - Should updating the UI be divided up into sub-functions
-    # Or since repaint is automatically called on all the widgets, does it matter?
+        # Hide bottom UI
+        self.bottomUIContainer.hide()
+        self.bottomUnderlay.opacityHide()
+
+        self.uiUpdateScreen()
+
     def uiUpdateScreen(self):
-        # self.picture.print_obj()
-        # self.printCurrentMemoryUsage()
-        pass
-
-        # TODO - comment out for faster loading and easier of testing
+        self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
         self.uiUpdateTop()
         self.uiUpdateBottom()
 
-    def uiUpdateScreenVertical(self):
-        pass
-
-    # TODO -- Might be more resource efficient to have all the objects faded out
-    # in 1 method, instead of having the fade attached to each individual class
     def uiUpdateTop(self):
-        # print("Update the top")
-        self.timerFadeOutUI.stop()  # stops timer which calls _fadeOutUI()
+        print('uiUpdateTop')
 
         mode = Status().get_mode()
         scope = Status().get_scope()
         orientation = Status().get_orientation()
 
-        # TODO - VUpdate -- organize all the landscape updates together
-        # TODO - maybe adjust so the UI is always shown
-
-        # Do the visualization
-        if orientation == StatusOrientation.LANDSCAPE:  # VUpdate
-            self.topUnderlay.show()  # semi-transparent background
+        # Unhide UI when a control is changed
+        if orientation == StatusOrientation.LANDSCAPE:
+            self.topUnderlay.opacityShow()
+            self.scopeWidget.opacityShow()
+            self.centerLabel.opacityShow()
+            self.colorpalette.opacityShow()
+            self.rightLabel.opacityShow()
+            if Status().is_device_mac_windows():
+                self.scrollSpeedLabel.opacityShow()
+            self.timerFadeOutUI.start(2500)  # wait 2.5s until top UI fades out
 
         if scope == StatusScope.HIKE:
             self.scopeWidget.setScopeHikes()
         elif scope == StatusScope.GLOBAL:
             self.scopeWidget.setScopeArchive()
-
-        if orientation == StatusOrientation.LANDSCAPE:  # VUpdate
-            self.scopeWidget.opacityShow()
 
         if mode == StatusMode.TIME:
             self.centerLabel.setPrimaryText(self.picture.uitime_hrmm)
@@ -1245,20 +1213,20 @@ class MainWindow(QMainWindow):
             self.centerLabel.setPrimaryText('')
             self.centerLabel.setSecondaryText('')
 
-        if orientation == StatusOrientation.LANDSCAPE:  # VUpdate
-            self.centerLabel.opacityShow()
-
         self.rightLabel.setPrimaryText(f"{self.picture.uihike}\n{self.picture.uidate}")
-
-        if orientation == StatusOrientation.LANDSCAPE:  # VUpdate
-            self.rightLabel.opacityShow()
-            self.scrollSpeedLabel.opacityShow()
-
-            self.timerFadeOutUI.start(2500)  # wait 1s until you fade out top UI
 
     def uiUpdateBottom(self):
         scope = Status().get_scope()
         mode = Status().get_mode()
+        orientation = Status().get_orientation()
+
+        # Unhide UI when a control is changed
+        if orientation == StatusOrientation.LANDSCAPE:
+            self.bottomUnderlay.opacityShow()
+            self.altitudegraph.opacityShow()
+            self.colorbar.opacityShow()
+            self.timebar.opacityShow()
+            self.timerFadeOutUI.start(2500)  # wait 2.5s until top UI fades out
 
         if self.preload:
             print('use the preloaded UIData')
@@ -1395,7 +1363,7 @@ class MainWindow(QMainWindow):
         if result == StatusOrientation.LANDSCAPE:
             self.control_landscape()
         elif result == StatusOrientation.PORTRAIT:
-            self.control_vertical()
+            self.control_vertical_accelerometer()
 
     # Hall Effect
     def pressed_hall_effect(self, result):
@@ -1443,22 +1411,23 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_L:
             x = self.frameGeometry().x()
             y = self.frameGeometry().y()
-            self.setGeometry(x, y+22, 1280, 720)  # VUpdate
+            self.setGeometry(x, y+22, 1280, 720)  # Keeps the window position on screen consistent
             self.control_landscape()
         elif event.key() == Qt.Key_V:
             x = self.frameGeometry().x()
             y = self.frameGeometry().y()
             # Change the size of the window
             #                x, y, w, h
-            self.setGeometry(x, y+22, 720, 1280)  # VUpdate
-            self.control_vertical()
-        elif event.key() == Qt.Key_A:
-            print("Simulates an accelerometer event")
+            self.setGeometry(x, y+22, 720, 1280)  # Keeps the window position on screen consistent
+            self.control_vertical_mac_app()
+        # NOTE used for TESTING to simulate Raspberry Pi during development
+        # elif event.key() == Qt.Key_A:
+        #     print("Simulates an accelerometer event")
 
-            x = self.frameGeometry().x()
-            y = self.frameGeometry().y()
-            self.setGeometry(x, y+22, 1280, 720)  # VUpdate
-            self.control_vertical_accelerometer()
+        #     x = self.frameGeometry().x()
+        #     y = self.frameGeometry().y()
+        #     self.setGeometry(x, y+22, 1280, 720)  # Keeps the window position on screen consistent
+        #     self.control_vertical_accelerometer()
 
         # Help Menu
         elif event.key() == Qt.Key_H:
@@ -1528,31 +1497,32 @@ class MainWindow(QMainWindow):
         print('setLandscape')
         self.uiSetLandscape()
 
-    def control_vertical(self):
+    def control_vertical_mac_app(self):
         '''Changes the orientation to vertical'''
-        print('control_vertical()')
-        self.uiSetVertical()
+        print('control_vertical_mac_app()')
+        self.uiSetVerticalMacApp()
 
     def control_vertical_accelerometer(self):
         '''Changes the orientation to vertical on the Raspberry Pi'''
-        print('Need to implement: self.uiSetVerticalAcclerometer()')
+        print('control_vertical_accelerometer()')
         self.uiSetVerticalAccelerometer()
 
     def control_speed_slower(self):
         '''Mac/Windows app only: decreases skip size for keyboard'''
-        # print('-- Scroll Speed')
+        print('-- Scroll Speed')
         if Status().is_device_mac_windows():
             Status().decrease_speed()
             self.scrollSpeedLabel.setText(f'{Status().get_speed()}x')
 
     def control_speed_faster(self):
         '''Mac/Windows app only: increases skip size for keyboard'''
-        # print('++ Scroll Speed')
+        print('++ Scroll Speed')
         if Status().is_device_mac_windows():
             Status().increase_speed()
             self.scrollSpeedLabel.setText(f'{Status().get_speed()}x')
 
     def control_help_menu(self):
+        print('control_help_menu')
         # self.helpMenu.toggleShowHide()
         self.helpMenu.toggleShowHideWithFade()
 
@@ -1583,6 +1553,6 @@ window = MainWindow()
 if platform.system() == 'Darwin' or platform.system() == 'Windows':
     window.show()
 elif platform.system() == 'Linux':
-    # window.showFullScreen()
-    window.show()
+    window.showFullScreen()
+    # window.show()
 app.exec_()
