@@ -937,6 +937,12 @@ class SQLController:
         else:
             return row[0]
 
+    def get_archive_size(self) -> int:
+        cursor = self.connection.cursor()
+        cursor.execute(self.statements.select_archive_size())
+        archiveSize = cursor.fetchone()[0]
+        return archiveSize
+
     def get_hike_average_color(self, hike_id: int, camNum: int = 0):
         cursor = self.connection.cursor()
         cursor.execute(self.statements.get_hike_average_color(hike_id=hike_id))
