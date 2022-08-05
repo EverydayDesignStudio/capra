@@ -751,7 +751,7 @@ class SlideshowWindow(QMainWindow):
         else:
             self.picture = self.sql_controller.get_first_time_picture()
 
-        # TESTING - comment out to speed up program load time
+        ### TODO: TESTING - comment out to speed up program load time
         self.uiData = self.sql_controller.preload_ui_data()
         self.preload = True
 
@@ -1494,12 +1494,12 @@ class SlideshowWindow(QMainWindow):
 
 
 
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = SlideshowWindow()
-#     if platform.system() == 'Darwin' or platform.system() == 'Windows':
-#         window.show()
-#     elif platform.system() == 'Linux':
-#         # window.showFullScreen()
-#         window.show()
-#     app.exec_()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = SlideshowWindow()
+    if platform.system() == 'Darwin' or platform.system() == 'Windows':
+        window.show()
+    elif platform.system() == 'Linux':
+        # window.showFullScreen()
+        window.show()
+    app.exec_()
