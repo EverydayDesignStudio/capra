@@ -1262,6 +1262,7 @@ class TransferThread(QRunnable):
                 RETRY += 1
 
 
+### TODO: handle the first transfer with empty archive
 class TransferAnimationWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1720,6 +1721,8 @@ class CapraWindow(QMainWindow):
 
     def hallEffectChecker(self):
         global CURRENT_WINDOW
+
+        ### TODO: Show loading screen
 
         # hall-effect is ON and the camera is UP - we are ready to transfer!
         if (g.HALL_EFFECT and g.CAMERA_UP):
