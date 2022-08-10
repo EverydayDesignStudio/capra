@@ -1335,6 +1335,14 @@ class SlideshowWindow(QMainWindow):
     def pressed_hall_effect(self, result):
         print('Hall Effect was pressed: %d' % result)
 
+    def mousePressEvent(self, QMouseEvent):
+        if QMouseEvent.button() == Qt.LeftButton:
+            print("Left Button Clicked")
+        elif QMouseEvent.button() == Qt.RightButton:
+            print("Right Button Clicked")
+            self.garbageCollection()
+            self.close()
+
     # Keyboard Presses
     # -------------------------------------------------------------------------
     def keyPressEvent(self, event):
@@ -1500,6 +1508,6 @@ if __name__ == "__main__":
     if platform.system() == 'Darwin' or platform.system() == 'Windows':
         window.show()
     elif platform.system() == 'Linux':
-        # window.showFullScreen()
+        window.showFullScreen()
         window.show()
     app.exec_()
