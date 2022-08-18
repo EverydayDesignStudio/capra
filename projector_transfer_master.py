@@ -651,11 +651,11 @@ def buildHike(currHike):
                 if os.path.isfile(picPathCam1_dest):
                     os.remove(picPathCam1_dest)
                 if os.path.isfile(picPathCam2_dest):
-                    os.remove(picPathCam1_dest)
+                    os.remove(picPathCam2_dest)
                 if os.path.isfile(picPathCam2f_dest):
-                    os.remove(picPathCam1_dest)
+                    os.remove(picPathCam2f_dest)
                 if os.path.isfile(picPathCam3_dest):
-                    os.remove(picPathCam1_dest)
+                    os.remove(picPathCam3_dest)
 
                 index_in_hike += 1
                 continue
