@@ -616,13 +616,7 @@ def buildHike(currHike):
             img_res = None
             # resize and rotate for newly added pictures
             try:
-                #    1. make a copy of pic2 as pic2'f'
-                if (not os.path.exists(picPathCam2f_dest)):
-                    img = Image.open(picPathCam2_src)
-                    img_res = img.copy()
-                    img_res.save(picPathCam2f_dest)
-
-                #    2. resize to 427x720 and rotate 90 deg
+                #    1. resize to 427x720 and rotate 90 deg
                 if (not os.path.exists(picPathCam1_dest)):
                     img = Image.open(picPathCam1_src)
                     img_res = img.resize((720, 427), Image.ANTIALIAS).rotate(270, expand=True)
@@ -642,6 +636,14 @@ def buildHike(currHike):
                         img = Image.open(WHITE_IMAGE)
                         img_res = img.copy().rotate(90, expand=True)
                         img_res.save(picPathCam3_dest)
+
+                #    2. make a copy of pic2 as pic2'f'
+                #    ** pic2f should act as a safeguard - if pic2f is present, pic1, pic2 and pic3 should all be there
+                if (not os.path.exists(picPathCam2f_dest)):
+                    img = Image.open(picPathCam2_src)
+                    img_res = img.copy()
+                    img_res.save(picPathCam2f_dest)
+
             except:
                 print("!! Hike {} @ row {} has truncated pictures, could not rotate. Skipping a row..".format(currHike, index_in_hike))
                 deleteCount += 1
